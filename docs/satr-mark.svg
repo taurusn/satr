@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title description">
+  <title id="title">Satr</title>
+  <desc id="description">A document page with a heading mark and reading thread.</desc>
+  <rect x="4" y="4" width="152" height="152" rx="34" fill="#365e4d"/>
+  <rect x="38" y="24" width="84" height="112" rx="10" fill="#f1f3ee"/>
+  <g fill="none" stroke="#27322c" stroke-linecap="round" stroke-width="7">
+    <path d="M61 49v38M88 49v38M51 61h48M49 77h48"/>
+  </g>
+  <path d="M55 109c14 0 21-9 33-9 8 0 12 6 18 6" fill="none" stroke="#557a68" stroke-linecap="round" stroke-width="3"/>
+  <g fill="#557a68">
+    <circle cx="55" cy="109" r="4"/>
+    <circle cx="88" cy="100" r="4"/>
+    <circle cx="106" cy="106" r="4"/>
+  </g>
+</svg>
