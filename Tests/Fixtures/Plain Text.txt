@@ -1,0 +1,7 @@
+Plain text stays plain.
+
+# This is not a rendered heading
+- This is not a rendered list
+
+Spacing and line breaks remain visible.
+النص العربي يبقى باتجاهه الصحيح.

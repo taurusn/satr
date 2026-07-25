@@ -26,7 +26,7 @@ final class WelcomeViewController: NSViewController, NSWindowDelegate {
         title.textColor = .labelColor
         title.alignment = .center
 
-        let description = NSTextField(wrappingLabelWithString: "Open a Markdown file to read its text, diagrams, tables, images, and links in one place.")
+        let description = NSTextField(wrappingLabelWithString: "Open Markdown and plain-text files to read their content in one focused place.")
         description.font = .systemFont(ofSize: 15)
         description.textColor = .secondaryLabelColor
         description.alignment = .center
@@ -99,7 +99,7 @@ private final class WelcomeRootView: NSView {
 
 private final class DropZoneView: NSView {
     private let onDrop: (URL?) -> Void
-    private let label = NSTextField(labelWithString: "Drop a .md file here")
+    private let label = NSTextField(labelWithString: "Drop a .md or .txt file here")
 
     init(onDrop: @escaping (URL?) -> Void) {
         self.onDrop = onDrop
@@ -151,7 +151,7 @@ private final class DropZoneView: NSView {
         guard let urls = draggingInfo.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: options) as? [URL] else {
             return nil
         }
-        return urls.first { ["md", "markdown", "mdown", "mkd"].contains($0.pathExtension.lowercased()) }
+        return urls.first { ["md", "markdown", "mdown", "mkd", "txt"].contains($0.pathExtension.lowercased()) }
     }
 
     private func updateStyle(isDragging: Bool) {

@@ -162,7 +162,7 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSTo
 
         if url.scheme == "satr-wiki" {
             openWikiLink(url)
-        } else if url.isFileURL, Self.isMarkdown(url) {
+        } else if url.isFileURL, Self.isSupportedDocument(url) {
             (NSApp.delegate as? AppDelegate)?.openDocument(url, inTabGroupOf: self)
         } else if url.scheme == "http" || url.scheme == "https" || url.scheme == "mailto" {
             NSWorkspace.shared.open(url)
@@ -264,8 +264,8 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSTo
         webView.evaluateJavaScript("window.satrScrollToHeading(\(json))")
     }
 
-    private static func isMarkdown(_ url: URL) -> Bool {
-        ["md", "markdown", "mdown", "mkd"].contains(url.pathExtension.lowercased())
+    private static func isSupportedDocument(_ url: URL) -> Bool {
+        ["md", "markdown", "mdown", "mkd", "txt"].contains(url.pathExtension.lowercased())
     }
 }
 

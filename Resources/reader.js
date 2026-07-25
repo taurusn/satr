@@ -206,7 +206,20 @@
   const render = async () => {
     const root = document.getElementById("document");
     try {
-      const markdown = stripFrontmatter(decodeBase64(window.SATR_DOCUMENT.markdownBase64));
+      const fileName = decodeBase64(window.SATR_DOCUMENT.fileNameBase64);
+      const source = decodeBase64(window.SATR_DOCUMENT.markdownBase64);
+
+      if (/\.txt$/i.test(fileName)) {
+        root.innerHTML = `<pre class="plain-text" dir="auto">${escapeHTML(source)}</pre>`;
+        state.headings = [];
+        buildDocumentThread(root);
+        postStatus(root);
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+        document.body.dataset.rendered = "true";
+        return;
+      }
+
+      const markdown = stripFrontmatter(source);
       marked.use({ extensions: [wikiLinkExtension] });
       marked.setOptions({ gfm: true, breaks: false });
 

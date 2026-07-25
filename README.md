@@ -1,6 +1,6 @@
 # Satr
 
-Satr is Hatim's local macOS Markdown reader. It opens `.md`, `.markdown`, `.mdown`, and `.mkd` files, renders GitHub-flavored Markdown and Mermaid diagrams, follows local links, resolves Obsidian-style wiki links, and reloads when the source file changes.
+Satr is Hatim's local macOS Markdown and plain-text reader. It opens `.md`, `.markdown`, `.mdown`, `.mkd`, and `.txt` files. Markdown documents render GitHub-flavored Markdown and Mermaid diagrams, follow local links, and resolve Obsidian-style wiki links. Plain-text documents preserve their original line breaks and spacing. Both reload when the source file changes.
 
 Documents use native macOS tabs. Open several files in one window, reorder tabs by dragging, or drag a tab outside the tab bar to give it its own window. Drag it back onto another Satr tab bar to merge it by hand, or choose **Window > Merge All Windows**. Single-document windows keep their tab bar visible so there is always a drop target. `Command-T` opens a document in a new tab, `Command-N` opens one in a separate window, and Control-Tab moves between tabs.
 

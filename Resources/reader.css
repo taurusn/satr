@@ -241,6 +241,19 @@ pre code {
   font-size: 13px;
 }
 
+.plain-text {
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font: inherit;
+  line-height: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 table {
   display: block;
   width: 100%;

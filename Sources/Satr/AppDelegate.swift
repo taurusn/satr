@@ -24,7 +24,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         for filename in filenames {
             let url = URL(fileURLWithPath: filename).standardizedFileURL
-            guard Self.isMarkdown(url) else { continue }
+            guard Self.isSupportedDocument(url) else { continue }
             if let opened = openDocument(url, inTabGroupOf: tabAnchor) {
                 tabAnchor = opened
             }
@@ -67,16 +67,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func presentOpenPanel(openingInNewWindow: Bool) {
         let panel = NSOpenPanel()
-        panel.title = openingInNewWindow ? "Open Markdown in New Window" : "Open Markdown in Tab"
+        panel.title = openingInNewWindow ? "Open Document in New Window" : "Open Document in Tab"
         panel.prompt = "Open"
         panel.allowsMultipleSelection = true
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
-        panel.allowedContentTypes = Self.markdownTypes
+        panel.allowedContentTypes = Self.documentTypes
 
         if panel.runModal() == .OK {
             var tabAnchor = openingInNewWindow ? nil : activeDocumentController
-            for url in panel.urls where Self.isMarkdown(url) {
+            for url in panel.urls where Self.isSupportedDocument(url) {
                 if let opened = openDocument(url, inTabGroupOf: tabAnchor) {
                     tabAnchor = openingInNewWindow ? nil : opened
                 }
@@ -269,12 +269,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return menu
     }
 
-    private static let markdownTypes: [UTType] = {
-        let extensions = ["md", "markdown", "mdown", "mkd"]
-        return extensions.compactMap { UTType(filenameExtension: $0) }
+    private static let supportedExtensions = ["md", "markdown", "mdown", "mkd", "txt"]
+
+    private static let documentTypes: [UTType] = {
+        supportedExtensions.compactMap { UTType(filenameExtension: $0) }
     }()
 
-    private static func isMarkdown(_ url: URL) -> Bool {
-        ["md", "markdown", "mdown", "mkd"].contains(url.pathExtension.lowercased())
+    private static func isSupportedDocument(_ url: URL) -> Bool {
+        supportedExtensions.contains(url.pathExtension.lowercased())
     }
 }
