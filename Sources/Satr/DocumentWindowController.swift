@@ -49,6 +49,8 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSTo
         window.representedURL = documentURL
         window.titleVisibility = .visible
         window.toolbarStyle = .unified
+        window.tabbingIdentifier = "sa.hatim.Satr.documents"
+        window.tabbingMode = .preferred
         window.minSize = NSSize(width: 560, height: 420)
         window.center()
 
@@ -119,6 +121,14 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSTo
         onClose()
     }
 
+    func windowDidBecomeKey(_ notification: Notification) {
+        keepTabBarVisible()
+    }
+
+    func windowDidResignKey(_ notification: Notification) {
+        keepTabBarVisible()
+    }
+
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
         [.openDocument, .reloadDocument, .revealDocument, .smallerText, .largerText, .flexibleSpace, .space]
     }
@@ -153,7 +163,7 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSTo
         if url.scheme == "satr-wiki" {
             openWikiLink(url)
         } else if url.isFileURL, Self.isMarkdown(url) {
-            (NSApp.delegate as? AppDelegate)?.openDocument(url)
+            (NSApp.delegate as? AppDelegate)?.openDocument(url, inTabGroupOf: self)
         } else if url.scheme == "http" || url.scheme == "https" || url.scheme == "mailto" {
             NSWorkspace.shared.open(url)
         } else if url.isFileURL {
@@ -184,6 +194,15 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSTo
         let item = DispatchWorkItem { [weak self] in self?.reloadDocument(nil) }
         reloadWorkItem = item
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.18, execute: item)
+    }
+
+    private func keepTabBarVisible() {
+        DispatchQueue.main.async { [weak self] in
+            guard let window = self?.window,
+                  window.isVisible,
+                  window.tabbedWindows == nil else { return }
+            window.toggleTabBar(nil)
+        }
     }
 
     private func toolbarItem(_ identifier: NSToolbarItem.Identifier, label: String, symbol: String, action: Selector) -> NSToolbarItem {
@@ -230,7 +249,7 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSTo
         while true {
             let candidate = directory.appendingPathComponent(relativePath).standardizedFileURL
             if FileManager.default.fileExists(atPath: candidate.path) {
-                (NSApp.delegate as? AppDelegate)?.openDocument(candidate)
+                (NSApp.delegate as? AppDelegate)?.openDocument(candidate, inTabGroupOf: self)
                 return
             }
             let parent = directory.deletingLastPathComponent()

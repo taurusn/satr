@@ -20,11 +20,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func application(_ sender: NSApplication, openFiles filenames: [String]) {
         welcomeWorkItem?.cancel()
         var openedAny = false
+        var tabAnchor = activeDocumentController
 
         for filename in filenames {
             let url = URL(fileURLWithPath: filename).standardizedFileURL
             guard Self.isMarkdown(url) else { continue }
-            openDocument(url)
+            if let opened = openDocument(url, inTabGroupOf: tabAnchor) {
+                tabAnchor = opened
+            }
             openedAny = true
         }
 
@@ -47,8 +50,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc func openDocumentAction(_ sender: Any?) {
+        presentOpenPanel(openingInNewWindow: false)
+    }
+
+    @objc func newTabAction(_ sender: Any?) {
+        presentOpenPanel(openingInNewWindow: false)
+    }
+
+    @objc func newWindowAction(_ sender: Any?) {
+        presentOpenPanel(openingInNewWindow: true)
+    }
+
+    @objc func newWindowForTab(_ sender: Any?) {
+        newTabAction(sender)
+    }
+
+    private func presentOpenPanel(openingInNewWindow: Bool) {
         let panel = NSOpenPanel()
-        panel.title = "Open Markdown"
+        panel.title = openingInNewWindow ? "Open Markdown in New Window" : "Open Markdown in Tab"
         panel.prompt = "Open"
         panel.allowsMultipleSelection = true
         panel.canChooseDirectories = false
@@ -56,17 +75,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.allowedContentTypes = Self.markdownTypes
 
         if panel.runModal() == .OK {
+            var tabAnchor = openingInNewWindow ? nil : activeDocumentController
             for url in panel.urls where Self.isMarkdown(url) {
-                openDocument(url)
+                if let opened = openDocument(url, inTabGroupOf: tabAnchor) {
+                    tabAnchor = openingInNewWindow ? nil : opened
+                }
             }
         }
     }
 
-    func openDocument(_ url: URL) {
+    @discardableResult
+    func openDocument(_ url: URL, inTabGroupOf tabAnchor: DocumentWindowController? = nil) -> DocumentWindowController? {
         let normalizedURL = url.standardizedFileURL
         guard FileManager.default.fileExists(atPath: normalizedURL.path) else {
             showMissingFileAlert(normalizedURL)
-            return
+            return nil
         }
 
         welcomeWindow?.close()
@@ -76,7 +99,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             existing.showWindow(nil)
             existing.window?.makeKeyAndOrderFront(nil)
             NSApp.activate()
-            return
+            return existing
         }
 
         do {
@@ -84,13 +107,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.documentWindows.removeValue(forKey: normalizedURL)
             }
             documentWindows[normalizedURL] = controller
+            if let anchorWindow = tabAnchor?.window,
+               let documentWindow = controller.window,
+               anchorWindow !== documentWindow {
+                anchorWindow.addTabbedWindow(documentWindow, ordered: .above)
+            }
             controller.showWindow(nil)
             controller.window?.makeKeyAndOrderFront(nil)
             NSApp.activate()
+            return controller
         } catch {
             let alert = NSAlert(error: error)
             alert.messageText = "Satr could not open this file"
             alert.runModal()
+            return nil
         }
     }
 
@@ -179,9 +209,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let fileItem = NSMenuItem()
         let fileMenu = NSMenu(title: "File")
+        let newTabItem = fileMenu.addItem(withTitle: "New Tab…", action: #selector(newTabAction(_:)), keyEquivalent: "t")
+        newTabItem.target = self
+        let newWindowItem = fileMenu.addItem(withTitle: "New Window…", action: #selector(newWindowAction(_:)), keyEquivalent: "n")
+        newWindowItem.target = self
+        fileMenu.addItem(.separator())
         let openItem = fileMenu.addItem(withTitle: "Open…", action: #selector(openDocumentAction(_:)), keyEquivalent: "o")
         openItem.target = self
-        fileMenu.addItem(withTitle: "Close", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        fileMenu.addItem(.separator())
+        fileMenu.addItem(withTitle: "Close Tab", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
         fileItem.submenu = fileMenu
         menu.addItem(fileItem)
 
@@ -216,6 +252,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let windowMenu = NSMenu(title: "Window")
         windowMenu.addItem(withTitle: "Minimize", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
         windowMenu.addItem(withTitle: "Zoom", action: #selector(NSWindow.performZoom(_:)), keyEquivalent: "")
+        windowMenu.addItem(.separator())
+        let previousTab = windowMenu.addItem(withTitle: "Show Previous Tab", action: #selector(NSWindow.selectPreviousTab(_:)), keyEquivalent: "\t")
+        previousTab.keyEquivalentModifierMask = [.control, .shift]
+        let nextTab = windowMenu.addItem(withTitle: "Show Next Tab", action: #selector(NSWindow.selectNextTab(_:)), keyEquivalent: "\t")
+        nextTab.keyEquivalentModifierMask = [.control]
+        windowMenu.addItem(withTitle: "Move Tab to New Window", action: #selector(NSWindow.moveTabToNewWindow(_:)), keyEquivalent: "")
+        windowMenu.addItem(withTitle: "Merge All Windows", action: #selector(NSWindow.mergeAllWindows(_:)), keyEquivalent: "")
+        windowMenu.addItem(withTitle: "Show Tab Bar", action: #selector(NSWindow.toggleTabBar(_:)), keyEquivalent: "")
         windowMenu.addItem(.separator())
         windowMenu.addItem(withTitle: "Bring All to Front", action: #selector(NSApplication.arrangeInFront(_:)), keyEquivalent: "")
         windowItem.submenu = windowMenu
