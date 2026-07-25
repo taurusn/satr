@@ -16,4 +16,8 @@ chmod +x Scripts/build.sh
 Scripts/build.sh --install
 ```
 
-The installed app lives at `/Applications/Satr.app`. Its bundle identifier is `sa.hatim.Satr`, and its document declaration gives Finder an **Open With > Satr** option for Markdown files.
+The installed app lives at `/Applications/Satr.app`. Its bundle identifier is `com.satr.reader`, and its document declarations support Markdown and plain-text files.
+
+## Privacy
+
+Satr renders documents locally. Remote images and media referenced by a document load automatically, just as they do in a browser. Opening an untrusted document can therefore contact its remote host and reveal ordinary request metadata such as IP address and access time. Mermaid, Markdown parsing, and local document rendering do not require a network connection.

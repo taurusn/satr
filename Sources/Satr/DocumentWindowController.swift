@@ -49,7 +49,7 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSTo
         window.representedURL = documentURL
         window.titleVisibility = .visible
         window.toolbarStyle = .unified
-        window.tabbingIdentifier = "sa.hatim.Satr.documents"
+        window.tabbingIdentifier = AppIdentity.documentTabGroup
         window.tabbingMode = .preferred
         window.minSize = NSSize(width: 560, height: 420)
         window.center()
@@ -278,7 +278,7 @@ private final class MarkdownFilePresenter: NSObject, NSFilePresenter {
         presentedItemURL = url
         self.onChange = onChange
         let queue = OperationQueue()
-        queue.name = "sa.hatim.Satr.file-presenter"
+        queue.name = AppIdentity.filePresenterQueue
         queue.maxConcurrentOperationCount = 1
         presentedItemOperationQueue = queue
         super.init()
@@ -343,9 +343,9 @@ private final class LocalFileSchemeHandler: NSObject, WKURLSchemeHandler {
 }
 
 private extension NSToolbarItem.Identifier {
-    static let openDocument = NSToolbarItem.Identifier("sa.hatim.Satr.toolbar.open")
-    static let reloadDocument = NSToolbarItem.Identifier("sa.hatim.Satr.toolbar.reload")
-    static let revealDocument = NSToolbarItem.Identifier("sa.hatim.Satr.toolbar.reveal")
-    static let smallerText = NSToolbarItem.Identifier("sa.hatim.Satr.toolbar.smaller")
-    static let largerText = NSToolbarItem.Identifier("sa.hatim.Satr.toolbar.larger")
+    static let openDocument = NSToolbarItem.Identifier(AppIdentity.identifier("toolbar.open"))
+    static let reloadDocument = NSToolbarItem.Identifier(AppIdentity.identifier("toolbar.reload"))
+    static let revealDocument = NSToolbarItem.Identifier(AppIdentity.identifier("toolbar.reveal"))
+    static let smallerText = NSToolbarItem.Identifier(AppIdentity.identifier("toolbar.smaller"))
+    static let largerText = NSToolbarItem.Identifier(AppIdentity.identifier("toolbar.larger"))
 }
