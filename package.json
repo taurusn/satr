@@ -1,0 +1,11 @@
+{
+  "name": "satr-renderer-assets",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Vendored browser libraries for the Satr macOS Markdown reader",
+  "dependencies": {
+    "dompurify": "3.4.12",
+    "marked": "18.0.7",
+    "mermaid": "11.16.0"
+  }
+}

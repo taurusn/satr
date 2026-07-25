@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src satr-local: file: data: https: http:; media-src satr-local: file: data: https: http:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; font-src file: data:;">
+  <style>__SATR_STYLES__</style>
+</head>
+<body>
+  <aside id="document-thread" aria-label="Document headings"></aside>
+  <main id="reader-shell">
+    <article id="document" aria-live="polite">
+      <p class="rendering-state">Rendering document…</p>
+    </article>
+  </main>
+  <script>__SATR_MARKED__</script>
+  <script>__SATR_PURIFY__</script>
+  <script>__SATR_MERMAID__</script>
+  <script>
+    window.SATR_DOCUMENT = {
+      markdownBase64: "__SATR_MARKDOWN_B64__",
+      fileNameBase64: "__SATR_FILENAME_B64__"
+    };
+  </script>
+  <script>__SATR_READER__</script>
+</body>
+</html>

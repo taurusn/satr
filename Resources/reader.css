@@ -1,0 +1,413 @@
+:root {
+  color-scheme: light dark;
+  --canvas: #f4f5f2;
+  --ink: #242723;
+  --muted: #686e67;
+  --faint: #92978f;
+  --line: #d9ddd7;
+  --soft: #ecefea;
+  --code: #e8ece6;
+  --accent: #3d6756;
+  --accent-soft: #dfe9e3;
+  --selection: #c9ddd2;
+  --danger: #9b453f;
+  --measure: 78ch;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #171916;
+    --ink: #ecefe9;
+    --muted: #afb5ad;
+    --faint: #7e857d;
+    --line: #343a34;
+    --soft: #20241f;
+    --code: #252a24;
+    --accent: #79aa91;
+    --accent-soft: #263a30;
+    --selection: #365344;
+    --danger: #dc8b82;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  scroll-behavior: smooth;
+  background: var(--canvas);
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  color: var(--ink);
+  background: var(--canvas);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  color: var(--ink);
+  background: var(--selection);
+}
+
+#reader-shell {
+  width: min(100%, calc(var(--measure) + 144px));
+  margin: 0 auto;
+  padding: 64px 72px max(112px, calc(100vh - 180px));
+}
+
+#document {
+  max-width: var(--measure);
+  margin: 0 auto;
+  font-size: 16.5px;
+  line-height: 1.72;
+  letter-spacing: -0.006em;
+  overflow-wrap: anywhere;
+}
+
+#document > :first-child {
+  margin-top: 0;
+}
+
+#document > h2:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.rendering-state {
+  color: var(--muted);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 2.1em 0 0.65em;
+  color: var(--ink);
+  font-weight: 650;
+  line-height: 1.24;
+  letter-spacing: -0.026em;
+  scroll-margin-top: 44px;
+}
+
+h1 {
+  max-width: 24ch;
+  margin-top: 0;
+  font-size: clamp(2rem, 4.3vw, 2.7rem);
+  line-height: 1.12;
+  letter-spacing: -0.04em;
+}
+
+h2 {
+  margin-top: 2.6em;
+  padding-top: 0.75em;
+  border-top: 1px solid var(--line);
+  font-size: 1.55rem;
+}
+
+h3 {
+  font-size: 1.21rem;
+}
+
+h4,
+h5,
+h6 {
+  font-size: 1rem;
+  letter-spacing: -0.012em;
+}
+
+p,
+ul,
+ol,
+blockquote,
+table,
+pre,
+.mermaid-shell {
+  margin: 0 0 1.35em;
+}
+
+p,
+li,
+blockquote,
+td,
+th {
+  unicode-bidi: plaintext;
+  text-align: start;
+}
+
+ul,
+ol {
+  padding-inline-start: 1.55em;
+}
+
+li {
+  margin: 0.34em 0;
+}
+
+li::marker {
+  color: var(--faint);
+}
+
+.task-list-item,
+li:has(> input[type="checkbox"]) {
+  list-style: none;
+  margin-inline-start: -1.42em;
+}
+
+input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  margin: 0 0.48em 0 0;
+  accent-color: var(--accent);
+  vertical-align: -1px;
+}
+
+a {
+  color: var(--accent);
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+a.wikilink {
+  text-decoration-style: dotted;
+}
+
+strong {
+  font-weight: 650;
+}
+
+hr {
+  height: 1px;
+  margin: 2.6em 0;
+  border: 0;
+  background: var(--line);
+}
+
+blockquote {
+  margin-inline: 0;
+  padding: 0.1em 0 0.1em 1.15em;
+  border-inline-start: 3px solid var(--accent);
+  color: var(--muted);
+}
+
+blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+code,
+kbd,
+samp {
+  font-family: "SFMono-Regular", Menlo, monospace;
+  font-size: 0.88em;
+  font-variant-ligatures: none;
+}
+
+:not(pre) > code {
+  padding: 0.15em 0.36em;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--code);
+}
+
+pre {
+  overflow: auto;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--code);
+  line-height: 1.58;
+  tab-size: 2;
+}
+
+pre code {
+  font-size: 13px;
+}
+
+table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 0.94em;
+}
+
+th,
+td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+th {
+  font-weight: 650;
+  background: var(--soft);
+}
+
+img,
+video {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.65em auto;
+  border-radius: 4px;
+}
+
+.mermaid-shell {
+  position: relative;
+  overflow-x: auto;
+  padding: 26px 18px;
+  border-block: 1px solid var(--line);
+  background: var(--soft);
+}
+
+.mermaid {
+  display: flex;
+  min-width: min-content;
+  justify-content: center;
+}
+
+.mermaid svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaid-error {
+  margin: 0;
+  color: var(--danger);
+  white-space: pre-wrap;
+}
+
+#document-thread {
+  position: fixed;
+  z-index: 2;
+  top: 66px;
+  bottom: 48px;
+  left: max(20px, calc(50vw - 520px));
+  width: 22px;
+}
+
+#document-thread[hidden] {
+  display: none;
+}
+
+.thread-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 10px;
+  width: 1px;
+  background: var(--line);
+}
+
+.thread-progress {
+  position: absolute;
+  top: 0;
+  left: 10px;
+  width: 1px;
+  height: 0;
+  background: var(--accent);
+}
+
+.thread-node {
+  position: absolute;
+  left: 6px;
+  width: 9px;
+  height: 9px;
+  margin-top: -4px;
+  padding: 0;
+  border: 1px solid var(--faint);
+  border-radius: 50%;
+  background: var(--canvas);
+  cursor: pointer;
+}
+
+.thread-node[data-level="3"] {
+  left: 7px;
+  width: 7px;
+  height: 7px;
+  margin-top: -3px;
+}
+
+.thread-node.is-past,
+.thread-node.is-active {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.thread-node.is-active {
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+@media (max-width: 900px) {
+  #reader-shell {
+    padding: 46px 30px 92px;
+  }
+
+  #document-thread {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  #reader-shell {
+    padding: 34px 21px 72px;
+  }
+
+  #document {
+    font-size: 16px;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  pre {
+    margin-inline: -8px;
+    padding: 15px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+@media print {
+  :root {
+    --canvas: #fff;
+    --ink: #111;
+    --muted: #444;
+    --line: #ccc;
+    --soft: #f7f7f7;
+    --code: #f4f4f4;
+  }
+
+  #reader-shell {
+    width: auto;
+    padding: 0;
+  }
+
+  #document-thread {
+    display: none;
+  }
+}
