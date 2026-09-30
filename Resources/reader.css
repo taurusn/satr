@@ -11,7 +11,13 @@
   --accent-soft: #dfe9e3;
   --selection: #c9ddd2;
   --danger: #9b453f;
-  --measure: 78ch;
+  /* --zoom is the window's page zoom, set by the app. Zooming out keeps the column's on-screen
+     width, so more text fits per line; wide windows also widen it. Pixels, not ch: WebKit's page
+     zoom also shrinks ch, which would cancel the division. 780px is the old 78ch in SF at 16.5px. */
+  --measure: clamp(780px, max(calc(780px / var(--zoom, 1)), 48vw), 1240px);
+  --gutter: 72px;
+  /* Tables, code and diagrams may extend this far past the text column on each side. */
+  --wide-overhang: calc(120px / var(--zoom, 1));
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
 }
 
@@ -56,12 +62,19 @@ body {
 }
 
 #reader-shell {
-  width: min(100%, calc(var(--measure) + 144px));
   margin: 0 auto;
-  padding: 64px 72px max(112px, calc(100vh - 180px));
+  padding: 64px var(--gutter) max(112px, calc(100vh - 180px));
 }
 
 #document {
+  /* --prose-width is the measured text column, set by reader.js. */
+  --wide-width: max(
+    100%,
+    min(
+      calc(var(--prose-width, 100%) + 2 * var(--wide-overhang)),
+      calc(100vw - 2 * var(--gutter))
+    )
+  );
   max-width: var(--measure);
   margin: 0 auto;
   font-size: 16.5px;
@@ -254,24 +267,91 @@ pre code {
   overflow-wrap: anywhere;
 }
 
-table {
-  display: block;
-  width: 100%;
+/* Wide blocks: centred on the text column, free to grow past it into the margins. A flex container
+   centres an oversized child by overflowing both sides equally, which avoids percentage margins
+   (WebKit resolves those incorrectly under page zoom). */
+#document > .wide-block {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 1.35em;
+}
+
+.wide-block > .table-scroll,
+.wide-block > pre,
+.wide-block > .mermaid-shell {
+  flex: none;
+  width: max-content;
+  min-width: 100%;
+  max-width: var(--wide-width);
+  margin: 0;
+}
+
+.table-scroll {
+  max-width: 100%;
+  margin: 0 0 1.35em;
   overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overscroll-behavior-x: contain;
+}
+
+table {
+  width: auto;
+  min-width: 100%;
+  margin: 0;
   border-collapse: collapse;
   font-size: 0.94em;
+  line-height: 1.55;
 }
 
 th,
 td {
-  padding: 9px 12px;
+  padding: 9px 14px;
   border-bottom: 1px solid var(--line);
   vertical-align: top;
+  /* Break long words only when a line cannot wrap, so columns keep their natural width. */
+  overflow-wrap: break-word;
+  word-break: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+th + th,
+td + td {
+  border-inline-start: 1px solid var(--line);
 }
 
 th {
   font-weight: 650;
+  vertical-align: bottom;
   background: var(--soft);
+}
+
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+tbody tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--soft) 55%, transparent);
+}
+
+th[align="center"],
+td[align="center"] {
+  text-align: center;
+}
+
+th[align="right"],
+td[align="right"] {
+  text-align: right;
+}
+
+th[align="left"],
+td[align="left"] {
+  text-align: left;
+}
+
+td code,
+th code {
+  overflow-wrap: break-word;
 }
 
 img,
@@ -314,7 +394,8 @@ video {
   z-index: 2;
   top: 66px;
   bottom: 48px;
-  left: max(20px, calc(50vw - 520px));
+  /* Sits just outside the wide-block overhang so it never covers a table or code block. */
+  left: max(20px, calc(50vw - var(--prose-width, 724px) / 2 - var(--wide-overhang) - 38px));
   width: 22px;
 }
 
@@ -371,6 +452,10 @@ video {
 }
 
 @media (max-width: 900px) {
+  :root {
+    --gutter: 30px;
+  }
+
   #reader-shell {
     padding: 46px 30px 92px;
   }
@@ -381,6 +466,10 @@ video {
 }
 
 @media (max-width: 560px) {
+  :root {
+    --gutter: 21px;
+  }
+
   #reader-shell {
     padding: 34px 21px 72px;
   }
@@ -418,6 +507,21 @@ video {
   #reader-shell {
     width: auto;
     padding: 0;
+  }
+
+  #document > .wide-block {
+    display: block;
+  }
+
+  .wide-block > .table-scroll,
+  .wide-block > pre,
+  .wide-block > .mermaid-shell {
+    width: auto;
+    max-width: 100%;
+  }
+
+  .table-scroll {
+    overflow: visible;
   }
 
   #document-thread {

@@ -98,17 +98,24 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSTo
 
     @objc func increaseTextSize(_ sender: Any?) {
         zoomLevel = min(1.8, zoomLevel + 0.1)
-        webView.pageZoom = zoomLevel
+        applyZoom()
     }
 
     @objc func decreaseTextSize(_ sender: Any?) {
         zoomLevel = max(0.7, zoomLevel - 0.1)
-        webView.pageZoom = zoomLevel
+        applyZoom()
     }
 
     @objc func resetTextSize(_ sender: Any?) {
         zoomLevel = 1
+        applyZoom()
+    }
+
+    /// Applies the page zoom and tells the reader, so zooming out widens the text column instead of shrinking it.
+    private func applyZoom() {
         webView.pageZoom = zoomLevel
+        let level = String(format: "%.2f", Double(zoomLevel))
+        webView.evaluateJavaScript("document.documentElement.style.setProperty('--zoom', '\(level)')")
     }
 
     func windowWillClose(_ notification: Notification) {
@@ -151,6 +158,13 @@ final class DocumentWindowController: NSWindowController, NSWindowDelegate, NSTo
             return toolbarItem(itemIdentifier, label: "Larger Text", symbol: "textformat.size.larger", action: #selector(increaseTextSize(_:)))
         default:
             return nil
+        }
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        // A reload replaces the page, so give the new page the current zoom.
+        if zoomLevel != 1 {
+            applyZoom()
         }
     }
 

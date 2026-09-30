@@ -130,6 +130,37 @@
     }
   };
 
+  // Tables scroll inside their own frame, and top-level tables, code blocks and diagrams sit in a
+  // wide block that can grow past the text column (see #document > .wide-block in reader.css).
+  const prepareWideBlocks = (root) => {
+    root.querySelectorAll("table").forEach((table) => {
+      if (table.parentElement?.classList.contains("table-scroll")) return;
+      const frame = document.createElement("div");
+      frame.className = "table-scroll";
+      frame.setAttribute("dir", "auto");
+      table.replaceWith(frame);
+      frame.appendChild(table);
+    });
+
+    [...root.children]
+      .filter((element) => element.matches(".table-scroll, pre:not(.plain-text), .mermaid-shell"))
+      .forEach((element) => {
+        const block = document.createElement("div");
+        block.className = "wide-block";
+        element.replaceWith(block);
+        block.appendChild(element);
+      });
+  };
+
+  // Publishes the rendered text-column width so wide blocks and the heading thread can align to it.
+  const trackProseWidth = (root) => {
+    const publish = () => {
+      document.documentElement.style.setProperty("--prose-width", `${root.clientWidth}px`);
+    };
+    publish();
+    new ResizeObserver(publish).observe(root);
+  };
+
   const buildDocumentThread = (root) => {
     const thread = document.getElementById("document-thread");
     const headings = [...root.querySelectorAll("h2, h3")];
@@ -205,6 +236,7 @@
 
   const render = async () => {
     const root = document.getElementById("document");
+    trackProseWidth(root);
     try {
       const fileName = decodeBase64(window.SATR_DOCUMENT.fileNameBase64);
       const source = decodeBase64(window.SATR_DOCUMENT.markdownBase64);
@@ -236,6 +268,7 @@
       prepareLocalMedia(root);
       prepareTasks(root);
       await renderMermaid(root);
+      prepareWideBlocks(root);
       buildDocumentThread(root);
       postStatus(root);
       window.scrollTo({ top: 0, left: 0, behavior: "instant" });
