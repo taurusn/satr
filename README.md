@@ -22,6 +22,7 @@ Built by Hatim as a personal tool, with the source kept intentionally small and 
 - **Vault-aware links.** Normal Markdown links and Obsidian-style `[[wiki links]]` open in the current tab group.
 - **Text stays text.** `.txt` files preserve their symbols, spacing, line breaks, and bidirectional content instead of being interpreted as Markdown.
 - **Arabic and English together.** Direction is resolved per block so mixed-language documents remain readable.
+- **Recently opened.** The welcome window lists your latest files, and **File > Open Recent** keeps the last ten within reach.
 - **Finder-native.** Satr can be selected through **Open With** and registered as the default opener for supported files.
 
 ## Supported documents

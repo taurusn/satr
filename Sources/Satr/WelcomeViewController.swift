@@ -3,6 +3,8 @@ import AppKit
 final class WelcomeViewController: NSViewController, NSWindowDelegate {
     private let onOpenRequested: (URL?) -> Void
     var onWindowClose: (() -> Void)?
+    private let recentStack = NSStackView()
+    private let recentSection = NSStackView()
 
     init(onOpenRequested: @escaping (URL?) -> Void) {
         self.onOpenRequested = onOpenRequested
@@ -43,13 +45,27 @@ final class WelcomeViewController: NSViewController, NSWindowDelegate {
         openButton.keyEquivalent = "\r"
         openButton.translatesAutoresizingMaskIntoConstraints = false
 
-        let stack = NSStackView(views: [icon, title, description, dropZone, openButton])
+        let recentHeading = NSTextField(labelWithString: "Recently Opened")
+        recentHeading.font = .systemFont(ofSize: 12, weight: .semibold)
+        recentHeading.textColor = .secondaryLabelColor
+        recentStack.orientation = .vertical
+        recentStack.alignment = .leading
+        recentStack.spacing = 2
+        recentSection.orientation = .vertical
+        recentSection.alignment = .leading
+        recentSection.spacing = 6
+        recentSection.setViews([recentHeading, recentStack], in: .top)
+        NotificationCenter.default.addObserver(self, selector: #selector(reloadRecents), name: RecentDocuments.didChange, object: nil)
+        reloadRecents()
+
+        let stack = NSStackView(views: [icon, title, description, dropZone, openButton, recentSection])
         stack.orientation = .vertical
         stack.alignment = .centerX
         stack.spacing = 14
         stack.setCustomSpacing(9, after: title)
         stack.setCustomSpacing(26, after: description)
         stack.setCustomSpacing(22, after: dropZone)
+        stack.setCustomSpacing(24, after: openButton)
         stack.translatesAutoresizingMaskIntoConstraints = false
 
         root.addSubview(stack)
@@ -60,11 +76,24 @@ final class WelcomeViewController: NSViewController, NSWindowDelegate {
             dropZone.widthAnchor.constraint(equalToConstant: 430),
             dropZone.heightAnchor.constraint(equalToConstant: 92),
             openButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 130),
+            recentSection.widthAnchor.constraint(equalToConstant: 430),
+            recentStack.widthAnchor.constraint(equalTo: recentSection.widthAnchor),
             stack.centerXAnchor.constraint(equalTo: root.centerXAnchor),
             stack.centerYAnchor.constraint(equalTo: root.centerYAnchor, constant: -6)
         ])
 
         view = root
+    }
+
+    @objc private func reloadRecents() {
+        recentStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        let urls = Array(RecentDocuments.shared.urls.prefix(5))
+        recentSection.isHidden = urls.isEmpty
+        for url in urls {
+            let button = RecentFileButton(url: url) { [weak self] in self?.onOpenRequested(url) }
+            recentStack.addArrangedSubview(button)
+            button.widthAnchor.constraint(equalTo: recentStack.widthAnchor).isActive = true
+        }
     }
 
     @objc private func openFile() {
@@ -160,5 +189,66 @@ private final class DropZoneView: NSView {
         layer?.borderColor = (isDragging ? NSColor.systemGreen : NSColor.separatorColor).cgColor
         layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
         label.textColor = isDragging ? .labelColor : .secondaryLabelColor
+    }
+}
+
+private final class RecentFileButton: NSButton {
+    private let onClick: () -> Void
+
+    init(url: URL, onClick: @escaping () -> Void) {
+        self.onClick = onClick
+        super.init(frame: .zero)
+        isBordered = false
+        title = ""
+        target = self
+        action = #selector(clicked)
+        toolTip = url.path
+        setButtonType(.momentaryChange)
+
+        let name = NSTextField(labelWithString: url.lastPathComponent)
+        name.font = .systemFont(ofSize: 13, weight: .medium)
+        name.textColor = .labelColor
+        name.lineBreakMode = .byTruncatingMiddle
+        name.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)
+
+        let folder = NSTextField(labelWithString: (url.deletingLastPathComponent().path as NSString).abbreviatingWithTildeInPath)
+        folder.font = .systemFont(ofSize: 12)
+        folder.textColor = .secondaryLabelColor
+        folder.lineBreakMode = .byTruncatingHead
+        folder.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        let row = NSStackView(views: [name, folder])
+        row.orientation = .horizontal
+        row.spacing = 8
+        row.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(row)
+        NSLayoutConstraint.activate([
+            row.leadingAnchor.constraint(equalTo: leadingAnchor),
+            row.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor),
+            row.topAnchor.constraint(equalTo: topAnchor, constant: 2),
+            row.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2),
+            heightAnchor.constraint(equalToConstant: 22)
+        ])
+    }
+
+    override var intrinsicContentSize: NSSize {
+        NSSize(width: NSView.noIntrinsicMetric, height: 22)
+    }
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        let local = convert(point, from: superview)
+        return bounds.contains(local) ? self : nil
+    }
+
+    override func resetCursorRects() {
+        addCursorRect(bounds, cursor: .pointingHand)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    @objc private func clicked() {
+        onClick()
     }
 }
