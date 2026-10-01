@@ -1,7 +1,7 @@
 import AppKit
 import UniformTypeIdentifiers
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var documentWindows: [URL: DocumentWindowController] = [:]
     private var welcomeWindow: NSWindowController?
     private var welcomeWorkItem: DispatchWorkItem?
@@ -99,6 +99,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             existing.showWindow(nil)
             existing.window?.makeKeyAndOrderFront(nil)
             NSApp.activate()
+            RecentDocuments.shared.note(normalizedURL)
             return existing
         }
 
@@ -115,6 +116,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             controller.showWindow(nil)
             controller.window?.makeKeyAndOrderFront(nil)
             NSApp.activate()
+            RecentDocuments.shared.note(normalizedURL)
             return controller
         } catch {
             let alert = NSAlert(error: error)
@@ -144,6 +146,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         activeDocumentController?.revealInFinder(sender)
     }
 
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        guard menu.title == "Open Recent" else { return }
+        menu.removeAllItems()
+        let urls = RecentDocuments.shared.urls
+        if urls.isEmpty {
+            let empty = menu.addItem(withTitle: "No Recent Documents", action: nil, keyEquivalent: "")
+            empty.isEnabled = false
+        }
+        for url in urls {
+            let item = menu.addItem(withTitle: url.lastPathComponent, action: #selector(openRecentDocument(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = url
+            item.toolTip = url.path
+            let icon = NSWorkspace.shared.icon(forFile: url.path)
+            icon.size = NSSize(width: 16, height: 16)
+            item.image = icon
+        }
+        menu.addItem(.separator())
+        let clear = menu.addItem(withTitle: "Clear Menu", action: urls.isEmpty ? nil : #selector(clearRecentDocuments(_:)), keyEquivalent: "")
+        clear.target = self
+        clear.isEnabled = !urls.isEmpty
+    }
+
+    @objc private func openRecentDocument(_ sender: NSMenuItem) {
+        guard let url = sender.representedObject as? URL else { return }
+        if !FileManager.default.fileExists(atPath: url.path) {
+            RecentDocuments.shared.remove(url)
+        }
+        openDocument(url, inTabGroupOf: activeDocumentController)
+    }
+
+    @objc private func clearRecentDocuments(_ sender: Any?) {
+        RecentDocuments.shared.clear()
+    }
+
     private var activeDocumentController: DocumentWindowController? {
         NSApp.keyWindow?.windowController as? DocumentWindowController
     }
@@ -164,7 +201,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 700, height: 470),
+            contentRect: NSRect(x: 0, y: 0, width: 700, height: 600),
             styleMask: [.titled, .closable, .miniaturizable],
             backing: .buffered,
             defer: false
@@ -216,6 +253,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         fileMenu.addItem(.separator())
         let openItem = fileMenu.addItem(withTitle: "Open…", action: #selector(openDocumentAction(_:)), keyEquivalent: "o")
         openItem.target = self
+        let recentItem = NSMenuItem(title: "Open Recent", action: nil, keyEquivalent: "")
+        let recentMenu = NSMenu(title: "Open Recent")
+        recentMenu.delegate = self
+        recentItem.submenu = recentMenu
+        fileMenu.addItem(recentItem)
         fileMenu.addItem(.separator())
         fileMenu.addItem(withTitle: "Close Tab", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
         fileItem.submenu = fileMenu
