@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en" data-theme="paper" data-face="sans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; worker-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' linen-local: linen-remote: data:; font-src 'self'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+  <link rel="stylesheet" href="fonts.css">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="page.css">
+</head>
+<body>
+  <div id="shell">
+    <nav id="outline" aria-label="Outline" hidden>
+      <input id="outline-filter" type="search" placeholder="Filter" aria-label="Filter headings">
+      <div id="outline-title"></div>
+      <ol id="outline-list"></ol>
+      <div id="progress" aria-hidden="true"><i></i></div>
+    </nav>
+    <main id="pane">
+      <header id="note-header" hidden>
+        <div id="eyebrow" class="eyebrow"></div>
+        <h1 id="note-title" class="title"></h1>
+      </header>
+      <div id="banner" class="notice" hidden></div>
+      <article id="doc"></article>
+      <div id="notice" class="notice" hidden></div>
+    </main>
+  </div>
+  <footer id="footer"></footer>
+  <div id="findbar" hidden>
+    <span class="fi" aria-hidden="true"></span>
+    <input id="find-input" type="search" aria-label="Find in document" autocomplete="off" spellcheck="false">
+    <button id="find-fold" type="button" aria-pressed="true" dir="rtl" hidden></button>
+    <span id="find-count" aria-live="polite"></span>
+    <button id="find-prev" aria-label="Previous match"></button>
+    <button id="find-next" aria-label="Next match"></button>
+    <button id="find-done">Done</button>
+  </div>
+  <div id="match-rail" aria-hidden="true"></div>
+  <div id="props" class="pop" hidden role="dialog" aria-label="Properties"></div>
+  <div id="status" class="vh" role="status" aria-live="polite"></div>
+  <script src="vendor/marked.js"></script>
+  <script src="vendor/purify.min.js"></script>
+  <script src="vendor/highlight.min.js"></script>
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="extensions.js"></script>
+  <script src="lexer.js"></script>
+  <script src="diff.js"></script>
+  <script src="page.js"></script>
+</body>
+</html>

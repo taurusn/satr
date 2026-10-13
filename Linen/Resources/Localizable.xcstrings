@@ -1,0 +1,1023 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {},
+    "%lld notes called %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld ملاحظات باسم %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld notes called %2$@"
+          }
+        }
+      }
+    },
+    "%lld%%" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld%%"
+          }
+        }
+      }
+    },
+    "+" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+"
+          }
+        }
+      }
+    },
+    "About Linen" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حول سطر"
+          }
+        }
+      }
+    },
+    "Actual Size" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحجم الفعلي"
+          }
+        }
+      }
+    },
+    "Also open plain text (.txt) files in Linen" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح ملفات النص العادي (.txt) في سطر أيضًا"
+          }
+        }
+      }
+    },
+    "Always load" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حمّل دائمًا"
+          }
+        }
+      }
+    },
+    "Appearance" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المظهر"
+          }
+        }
+      }
+    },
+    "Arabic (Windows-1256)" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "العربية (Windows-1256)"
+          }
+        }
+      }
+    },
+    "Ask per file" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اسأل لكل ملف"
+          }
+        }
+      }
+    },
+    "Automatic" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تلقائي"
+          }
+        }
+      }
+    },
+    "Back" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "رجوع"
+          }
+        }
+      }
+    },
+    "Body face" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خط النص"
+          }
+        }
+      }
+    },
+    "Bring All to Front" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إحضار الكل إلى المقدمة"
+          }
+        }
+      }
+    },
+    "Cancel" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إلغاء"
+          }
+        }
+      }
+    },
+    "Close" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إغلاق"
+          }
+        }
+      }
+    },
+    "Close Tab" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إغلاق علامة التبويب"
+          }
+        }
+      }
+    },
+    "Copy" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نسخ"
+          }
+        }
+      }
+    },
+    "Copy Reference" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نسخ المرجع"
+          }
+        }
+      }
+    },
+    "Downloading from iCloud" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جارٍ التنزيل من iCloud"
+          }
+        }
+      }
+    },
+    "Drop a .md or .txt file here" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أفلت ملف ‎.md‎ أو ‎.txt‎ هنا"
+          }
+        }
+      }
+    },
+    "Edit" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تحرير"
+          }
+        }
+      }
+    },
+    "Enter Full Screen" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الدخول في وضع ملء الشاشة"
+          }
+        }
+      }
+    },
+    "File" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ملف"
+          }
+        }
+      }
+    },
+    "Find" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بحث"
+          }
+        }
+      }
+    },
+    "Find Next" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "البحث عن التالي"
+          }
+        }
+      }
+    },
+    "Find Previous" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "البحث عن السابق"
+          }
+        }
+      }
+    },
+    "Find…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بحث…"
+          }
+        }
+      }
+    },
+    "Follow system" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حسب النظام"
+          }
+        }
+      }
+    },
+    "Forward" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تقدّم"
+          }
+        }
+      }
+    },
+    "Go" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "انتقال"
+          }
+        }
+      }
+    },
+    "Hide Linen" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إخفاء سطر"
+          }
+        }
+      }
+    },
+    "Hide Others" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إخفاء الآخرين"
+          }
+        }
+      }
+    },
+    "Hide Outline" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إخفاء المخطط"
+          }
+        }
+      }
+    },
+    "Larger" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أكبر"
+          }
+        }
+      }
+    },
+    "Larger Text" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نص أكبر"
+          }
+        }
+      }
+    },
+    "Linen" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سطر"
+          }
+        }
+      }
+    },
+    "Linen could not read this file" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر على سطر قراءة هذا الملف"
+          }
+        }
+      }
+    },
+    "Linen needs permission to read this folder" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يحتاج سطر إلى إذن لقراءة هذا المجلد"
+          }
+        }
+      }
+    },
+    "Linen opens it again when the disk is back." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يفتحه سطر من جديد عند عودة القرص."
+          }
+        }
+      }
+    },
+    "Make Default" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اجعله الافتراضي"
+          }
+        }
+      }
+    },
+    "Make Linen the Default Reader…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اجعل سطر القارئ الافتراضي…"
+          }
+        }
+      }
+    },
+    "Make Linen the default reader for Markdown?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أتجعل سطر القارئ الافتراضي لملفات ماركداون؟"
+          }
+        }
+      }
+    },
+    "Markdown files will open in Linen when you double-click them." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ستُفتح ملفات ماركداون في سطر عند النقر عليها مرتين."
+          }
+        }
+      }
+    },
+    "Merge All Windows" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دمج كل النوافذ"
+          }
+        }
+      }
+    },
+    "Minimize" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تصغير"
+          }
+        }
+      }
+    },
+    "Move Tab to New Window" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نقل علامة التبويب إلى نافذة جديدة"
+          }
+        }
+      }
+    },
+    "New Tab…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "علامة تبويب جديدة…"
+          }
+        }
+      }
+    },
+    "Next Change" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التغيير التالي"
+          }
+        }
+      }
+    },
+    "Night" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ليل"
+          }
+        }
+      }
+    },
+    "No Recent Files" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا ملفات حديثة"
+          }
+        }
+      }
+    },
+    "No note called %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا ملاحظة باسم %@"
+          }
+        }
+      }
+    },
+    "Not downloaded" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غير منزَّل"
+          }
+        }
+      }
+    },
+    "Obsidian for vault notes" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أوبسيديان لملاحظات المخزن"
+          }
+        }
+      }
+    },
+    "Open" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فتح"
+          }
+        }
+      }
+    },
+    "Open Quickly…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فتح سريع…"
+          }
+        }
+      }
+    },
+    "Open Recent" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فتح الأحدث"
+          }
+        }
+      }
+    },
+    "Open System Settings" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح إعدادات النظام"
+          }
+        }
+      }
+    },
+    "Open in Editor" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فتح في محرر"
+          }
+        }
+      }
+    },
+    "Open quickly" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فتح سريع"
+          }
+        }
+      }
+    },
+    "Open this link in another app?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أتفتح هذا الرابط في تطبيق آخر؟"
+          }
+        }
+      }
+    },
+    "Open “%@”?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أتفتح ”%@“؟"
+          }
+        }
+      }
+    },
+    "Open…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فتح…"
+          }
+        }
+      }
+    },
+    "Outline" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المخطط"
+          }
+        }
+      }
+    },
+    "Page Setup…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إعداد الصفحة…"
+          }
+        }
+      }
+    },
+    "Paper" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ورق"
+          }
+        }
+      }
+    },
+    "Previous Change" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التغيير السابق"
+          }
+        }
+      }
+    },
+    "Print…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "طباعة…"
+          }
+        }
+      }
+    },
+    "Quit Linen" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إنهاء سطر"
+          }
+        }
+      }
+    },
+    "Recent" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الأحدث"
+          }
+        }
+      }
+    },
+    "Reload" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إعادة تحميل"
+          }
+        }
+      }
+    },
+    "Remote images" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الصور البعيدة"
+          }
+        }
+      }
+    },
+    "Reveal Folder" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إظهار المجلد"
+          }
+        }
+      }
+    },
+    "Reveal in Finder" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إظهار في Finder"
+          }
+        }
+      }
+    },
+    "Select All" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تحديد الكل"
+          }
+        }
+      }
+    },
+    "Serif Text" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ثمانية نص"
+          }
+        }
+      }
+    },
+    "Settings" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإعدادات"
+          }
+        }
+      }
+    },
+    "Settings…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإعدادات…"
+          }
+        }
+      }
+    },
+    "Show All" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إظهار الكل"
+          }
+        }
+      }
+    },
+    "Show Next Tab" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إظهار علامة التبويب التالية"
+          }
+        }
+      }
+    },
+    "Show Outline" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إظهار المخطط"
+          }
+        }
+      }
+    },
+    "Show Previous Tab" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إظهار علامة التبويب السابقة"
+          }
+        }
+      }
+    },
+    "Show Properties" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إظهار الخصائص"
+          }
+        }
+      }
+    },
+    "Smaller" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أصغر"
+          }
+        }
+      }
+    },
+    "Smaller Text" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نص أصغر"
+          }
+        }
+      }
+    },
+    "Text Encoding" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ترميز النص"
+          }
+        }
+      }
+    },
+    "Text Size" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حجم النص"
+          }
+        }
+      }
+    },
+    "Text size" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حجم النص"
+          }
+        }
+      }
+    },
+    "The disk holding this file is not connected" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "القرص الذي يحمل هذا الملف غير متصل"
+          }
+        }
+      }
+    },
+    "This file can run programs on your Mac." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذا الملف يستطيع تشغيل برامج على جهازك."
+          }
+        }
+      }
+    },
+    "This file is no longer here" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يعد هذا الملف هنا"
+          }
+        }
+      }
+    },
+    "This file is outside this vault." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذا الملف خارج هذا المخزن."
+          }
+        }
+      }
+    },
+    "Thmanyah Sans" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ثمانية بلا تذييل"
+          }
+        }
+      }
+    },
+    "Use Selection for Find" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استخدام التحديد للبحث"
+          }
+        }
+      }
+    },
+    "View" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عرض"
+          }
+        }
+      }
+    },
+    "Western (Windows-1252)" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الغربية (Windows-1252)"
+          }
+        }
+      }
+    },
+    "What are we reading?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ماذا نقرأ؟"
+          }
+        }
+      }
+    },
+    "Window" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نافذة"
+          }
+        }
+      }
+    },
+    "Zoom" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تكبير وتصغير"
+          }
+        }
+      }
+    },
+    "↩ open · ⌘↩ new tab" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "↩ فتح · ⌘↩ علامة تبويب جديدة"
+          }
+        }
+      }
+    },
+    "−" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "−"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

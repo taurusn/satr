@@ -1,11 +1,13 @@
 {
-  "name": "satr-renderer-assets",
+  "name": "linen-renderer-assets",
   "private": true,
   "version": "1.0.0",
-  "description": "Vendored browser libraries for the Satr macOS Markdown reader",
+  "description": "Vendored browser libraries for the Linen macOS Markdown reader",
   "dependencies": {
     "dompurify": "3.4.12",
     "marked": "18.0.7",
-    "mermaid": "11.16.0"
+    "mermaid": "11.16.0",
+    "@highlightjs/cdn-assets": "11.11.1",
+    "katex": "0.16.25"
   }
 }

@@ -1,0 +1,10 @@
+/* Linen's faces. The build copies these Thmanyah files from ~/Library/Fonts into fonts/ beside this file in the
+   built app (they are never committed: their license forbids hosting them); local() covers a page opened from
+   the source folder on a Mac where they are installed. The families get Linen names so a face is never
+   mistaken for an installed one with different metrics. */
+@font-face { font-family: "Linen Sans"; font-weight: 400; src: url("fonts/thmanyahsans-Regular.otf") format("opentype"), local("thmanyahsans-Regular"); }
+@font-face { font-family: "Linen Sans"; font-weight: 500; src: url("fonts/thmanyahsans-Medium.otf") format("opentype"), local("thmanyahsans-Medium"); }
+@font-face { font-family: "Linen Sans"; font-weight: 600 700; src: url("fonts/thmanyahsans-Bold.otf") format("opentype"), local("thmanyahsans-Bold"); }
+@font-face { font-family: "Linen Serif Display"; font-weight: 300; src: url("fonts/thmanyahserifdisplay-Light.otf") format("opentype"), local("thmanyahserifdisplay-Light"); }
+@font-face { font-family: "Linen Serif Text"; font-weight: 400; src: url("fonts/thmanyahseriftext-Regular.otf") format("opentype"), local("thmanyahseriftext-Regular"); }
+@font-face { font-family: "Linen Serif Text"; font-weight: 500 700; src: url("fonts/thmanyahseriftext-Medium.otf") format("opentype"), local("thmanyahseriftext-Medium"); }

@@ -1,3 +1,21 @@
 .DS_Store
 build/
 node_modules/
+*.xcodeproj/
+DerivedData/
+# Thmanyah fonts are copied from ~/Library/Fonts at build time and never committed (license).
+thmanyah*.otf
+docs/spikes/*/corpus
+docs/spikes/*/watch
+# Local working files stay off the public repo: raw research captures,
+# review transcripts and screenshots, and spike run outputs.
+docs/research/raw/
+docs/reviews/*-codex.md
+docs/reviews/*.diff
+docs/reviews/round1-fresh.md
+docs/reviews/round1-fresh-shots/
+docs/spikes/corpus/baseline-*.txt
+docs/spikes/*/results-raw.txt
+*.log
+__pycache__/
+*.pyc

@@ -1,114 +1,50 @@
 <p align="center">
-  <img src="docs/satr-mark.svg" width="112" height="112" alt="Satr app mark">
+  <img src="docs/design/linen-icon-mac.svg" width="112" height="112" alt="Linen app icon">
 </p>
 
-<h1 align="center">Satr</h1>
+<h1 align="center">Linen</h1>
 
 <p align="center">
-  A small native macOS reader for Markdown, Mermaid, and plain text.
+  A native macOS reader for Markdown and plain text. A Loom product.
   <br>
-  <em>سطر</em> means “line” in Arabic.
+  In Arabic it is <em>سطر</em>, "line".
 </p>
 
-Satr gives local documents a focused reading surface without turning them into a browser tab or opening a full editor. It is a native AppKit application with an offline rendering stack, Finder integration, and document tabs that behave like macOS windows should.
+Linen opens the notes, plans and PRDs you and your agents write, and keeps your place while they are rewritten under you. It reads; it never edits. Open in Editor hands the file to Obsidian or your editor of choice.
 
-Built by Hatim as a personal tool, with the source kept intentionally small and understandable.
+## What it does
 
-## What makes it Satr
+- **Typeset reading.** Thmanyah faces, a 34-em text measure with tables, code and diagrams allowed to widen past it, Mermaid diagrams, KaTeX math, highlighted code, callouts, footnotes, task lists, and Obsidian wiki links and embeds.
+- **Arabic and English together.** Direction is decided per block, the interface comes in Arabic, and find folds tashkeel, hamza forms, alef maqsura, taa marbuta and tatweel (with an option to turn it off).
+- **Live reload that keeps your place.** Any writer can save the file: in place, atomic replace, Vim, `mv` over, coordinated writes. The block you were reading stays on the same line, and blocks that changed since you last looked get a thin mark. Next Change walks them.
+- **Vault-aware.** Wiki links resolve the way Obsidian resolves them, Open Quickly (⇧⌘O) searches note names and aliases, and links outside the vault ask first.
+- **Safe by construction.** The page has a literal content security policy with no network at all, local images are opened by descriptor inside the vault only, remote images load through the app on request, and every limit (size, tokens, pixels, nesting) is bounded.
+- **Made for working with agents.** Copy Reference (⌥⌘C) copies `path:lines` and the quoted lines, ready to paste into a prompt.
+- **Mac all the way.** Native tabs, session restore with each tab's place and text size, Paper and Night themes that follow the system, Quick Look in Finder, Print and Save as PDF with running titles and an outline.
 
-- **Native document tabs.** Open several files together, reorder them, drag a tab into its own window, and merge it back by hand.
-- **A reading thread.** Headings become quiet navigation points along the left edge, with progress tied to the document's real scroll range.
-- **Mermaid included.** Flowcharts and sequence diagrams render locally without a network dependency.
-- **Vault-aware links.** Normal Markdown links and Obsidian-style `[[wiki links]]` open in the current tab group.
-- **Text stays text.** `.txt` files preserve their symbols, spacing, line breaks, and bidirectional content instead of being interpreted as Markdown.
-- **Arabic and English together.** Direction is resolved per block so mixed-language documents remain readable.
-- **Recently opened.** The welcome window lists your latest files, and **File > Open Recent** keeps the last ten within reach.
-- **Finder-native.** Satr can be selected through **Open With** and registered as the default opener for supported files.
+## Build
 
-## Supported documents
-
-| Format | Behavior |
-| --- | --- |
-| `.md`, `.markdown`, `.mdown`, `.mkd` | GitHub-flavored Markdown, tables, task lists, code, links, local media, and Mermaid |
-| `.txt` | Literal plain text with preserved whitespace and automatic text direction |
-
-YAML frontmatter is hidden in reading view. Files reload automatically when another application changes them on disk.
-
-## Tabs and windows
-
-- `Command-T` opens a document in a new tab.
-- `Command-N` opens a document in a separate window.
-- `Control-Tab` and `Control-Shift-Tab` move between tabs.
-- Drag a tab outside its window to detach it.
-- Drag it onto another visible Satr tab bar to merge it by hand.
-- Choose **Window > Merge All Windows** to combine every Satr window at once.
-
-Single-document windows keep their tab bar visible, so a detached tab always has a clear place to return.
-
-## How it works
-
-```mermaid
-flowchart LR
-    F[Markdown or text file] --> A[AppKit document window]
-    A --> W[WKWebView reading surface]
-    W --> M[marked]
-    W --> D[DOMPurify]
-    W --> R[Mermaid]
-    A --> P[NSFilePresenter reloads]
-    A --> T[Native macOS tab group]
-```
-
-Each document owns its own renderer, file presenter, zoom level, scroll position, and window. macOS provides the tab grouping, reordering, detaching, and merging behavior. Satr provides the reading interface inside each document window.
-
-## Build from source
-
-Requirements:
-
-- macOS 14 or later
-- Apple Silicon Mac
-- Xcode command-line tools
-- Node.js and npm for the bundled browser libraries
+Requirements: macOS 15 or later, Xcode 26, [XcodeGen](https://github.com/yonaskolb/XcodeGen).
 
 ```sh
-git clone <repository-url>
-cd Satr
-npm ci
-
-mkdir -p Resources/vendor
-cp node_modules/marked/lib/marked.umd.js Resources/vendor/marked.js
-cp node_modules/dompurify/dist/purify.min.js Resources/vendor/purify.min.js
-cp node_modules/mermaid/dist/mermaid.min.js Resources/vendor/mermaid.min.js
-
-Scripts/build.sh --install
+make build     # Debug app in build/DerivedData
+make run       # build and open it
+make test      # LinenKit tests
+make corpus    # render every note in ~/vault and the Ferry docs, report problems
+make install   # Release build into /Applications
 ```
 
-The build script compiles an optimized arm64 binary, creates the app icon, assembles `/Applications/Satr.app`, and applies an ad-hoc signature. The installed bundle identifier is `com.satr.reader`.
+The Thmanyah faces are copied into the app at build time from `~/Library/Fonts`; without them Linen falls back to system faces. See `docs/BUILD.md`.
 
-## Project map
+## Layout
 
-```text
-Sources/Satr/       AppKit windows, file handling, and rendering bridge
-Resources/          Reading surface, styles, and bundled renderers
-Scripts/            Repeatable app build and icon generation
-Tests/Fixtures/     Markdown, Mermaid, local-image, link, and text fixtures
-```
+| Path | What lives there |
+| --- | --- |
+| `Linen/` | The app: windows and tabs, menus, panels, printing, the link gate and the local and remote image handlers |
+| `LinenKit/` | The model, tested on its own: vault index and link rules, file watcher, text decoding, place and baseline stores |
+| `Renderer/` | The page: lexing in a worker, sanitising, rendering in slices, place keeping, change marks, find |
+| `LinenQuickLook/` | The Quick Look extension |
+| `docs/PRD.md` | The product: requirements, design contract, architecture, review log and build log |
+| `docs/research/`, `docs/spikes/`, `docs/reviews/` | What the PRD was built on |
 
-The application does not use Electron, a package manager for Swift, an Xcode project, analytics, accounts, or a server.
-
-## Privacy
-
-Document content is rendered locally. The Markdown parser, sanitizer, Mermaid renderer, wiki-link resolver, and local media handler work without a network connection.
-
-Remote images and media referenced by a document load automatically, just as they do in a browser. Opening an untrusted document can therefore contact its remote host and reveal ordinary request metadata such as IP address and access time. No document text is uploaded by Satr.
-
-## Renderer dependencies
-
-- [marked](https://github.com/markedjs/marked) 18.0.7, MIT
-- [DOMPurify](https://github.com/cure53/DOMPurify) 3.4.12, MPL-2.0 or Apache-2.0
-- [Mermaid](https://github.com/mermaid-js/mermaid) 11.16.0, MIT
-
-These libraries are bundled so documents render offline. Their license texts should be retained in any redistributed source or application bundle.
-
-## Project license
-
-No license has been selected for Satr yet. Until one is added, the source is visible but remains under normal copyright restrictions.
+Linen grew out of Satr 1.2.1, whose sources (`Sources/`, `Resources/`, `package.json`) are still in the tree for reference.

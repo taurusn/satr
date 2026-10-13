@@ -1,0 +1,35 @@
+name: SatrQLSpike
+options:
+  bundleIdPrefix: com.satr.spike
+  deploymentTarget:
+    macOS: "15.0"
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    DEVELOPMENT_TEAM: 2U8YZJV343
+    CODE_SIGN_STYLE: Automatic
+    CODE_SIGN_IDENTITY: "Apple Development"
+    ENABLE_HARDENED_RUNTIME: YES
+targets:
+  QLSpikeApp:
+    type: application
+    platform: macOS
+    sources: [App]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.satr.spike.app
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_LSUIElement: YES
+        ENABLE_APP_SANDBOX: YES
+    dependencies:
+      - target: QLSpikePreview
+        embed: true
+  QLSpikePreview:
+    type: app-extension
+    platform: macOS
+    sources: [Preview]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.satr.spike.app.preview
+        INFOPLIST_FILE: Preview/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Preview/Preview.entitlements
