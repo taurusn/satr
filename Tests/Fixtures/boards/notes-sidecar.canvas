@@ -1,0 +1,9 @@
+{
+	"nodes":[
+		{"id":"n1","type":"text","text":"## Gateway","x":0,"y":0,"width":280,"height":140},
+		{"id":"n2","type":"text","text":"## Ledger","x":320,"y":0,"width":280,"height":140}
+	],
+	"edges":[
+		{"id":"e1","fromNode":"n1","toNode":"n2"}
+	]
+}

@@ -1,0 +1,2034 @@
+{
+	"card-0": {
+		"area": "Section 1",
+		"title": "Why Works",
+		"body": "Reads its settings from the config store at start.",
+		"refs": [
+			"docs/notes-0.md"
+		]
+	},
+	"card-7": {
+		"area": "Section 1",
+		"title": "Why Works",
+		"body": "Retries twice, then gives up and logs the failure.",
+		"refs": [
+			"docs/notes-7.md"
+		]
+	},
+	"card-21": {
+		"area": "Section 1",
+		"title": "Why Works",
+		"body": "Routes requests to the core service.",
+		"refs": [
+			"docs/notes-8.md"
+		]
+	},
+	"card-28": {
+		"area": "Section 1",
+		"title": "Why Planned",
+		"body": "Routes requests to the core service.",
+		"refs": [
+			"docs/notes-2.md"
+		]
+	},
+	"card-35": {
+		"area": "Section 1",
+		"title": "Why Partial",
+		"body": "Writes every event to the ledger.",
+		"refs": [
+			"docs/notes-9.md"
+		]
+	},
+	"card-42": {
+		"area": "Section 1",
+		"title": "Why Broken",
+		"body": "- reads from the queue\n- writes to the index",
+		"refs": [
+			"docs/notes-3.md"
+		]
+	},
+	"card-49": {
+		"area": "Section 2",
+		"title": "Why Works",
+		"body": "- reads from the queue\n- writes to the index",
+		"refs": [
+			"docs/notes-10.md"
+		]
+	},
+	"card-56": {
+		"area": "Section 2",
+		"title": "Why Missing",
+		"body": "Uses the shared database pool.",
+		"refs": [
+			"docs/notes-4.md"
+		]
+	},
+	"card-63": {
+		"area": "Section 2",
+		"title": "Why Works",
+		"body": "Writes every event to the ledger.",
+		"refs": [
+			"docs/notes-11.md"
+		]
+	},
+	"card-70": {
+		"area": "Section 2",
+		"title": "Why Works",
+		"body": "Owned by the platform team.",
+		"refs": [
+			"docs/notes-5.md"
+		]
+	},
+	"card-77": {
+		"area": "Section 2",
+		"title": "Why Works",
+		"body": "Uses the shared database pool.",
+		"refs": [
+			"docs/notes-12.md"
+		]
+	},
+	"card-84": {
+		"area": "Section 2",
+		"title": "Why Partial",
+		"body": "- reads from the queue\n- writes to the index",
+		"refs": [
+			"docs/notes-6.md"
+		]
+	},
+	"card-98": {
+		"area": "Section 3",
+		"title": "Why Broken",
+		"body": "- reads from the queue\n- writes to the index",
+		"refs": [
+			"docs/notes-7.md"
+		]
+	},
+	"card-105": {
+		"area": "Section 3",
+		"title": "Why Works",
+		"body": "Has **no tests** for the timeout path.",
+		"refs": [
+			"docs/notes-1.md"
+		]
+	},
+	"card-112": {
+		"area": "Section 3",
+		"title": "Why Planned",
+		"body": "Uses the shared database pool.",
+		"refs": [
+			"docs/notes-8.md"
+		]
+	},
+	"card-119": {
+		"area": "Section 3",
+		"title": "Why Planned",
+		"body": "Seen working in the last demo.",
+		"refs": [
+			"docs/notes-2.md"
+		]
+	},
+	"card-126": {
+		"area": "Section 3",
+		"title": "Why Works",
+		"body": "- reads from the queue\n- writes to the index",
+		"refs": [
+			"docs/notes-9.md"
+		]
+	},
+	"card-133": {
+		"area": "Section 3",
+		"title": "Why Partial",
+		"body": "Fails when the upstream is slow.",
+		"refs": [
+			"docs/notes-3.md"
+		]
+	},
+	"card-140": {
+		"area": "Section 3",
+		"title": "Why Partial",
+		"body": "Depends on the cache being warm.",
+		"refs": [
+			"docs/notes-10.md"
+		]
+	},
+	"card-147": {
+		"area": "Section 4",
+		"title": "Why Works",
+		"body": "Retries twice, then gives up and logs the failure.",
+		"refs": [
+			"docs/notes-4.md"
+		]
+	},
+	"card-154": {
+		"area": "Section 4",
+		"title": "Why Works",
+		"body": "Owned by the platform team.",
+		"refs": [
+			"docs/notes-11.md"
+		]
+	},
+	"card-161": {
+		"area": "Section 4",
+		"title": "Why Partial",
+		"body": "Depends on the cache being warm.",
+		"refs": [
+			"docs/notes-5.md"
+		]
+	},
+	"card-175": {
+		"area": "Section 4",
+		"title": "Why Partial",
+		"body": "Logs are kept for 30 days.",
+		"refs": [
+			"docs/notes-6.md"
+		]
+	},
+	"card-182": {
+		"area": "Section 4",
+		"title": "Why Missing",
+		"body": "Has **no tests** for the timeout path.",
+		"refs": [
+			"docs/notes-0.md"
+		]
+	},
+	"card-189": {
+		"area": "Section 4",
+		"title": "Why Missing",
+		"body": "Runs nightly at `02:00`.",
+		"refs": [
+			"docs/notes-7.md"
+		]
+	},
+	"card-196": {
+		"area": "Section 5",
+		"title": "Why Works",
+		"body": "Drops messages over 1 MB.",
+		"refs": [
+			"docs/notes-1.md"
+		]
+	},
+	"card-203": {
+		"area": "Section 5",
+		"title": "Why Partial",
+		"body": "Routes requests to the core service.",
+		"refs": [
+			"docs/notes-8.md"
+		]
+	},
+	"card-210": {
+		"area": "Section 5",
+		"title": "Why Planned",
+		"body": "Exists in code; not seen running.",
+		"refs": [
+			"docs/notes-2.md"
+		]
+	},
+	"card-217": {
+		"area": "Section 5",
+		"title": "Why Works",
+		"body": "Seen working in the last demo.",
+		"refs": [
+			"docs/notes-9.md"
+		]
+	},
+	"card-224": {
+		"area": "Section 5",
+		"title": "Why Works",
+		"body": "Exists in code; not seen running.",
+		"refs": [
+			"docs/notes-3.md"
+		]
+	},
+	"card-231": {
+		"area": "Section 5",
+		"title": "Why Works",
+		"body": "Routes requests to the core service.",
+		"refs": [
+			"docs/notes-10.md"
+		]
+	},
+	"card-238": {
+		"area": "Section 5",
+		"title": "Why Works",
+		"body": "Exists in code; not seen running.",
+		"refs": [
+			"docs/notes-4.md"
+		]
+	},
+	"card-252": {
+		"area": "Section 6",
+		"title": "Why Broken",
+		"body": "Exists in code; not seen running.",
+		"refs": [
+			"docs/notes-5.md"
+		]
+	},
+	"card-259": {
+		"area": "Section 6",
+		"title": "Why Works",
+		"body": "Runs nightly at `02:00`.",
+		"refs": [
+			"docs/notes-12.md"
+		]
+	},
+	"card-266": {
+		"area": "Section 6",
+		"title": "Why Missing",
+		"body": "Runs nightly at `02:00`.",
+		"refs": [
+			"docs/notes-6.md"
+		]
+	},
+	"card-273": {
+		"area": "Section 6",
+		"title": "Why Works",
+		"body": "Uses the shared database pool.",
+		"refs": [
+			"docs/notes-0.md"
+		]
+	},
+	"card-280": {
+		"area": "Section 6",
+		"title": "Why Planned",
+		"body": "Drops messages over 1 MB.",
+		"refs": [
+			"docs/notes-7.md"
+		]
+	},
+	"card-287": {
+		"area": "Section 6",
+		"title": "Why Partial",
+		"body": "Retries twice, then gives up and logs the failure.",
+		"refs": [
+			"docs/notes-1.md"
+		]
+	},
+	"card-294": {
+		"area": "Section 7",
+		"title": "Why Broken",
+		"body": "Depends on the cache being warm.",
+		"refs": [
+			"docs/notes-8.md"
+		]
+	},
+	"card-301": {
+		"area": "Section 7",
+		"title": "Why Partial",
+		"body": "Writes every event to the ledger.",
+		"refs": [
+			"docs/notes-2.md"
+		]
+	},
+	"card-308": {
+		"area": "Section 7",
+		"title": "Why Partial",
+		"body": "Writes every event to the ledger.",
+		"refs": [
+			"docs/notes-9.md"
+		]
+	},
+	"card-315": {
+		"area": "Section 7",
+		"title": "Why Partial",
+		"body": "Retries twice, then gives up and logs the failure.",
+		"refs": [
+			"docs/notes-3.md"
+		]
+	},
+	"card-329": {
+		"area": "Section 7",
+		"title": "Why Partial",
+		"body": "Fails when the upstream is slow.",
+		"refs": [
+			"docs/notes-4.md"
+		]
+	},
+	"card-336": {
+		"area": "Section 7",
+		"title": "Why Missing",
+		"body": "Seen working in the last demo.",
+		"refs": [
+			"docs/notes-11.md"
+		]
+	},
+	"card-343": {
+		"area": "Section 8",
+		"title": "Why Planned",
+		"body": "Drops messages over 1 MB.",
+		"refs": [
+			"docs/notes-5.md"
+		]
+	},
+	"card-350": {
+		"area": "Section 8",
+		"title": "Why Works",
+		"body": "Drops messages over 1 MB.",
+		"refs": [
+			"docs/notes-12.md"
+		]
+	},
+	"card-357": {
+		"area": "Section 8",
+		"title": "Why Works",
+		"body": "Uses the shared database pool.",
+		"refs": [
+			"docs/notes-6.md"
+		]
+	},
+	"card-364": {
+		"area": "Section 8",
+		"title": "Why Works",
+		"body": "- reads from the queue\n- writes to the index",
+		"refs": [
+			"docs/notes-0.md"
+		]
+	},
+	"card-371": {
+		"area": "Section 8",
+		"title": "Why Partial",
+		"body": "Depends on the cache being warm.",
+		"refs": [
+			"docs/notes-7.md"
+		]
+	},
+	"card-378": {
+		"area": "Section 8",
+		"title": "Why Broken",
+		"body": "Logs are kept for 30 days.",
+		"refs": [
+			"docs/notes-1.md"
+		]
+	},
+	"card-385": {
+		"area": "Section 8",
+		"title": "Why Planned",
+		"body": "Seen working in the last demo.",
+		"refs": [
+			"docs/notes-8.md"
+		]
+	},
+	"card-392": {
+		"area": "Section 9",
+		"title": "Why Works",
+		"body": "Owned by the platform team.",
+		"refs": [
+			"docs/notes-2.md"
+		]
+	},
+	"card-406": {
+		"area": "Section 9",
+		"title": "Why Missing",
+		"body": "Fails when the upstream is slow.",
+		"refs": [
+			"docs/notes-3.md"
+		]
+	},
+	"card-413": {
+		"area": "Section 9",
+		"title": "Why Broken",
+		"body": "- reads from the queue\n- writes to the index",
+		"refs": [
+			"docs/notes-10.md"
+		]
+	},
+	"card-420": {
+		"area": "Section 9",
+		"title": "Why Broken",
+		"body": "Runs nightly at `02:00`.",
+		"refs": [
+			"docs/notes-4.md"
+		]
+	},
+	"card-427": {
+		"area": "Section 9",
+		"title": "Why Works",
+		"body": "Runs nightly at `02:00`.",
+		"refs": [
+			"docs/notes-11.md"
+		]
+	},
+	"card-434": {
+		"area": "Section 9",
+		"title": "Why Works",
+		"body": "Fails when the upstream is slow.",
+		"refs": [
+			"docs/notes-5.md"
+		]
+	},
+	"card-441": {
+		"area": "Section 10",
+		"title": "Why Works",
+		"body": "Depends on the cache being warm.",
+		"refs": [
+			"docs/notes-12.md"
+		]
+	},
+	"card-448": {
+		"area": "Section 10",
+		"title": "Why Works",
+		"body": "Owned by the platform team.",
+		"refs": [
+			"docs/notes-6.md"
+		]
+	},
+	"card-455": {
+		"area": "Section 10",
+		"title": "Why Works",
+		"body": "Depends on the cache being warm.",
+		"refs": [
+			"docs/notes-0.md"
+		]
+	},
+	"card-462": {
+		"area": "Section 10",
+		"title": "Why Partial",
+		"body": "Writes every event to the ledger.",
+		"refs": [
+			"docs/notes-7.md"
+		]
+	},
+	"card-469": {
+		"area": "Section 10",
+		"title": "Why Works",
+		"body": "Fails when the upstream is slow.",
+		"refs": [
+			"docs/notes-1.md"
+		]
+	},
+	"card-483": {
+		"area": "Section 10",
+		"title": "Why Partial",
+		"body": "Depends on the cache being warm.",
+		"refs": [
+			"docs/notes-2.md"
+		]
+	},
+	"card-490": {
+		"area": "Section 11",
+		"title": "Why Planned",
+		"body": "Depends on the cache being warm.",
+		"refs": [
+			"docs/notes-9.md"
+		]
+	},
+	"card-497": {
+		"area": "Section 11",
+		"title": "Why Works",
+		"body": "Runs nightly at `02:00`.",
+		"refs": [
+			"docs/notes-3.md"
+		]
+	},
+	"card-504": {
+		"area": "Section 11",
+		"title": "Why Works",
+		"body": "Depends on the cache being warm.",
+		"refs": [
+			"docs/notes-10.md"
+		]
+	},
+	"card-511": {
+		"area": "Section 11",
+		"title": "Why Works",
+		"body": "- reads from the queue\n- writes to the index",
+		"refs": [
+			"docs/notes-4.md"
+		]
+	},
+	"card-518": {
+		"area": "Section 11",
+		"title": "Why Planned",
+		"body": "Fails when the upstream is slow.",
+		"refs": [
+			"docs/notes-11.md"
+		]
+	},
+	"card-525": {
+		"area": "Section 11",
+		"title": "Why Missing",
+		"body": "Reads its settings from the config store at start.",
+		"refs": [
+			"docs/notes-5.md"
+		]
+	},
+	"card-532": {
+		"area": "Section 11",
+		"title": "Why Planned",
+		"body": "Runs nightly at `02:00`.",
+		"refs": [
+			"docs/notes-12.md"
+		]
+	},
+	"card-539": {
+		"area": "Section 12",
+		"title": "Why Partial",
+		"body": "Logs are kept for 30 days.",
+		"refs": [
+			"docs/notes-6.md"
+		]
+	},
+	"card-546": {
+		"area": "Section 12",
+		"title": "Why Works",
+		"body": "Retries twice, then gives up and logs the failure.",
+		"refs": [
+			"docs/notes-0.md"
+		]
+	},
+	"card-560": {
+		"area": "Section 12",
+		"title": "Why Planned",
+		"body": "Reads its settings from the config store at start.",
+		"refs": [
+			"docs/notes-1.md"
+		]
+	},
+	"card-567": {
+		"area": "Section 12",
+		"title": "Why Works",
+		"body": "Owned by the platform team.",
+		"refs": [
+			"docs/notes-8.md"
+		]
+	},
+	"card-574": {
+		"area": "Section 12",
+		"title": "Why Missing",
+		"body": "Routes requests to the core service.",
+		"refs": [
+			"docs/notes-2.md"
+		]
+	},
+	"card-581": {
+		"area": "Section 12",
+		"title": "Why Planned",
+		"body": "Routes requests to the core service.",
+		"refs": [
+			"docs/notes-9.md"
+		]
+	},
+	"card-588": {
+		"area": "Section 13",
+		"title": "Why Works",
+		"body": "Has **no tests** for the timeout path.",
+		"refs": [
+			"docs/notes-3.md"
+		]
+	},
+	"card-595": {
+		"area": "Section 13",
+		"title": "Why Works",
+		"body": "Planned for the next release.",
+		"refs": [
+			"docs/notes-10.md"
+		]
+	},
+	"card-602": {
+		"area": "Section 13",
+		"title": "Why Planned",
+		"body": "Owned by the platform team.",
+		"refs": [
+			"docs/notes-4.md"
+		]
+	},
+	"card-609": {
+		"area": "Section 13",
+		"title": "Why Works",
+		"body": "Runs nightly at `02:00`.",
+		"refs": [
+			"docs/notes-11.md"
+		]
+	},
+	"card-616": {
+		"area": "Section 13",
+		"title": "Why Planned",
+		"body": "Planned for the next release.",
+		"refs": [
+			"docs/notes-5.md"
+		]
+	},
+	"card-623": {
+		"area": "Section 13",
+		"title": "Why Partial",
+		"body": "Exists in code; not seen running.",
+		"refs": [
+			"docs/notes-12.md"
+		]
+	},
+	"card-637": {
+		"area": "Section 14",
+		"title": "Why Works",
+		"body": "Depends on the cache being warm.",
+		"refs": [
+			"docs/notes-0.md"
+		]
+	},
+	"card-644": {
+		"area": "Section 14",
+		"title": "Why Missing",
+		"body": "Reads its settings from the config store at start.",
+		"refs": [
+			"docs/notes-7.md"
+		]
+	},
+	"card-651": {
+		"area": "Section 14",
+		"title": "Why Planned",
+		"body": "Runs nightly at `02:00`.",
+		"refs": [
+			"docs/notes-1.md"
+		]
+	},
+	"card-658": {
+		"area": "Section 14",
+		"title": "Why Works",
+		"body": "Uses the shared database pool.",
+		"refs": [
+			"docs/notes-8.md"
+		]
+	},
+	"card-665": {
+		"area": "Section 14",
+		"title": "Why Works",
+		"body": "Fails when the upstream is slow.",
+		"refs": [
+			"docs/notes-2.md"
+		]
+	},
+	"card-672": {
+		"area": "Section 14",
+		"title": "Why Works",
+		"body": "Routes requests to the core service.",
+		"refs": [
+			"docs/notes-9.md"
+		]
+	},
+	"card-679": {
+		"area": "Section 14",
+		"title": "Why Works",
+		"body": "Planned for the next release.",
+		"refs": [
+			"docs/notes-3.md"
+		]
+	},
+	"card-686": {
+		"area": "Section 15",
+		"title": "Why Missing",
+		"body": "Seen working in the last demo.",
+		"refs": [
+			"docs/notes-10.md"
+		]
+	},
+	"card-693": {
+		"area": "Section 15",
+		"title": "Why Broken",
+		"body": "Has **no tests** for the timeout path.",
+		"refs": [
+			"docs/notes-4.md"
+		]
+	},
+	"card-700": {
+		"area": "Section 15",
+		"title": "Why Missing",
+		"body": "Owned by the platform team.",
+		"refs": [
+			"docs/notes-11.md"
+		]
+	},
+	"card-714": {
+		"area": "Section 15",
+		"title": "Why Planned",
+		"body": "Depends on the cache being warm.",
+		"refs": [
+			"docs/notes-12.md"
+		]
+	},
+	"card-721": {
+		"area": "Section 15",
+		"title": "Why Works",
+		"body": "Owned by the platform team.",
+		"refs": [
+			"docs/notes-6.md"
+		]
+	},
+	"card-728": {
+		"area": "Section 15",
+		"title": "Why Works",
+		"body": "Writes every event to the ledger.",
+		"refs": [
+			"docs/notes-0.md"
+		]
+	},
+	"card-735": {
+		"area": "Section 16",
+		"title": "Why Works",
+		"body": "Exists in code; not seen running.",
+		"refs": [
+			"docs/notes-7.md"
+		]
+	},
+	"card-742": {
+		"area": "Section 16",
+		"title": "Why Partial",
+		"body": "Retries twice, then gives up and logs the failure.",
+		"refs": [
+			"docs/notes-1.md"
+		]
+	},
+	"card-749": {
+		"area": "Section 16",
+		"title": "Why Works",
+		"body": "Owned by the platform team.",
+		"refs": [
+			"docs/notes-8.md"
+		]
+	},
+	"card-756": {
+		"area": "Section 16",
+		"title": "Why Partial",
+		"body": "Planned for the next release.",
+		"refs": [
+			"docs/notes-2.md"
+		]
+	},
+	"card-763": {
+		"area": "Section 16",
+		"title": "Why Missing",
+		"body": "Planned for the next release.",
+		"refs": [
+			"docs/notes-9.md"
+		]
+	},
+	"card-770": {
+		"area": "Section 16",
+		"title": "Why Broken",
+		"body": "Uses the shared database pool.",
+		"refs": [
+			"docs/notes-3.md"
+		]
+	},
+	"card-777": {
+		"area": "Section 16",
+		"title": "Why Works",
+		"body": "Planned for the next release.",
+		"refs": [
+			"docs/notes-10.md"
+		]
+	},
+	"card-791": {
+		"area": "Section 17",
+		"title": "Why Partial",
+		"body": "Fails when the upstream is slow.",
+		"refs": [
+			"docs/notes-11.md"
+		]
+	},
+	"card-798": {
+		"area": "Section 17",
+		"title": "Why Partial",
+		"body": "Drops messages over 1 MB.",
+		"refs": [
+			"docs/notes-5.md"
+		]
+	},
+	"card-805": {
+		"area": "Section 17",
+		"title": "Why Missing",
+		"body": "Reads its settings from the config store at start.",
+		"refs": [
+			"docs/notes-12.md"
+		]
+	},
+	"card-812": {
+		"area": "Section 17",
+		"title": "Why Works",
+		"body": "Depends on the cache being warm.",
+		"refs": [
+			"docs/notes-6.md"
+		]
+	},
+	"card-819": {
+		"area": "Section 17",
+		"title": "Why Works",
+		"body": "Reads its settings from the config store at start.",
+		"refs": [
+			"docs/notes-0.md"
+		]
+	},
+	"card-826": {
+		"area": "Section 17",
+		"title": "Why Works",
+		"body": "Seen working in the last demo.",
+		"refs": [
+			"docs/notes-7.md"
+		]
+	},
+	"card-833": {
+		"area": "Section 18",
+		"title": "Why Works",
+		"body": "Seen working in the last demo.",
+		"refs": [
+			"docs/notes-1.md"
+		]
+	},
+	"card-840": {
+		"area": "Section 18",
+		"title": "Why Works",
+		"body": "Depends on the cache being warm.",
+		"refs": [
+			"docs/notes-8.md"
+		]
+	},
+	"card-847": {
+		"area": "Section 18",
+		"title": "Why Missing",
+		"body": "Drops messages over 1 MB.",
+		"refs": [
+			"docs/notes-2.md"
+		]
+	},
+	"card-854": {
+		"area": "Section 18",
+		"title": "Why Works",
+		"body": "Logs are kept for 30 days.",
+		"refs": [
+			"docs/notes-9.md"
+		]
+	},
+	"card-868": {
+		"area": "Section 18",
+		"title": "Why Planned",
+		"body": "- reads from the queue\n- writes to the index",
+		"refs": [
+			"docs/notes-10.md"
+		]
+	},
+	"card-875": {
+		"area": "Section 18",
+		"title": "Why Missing",
+		"body": "Planned for the next release.",
+		"refs": [
+			"docs/notes-4.md"
+		]
+	},
+	"card-882": {
+		"area": "Section 19",
+		"title": "Why Works",
+		"body": "Drops messages over 1 MB.",
+		"refs": [
+			"docs/notes-11.md"
+		]
+	},
+	"card-889": {
+		"area": "Section 19",
+		"title": "Why Planned",
+		"body": "- reads from the queue\n- writes to the index",
+		"refs": [
+			"docs/notes-5.md"
+		]
+	},
+	"card-896": {
+		"area": "Section 19",
+		"title": "Why Partial",
+		"body": "Fails when the upstream is slow.",
+		"refs": [
+			"docs/notes-12.md"
+		]
+	},
+	"card-903": {
+		"area": "Section 19",
+		"title": "Why Planned",
+		"body": "Fails when the upstream is slow.",
+		"refs": [
+			"docs/notes-6.md"
+		]
+	},
+	"card-910": {
+		"area": "Section 19",
+		"title": "Why Planned",
+		"body": "Planned for the next release.",
+		"refs": [
+			"docs/notes-0.md"
+		]
+	},
+	"card-917": {
+		"area": "Section 19",
+		"title": "Why Partial",
+		"body": "Uses the shared database pool.",
+		"refs": [
+			"docs/notes-7.md"
+		]
+	},
+	"card-924": {
+		"area": "Section 19",
+		"title": "Why Missing",
+		"body": "Drops messages over 1 MB.",
+		"refs": [
+			"docs/notes-1.md"
+		]
+	},
+	"card-931": {
+		"area": "Section 20",
+		"title": "Why Works",
+		"body": "Logs are kept for 30 days.",
+		"refs": [
+			"docs/notes-8.md"
+		]
+	},
+	"card-945": {
+		"area": "Section 20",
+		"title": "Why Partial",
+		"body": "Writes every event to the ledger.",
+		"refs": [
+			"docs/notes-9.md"
+		]
+	},
+	"card-952": {
+		"area": "Section 20",
+		"title": "Why Planned",
+		"body": "Retries twice, then gives up and logs the failure.",
+		"refs": [
+			"docs/notes-3.md"
+		]
+	},
+	"card-959": {
+		"area": "Section 20",
+		"title": "Why Planned",
+		"body": "Drops messages over 1 MB.",
+		"refs": [
+			"docs/notes-10.md"
+		]
+	},
+	"card-966": {
+		"area": "Section 20",
+		"title": "Why Works",
+		"body": "Runs nightly at `02:00`.",
+		"refs": [
+			"docs/notes-4.md"
+		]
+	},
+	"card-973": {
+		"area": "Section 20",
+		"title": "Why Works",
+		"body": "Routes requests to the core service.",
+		"refs": [
+			"docs/notes-11.md"
+		]
+	},
+	"card-980": {
+		"area": "Section 21",
+		"title": "Why Partial",
+		"body": "Exists in code; not seen running.",
+		"refs": [
+			"docs/notes-5.md"
+		]
+	},
+	"card-987": {
+		"area": "Section 21",
+		"title": "Why Partial",
+		"body": "Writes every event to the ledger.",
+		"refs": [
+			"docs/notes-12.md"
+		]
+	},
+	"card-994": {
+		"area": "Section 21",
+		"title": "Why Partial",
+		"body": "Retries twice, then gives up and logs the failure.",
+		"refs": [
+			"docs/notes-6.md"
+		]
+	},
+	"card-1001": {
+		"area": "Section 21",
+		"title": "Why Works",
+		"body": "Reads its settings from the config store at start.",
+		"refs": [
+			"docs/notes-0.md"
+		]
+	},
+	"card-1008": {
+		"area": "Section 21",
+		"title": "Why Broken",
+		"body": "Retries twice, then gives up and logs the failure.",
+		"refs": [
+			"docs/notes-7.md"
+		]
+	},
+	"card-1022": {
+		"area": "Section 21",
+		"title": "Why Works",
+		"body": "Logs are kept for 30 days.",
+		"refs": [
+			"docs/notes-8.md"
+		]
+	},
+	"card-1029": {
+		"area": "Section 22",
+		"title": "Why Planned",
+		"body": "Seen working in the last demo.",
+		"refs": [
+			"docs/notes-2.md"
+		]
+	},
+	"card-1036": {
+		"area": "Section 22",
+		"title": "Why Missing",
+		"body": "Writes every event to the ledger.",
+		"refs": [
+			"docs/notes-9.md"
+		]
+	},
+	"card-1043": {
+		"area": "Section 22",
+		"title": "Why Works",
+		"body": "Owned by the platform team.",
+		"refs": [
+			"docs/notes-3.md"
+		]
+	},
+	"card-1050": {
+		"area": "Section 22",
+		"title": "Why Missing",
+		"body": "Routes requests to the core service.",
+		"refs": [
+			"docs/notes-10.md"
+		]
+	},
+	"card-1057": {
+		"area": "Section 22",
+		"title": "Why Works",
+		"body": "Reads its settings from the config store at start.",
+		"refs": [
+			"docs/notes-4.md"
+		]
+	},
+	"card-1064": {
+		"area": "Section 22",
+		"title": "Why Works",
+		"body": "Reads its settings from the config store at start.",
+		"refs": [
+			"docs/notes-11.md"
+		]
+	},
+	"card-1071": {
+		"area": "Section 22",
+		"title": "Why Works",
+		"body": "Seen working in the last demo.",
+		"refs": [
+			"docs/notes-5.md"
+		]
+	},
+	"card-1078": {
+		"area": "Section 23",
+		"title": "Why Missing",
+		"body": "Routes requests to the core service.",
+		"refs": [
+			"docs/notes-12.md"
+		]
+	},
+	"card-1085": {
+		"area": "Section 23",
+		"title": "Why Missing",
+		"body": "Planned for the next release.",
+		"refs": [
+			"docs/notes-6.md"
+		]
+	},
+	"card-1099": {
+		"area": "Section 23",
+		"title": "Why Works",
+		"body": "Depends on the cache being warm.",
+		"refs": [
+			"docs/notes-7.md"
+		]
+	},
+	"card-1106": {
+		"area": "Section 23",
+		"title": "Why Partial",
+		"body": "Logs are kept for 30 days.",
+		"refs": [
+			"docs/notes-1.md"
+		]
+	},
+	"card-1113": {
+		"area": "Section 23",
+		"title": "Why Partial",
+		"body": "Uses the shared database pool.",
+		"refs": [
+			"docs/notes-8.md"
+		]
+	},
+	"card-1120": {
+		"area": "Section 23",
+		"title": "Why Missing",
+		"body": "Exists in code; not seen running.",
+		"refs": [
+			"docs/notes-2.md"
+		]
+	},
+	"card-1127": {
+		"area": "Section 24",
+		"title": "Why Works",
+		"body": "Fails when the upstream is slow.",
+		"refs": [
+			"docs/notes-9.md"
+		]
+	},
+	"card-1134": {
+		"area": "Section 24",
+		"title": "Why Works",
+		"body": "Routes requests to the core service.",
+		"refs": [
+			"docs/notes-3.md"
+		]
+	},
+	"card-1141": {
+		"area": "Section 24",
+		"title": "Why Planned",
+		"body": "Has **no tests** for the timeout path.",
+		"refs": [
+			"docs/notes-10.md"
+		]
+	},
+	"card-1148": {
+		"area": "Section 24",
+		"title": "Why Planned",
+		"body": "Logs are kept for 30 days.",
+		"refs": [
+			"docs/notes-4.md"
+		]
+	},
+	"card-1155": {
+		"area": "Section 24",
+		"title": "Why Broken",
+		"body": "Reads its settings from the config store at start.",
+		"refs": [
+			"docs/notes-11.md"
+		]
+	},
+	"card-1162": {
+		"area": "Section 24",
+		"title": "Why Planned",
+		"body": "Has **no tests** for the timeout path.",
+		"refs": [
+			"docs/notes-5.md"
+		]
+	},
+	"card-1176": {
+		"area": "Section 25",
+		"title": "Why Works",
+		"body": "Seen working in the last demo.",
+		"refs": [
+			"docs/notes-6.md"
+		]
+	},
+	"card-1183": {
+		"area": "Section 25",
+		"title": "Why Works",
+		"body": "Logs are kept for 30 days.",
+		"refs": [
+			"docs/notes-0.md"
+		]
+	},
+	"card-1190": {
+		"area": "Section 25",
+		"title": "Why Missing",
+		"body": "Reads its settings from the config store at start.",
+		"refs": [
+			"docs/notes-7.md"
+		]
+	},
+	"card-1197": {
+		"area": "Section 25",
+		"title": "Why Partial",
+		"body": "Runs nightly at `02:00`.",
+		"refs": [
+			"docs/notes-1.md"
+		]
+	},
+	"card-1204": {
+		"area": "Section 25",
+		"title": "Why Missing",
+		"body": "Planned for the next release.",
+		"refs": [
+			"docs/notes-8.md"
+		]
+	},
+	"card-1211": {
+		"area": "Section 25",
+		"title": "Why Works",
+		"body": "Has **no tests** for the timeout path.",
+		"refs": [
+			"docs/notes-2.md"
+		]
+	},
+	"card-1218": {
+		"area": "Section 25",
+		"title": "Why Planned",
+		"body": "Writes every event to the ledger.",
+		"refs": [
+			"docs/notes-9.md"
+		]
+	},
+	"card-1225": {
+		"area": "Section 26",
+		"title": "Why Missing",
+		"body": "Seen working in the last demo.",
+		"refs": [
+			"docs/notes-3.md"
+		]
+	},
+	"card-1232": {
+		"area": "Section 26",
+		"title": "Why Partial",
+		"body": "Exists in code; not seen running.",
+		"refs": [
+			"docs/notes-10.md"
+		]
+	},
+	"card-1239": {
+		"area": "Section 26",
+		"title": "Why Works",
+		"body": "Routes requests to the core service.",
+		"refs": [
+			"docs/notes-4.md"
+		]
+	},
+	"card-1253": {
+		"area": "Section 26",
+		"title": "Why Planned",
+		"body": "Logs are kept for 30 days.",
+		"refs": [
+			"docs/notes-5.md"
+		]
+	},
+	"card-1260": {
+		"area": "Section 26",
+		"title": "Why Works",
+		"body": "Uses the shared database pool.",
+		"refs": [
+			"docs/notes-12.md"
+		]
+	},
+	"card-1267": {
+		"area": "Section 26",
+		"title": "Why Works",
+		"body": "Logs are kept for 30 days.",
+		"refs": [
+			"docs/notes-6.md"
+		]
+	},
+	"card-1274": {
+		"area": "Section 27",
+		"title": "Why Works",
+		"body": "Routes requests to the core service.",
+		"refs": [
+			"docs/notes-0.md"
+		]
+	},
+	"card-1281": {
+		"area": "Section 27",
+		"title": "Why Works",
+		"body": "Exists in code; not seen running.",
+		"refs": [
+			"docs/notes-7.md"
+		]
+	},
+	"card-1288": {
+		"area": "Section 27",
+		"title": "Why Works",
+		"body": "Uses the shared database pool.",
+		"refs": [
+			"docs/notes-1.md"
+		]
+	},
+	"card-1295": {
+		"area": "Section 27",
+		"title": "Why Broken",
+		"body": "Depends on the cache being warm.",
+		"refs": [
+			"docs/notes-8.md"
+		]
+	},
+	"card-1302": {
+		"area": "Section 27",
+		"title": "Why Works",
+		"body": "Logs are kept for 30 days.",
+		"refs": [
+			"docs/notes-2.md"
+		]
+	},
+	"card-1309": {
+		"area": "Section 27",
+		"title": "Why Works",
+		"body": "Owned by the platform team.",
+		"refs": [
+			"docs/notes-9.md"
+		]
+	},
+	"card-1316": {
+		"area": "Section 27",
+		"title": "Why Planned",
+		"body": "Runs nightly at `02:00`.",
+		"refs": [
+			"docs/notes-3.md"
+		]
+	},
+	"card-1330": {
+		"area": "Section 28",
+		"title": "Why Missing",
+		"body": "Depends on the cache being warm.",
+		"refs": [
+			"docs/notes-4.md"
+		]
+	},
+	"card-1337": {
+		"area": "Section 28",
+		"title": "Why Works",
+		"body": "Runs nightly at `02:00`.",
+		"refs": [
+			"docs/notes-11.md"
+		]
+	},
+	"card-1344": {
+		"area": "Section 28",
+		"title": "Why Works",
+		"body": "Logs are kept for 30 days.",
+		"refs": [
+			"docs/notes-5.md"
+		]
+	},
+	"card-1351": {
+		"area": "Section 28",
+		"title": "Why Works",
+		"body": "- reads from the queue\n- writes to the index",
+		"refs": [
+			"docs/notes-12.md"
+		]
+	},
+	"card-1358": {
+		"area": "Section 28",
+		"title": "Why Planned",
+		"body": "Retries twice, then gives up and logs the failure.",
+		"refs": [
+			"docs/notes-6.md"
+		]
+	},
+	"card-1365": {
+		"area": "Section 28",
+		"title": "Why Partial",
+		"body": "- reads from the queue\n- writes to the index",
+		"refs": [
+			"docs/notes-0.md"
+		]
+	},
+	"card-1372": {
+		"area": "Section 29",
+		"title": "Why Partial",
+		"body": "Fails when the upstream is slow.",
+		"refs": [
+			"docs/notes-7.md"
+		]
+	},
+	"card-1379": {
+		"area": "Section 29",
+		"title": "Why Works",
+		"body": "Reads its settings from the config store at start.",
+		"refs": [
+			"docs/notes-1.md"
+		]
+	},
+	"card-1386": {
+		"area": "Section 29",
+		"title": "Why Missing",
+		"body": "- reads from the queue\n- writes to the index",
+		"refs": [
+			"docs/notes-8.md"
+		]
+	},
+	"card-1393": {
+		"area": "Section 29",
+		"title": "Why Partial",
+		"body": "Logs are kept for 30 days.",
+		"refs": [
+			"docs/notes-2.md"
+		]
+	},
+	"card-1407": {
+		"area": "Section 29",
+		"title": "Why Works",
+		"body": "Fails when the upstream is slow.",
+		"refs": [
+			"docs/notes-3.md"
+		]
+	},
+	"card-1414": {
+		"area": "Section 29",
+		"title": "Why Partial",
+		"body": "Depends on the cache being warm.",
+		"refs": [
+			"docs/notes-10.md"
+		]
+	},
+	"card-1421": {
+		"area": "Section 30",
+		"title": "Why Works",
+		"body": "Has **no tests** for the timeout path.",
+		"refs": [
+			"docs/notes-4.md"
+		]
+	},
+	"card-1428": {
+		"area": "Section 30",
+		"title": "Why Partial",
+		"body": "Depends on the cache being warm.",
+		"refs": [
+			"docs/notes-11.md"
+		]
+	},
+	"card-1435": {
+		"area": "Section 30",
+		"title": "Why Planned",
+		"body": "Retries twice, then gives up and logs the failure.",
+		"refs": [
+			"docs/notes-5.md"
+		]
+	},
+	"card-1442": {
+		"area": "Section 30",
+		"title": "Why Works",
+		"body": "Exists in code; not seen running.",
+		"refs": [
+			"docs/notes-12.md"
+		]
+	},
+	"card-1449": {
+		"area": "Section 30",
+		"title": "Why Works",
+		"body": "Exists in code; not seen running.",
+		"refs": [
+			"docs/notes-6.md"
+		]
+	},
+	"card-1456": {
+		"area": "Section 30",
+		"title": "Why Works",
+		"body": "Runs nightly at `02:00`.",
+		"refs": [
+			"docs/notes-0.md"
+		]
+	},
+	"card-1463": {
+		"area": "Section 30",
+		"title": "Why Works",
+		"body": "Exists in code; not seen running.",
+		"refs": [
+			"docs/notes-7.md"
+		]
+	},
+	"card-1470": {
+		"area": "Section 31",
+		"title": "Why Works",
+		"body": "Routes requests to the core service.",
+		"refs": [
+			"docs/notes-1.md"
+		]
+	},
+	"card-1484": {
+		"area": "Section 31",
+		"title": "Why Works",
+		"body": "Owned by the platform team.",
+		"refs": [
+			"docs/notes-2.md"
+		]
+	},
+	"card-1491": {
+		"area": "Section 31",
+		"title": "Why Works",
+		"body": "Reads its settings from the config store at start.",
+		"refs": [
+			"docs/notes-9.md"
+		]
+	},
+	"card-1498": {
+		"area": "Section 31",
+		"title": "Why Planned",
+		"body": "Drops messages over 1 MB.",
+		"refs": [
+			"docs/notes-3.md"
+		]
+	},
+	"card-1505": {
+		"area": "Section 31",
+		"title": "Why Missing",
+		"body": "Logs are kept for 30 days.",
+		"refs": [
+			"docs/notes-10.md"
+		]
+	},
+	"card-1512": {
+		"area": "Section 31",
+		"title": "Why Partial",
+		"body": "Reads its settings from the config store at start.",
+		"refs": [
+			"docs/notes-4.md"
+		]
+	},
+	"card-1519": {
+		"area": "Section 32",
+		"title": "Why Works",
+		"body": "Routes requests to the core service.",
+		"refs": [
+			"docs/notes-11.md"
+		]
+	},
+	"card-1526": {
+		"area": "Section 32",
+		"title": "Why Missing",
+		"body": "Writes every event to the ledger.",
+		"refs": [
+			"docs/notes-5.md"
+		]
+	},
+	"card-1533": {
+		"area": "Section 32",
+		"title": "Why Missing",
+		"body": "Owned by the platform team.",
+		"refs": [
+			"docs/notes-12.md"
+		]
+	},
+	"card-1540": {
+		"area": "Section 32",
+		"title": "Why Partial",
+		"body": "Reads its settings from the config store at start.",
+		"refs": [
+			"docs/notes-6.md"
+		]
+	},
+	"card-1547": {
+		"area": "Section 32",
+		"title": "Why Broken",
+		"body": "Depends on the cache being warm.",
+		"refs": [
+			"docs/notes-0.md"
+		]
+	},
+	"card-1561": {
+		"area": "Section 32",
+		"title": "Why Planned",
+		"body": "Logs are kept for 30 days.",
+		"refs": [
+			"docs/notes-1.md"
+		]
+	},
+	"card-1568": {
+		"area": "Section 33",
+		"title": "Why Missing",
+		"body": "Planned for the next release.",
+		"refs": [
+			"docs/notes-8.md"
+		]
+	},
+	"card-1575": {
+		"area": "Section 33",
+		"title": "Why Works",
+		"body": "Runs nightly at `02:00`.",
+		"refs": [
+			"docs/notes-2.md"
+		]
+	},
+	"card-1582": {
+		"area": "Section 33",
+		"title": "Why Planned",
+		"body": "Depends on the cache being warm.",
+		"refs": [
+			"docs/notes-9.md"
+		]
+	},
+	"card-1589": {
+		"area": "Section 33",
+		"title": "Why Works",
+		"body": "Owned by the platform team.",
+		"refs": [
+			"docs/notes-3.md"
+		]
+	},
+	"card-1596": {
+		"area": "Section 33",
+		"title": "Why Works",
+		"body": "Depends on the cache being warm.",
+		"refs": [
+			"docs/notes-10.md"
+		]
+	},
+	"card-1603": {
+		"area": "Section 33",
+		"title": "Why Works",
+		"body": "Uses the shared database pool.",
+		"refs": [
+			"docs/notes-4.md"
+		]
+	},
+	"card-1610": {
+		"area": "Section 33",
+		"title": "Why Works",
+		"body": "Retries twice, then gives up and logs the failure.",
+		"refs": [
+			"docs/notes-11.md"
+		]
+	},
+	"card-1617": {
+		"area": "Section 34",
+		"title": "Why Planned",
+		"body": "Planned for the next release.",
+		"refs": [
+			"docs/notes-5.md"
+		]
+	},
+	"card-1624": {
+		"area": "Section 34",
+		"title": "Why Broken",
+		"body": "Depends on the cache being warm.",
+		"refs": [
+			"docs/notes-12.md"
+		]
+	},
+	"card-1638": {
+		"area": "Section 34",
+		"title": "Why Planned",
+		"body": "Uses the shared database pool.",
+		"refs": [
+			"docs/notes-0.md"
+		]
+	},
+	"card-1645": {
+		"area": "Section 34",
+		"title": "Why Works",
+		"body": "Runs nightly at `02:00`.",
+		"refs": [
+			"docs/notes-7.md"
+		]
+	},
+	"card-1652": {
+		"area": "Section 34",
+		"title": "Why Partial",
+		"body": "Logs are kept for 30 days.",
+		"refs": [
+			"docs/notes-1.md"
+		]
+	},
+	"card-1659": {
+		"area": "Section 34",
+		"title": "Why Works",
+		"body": "Uses the shared database pool.",
+		"refs": [
+			"docs/notes-8.md"
+		]
+	},
+	"card-1666": {
+		"area": "Section 35",
+		"title": "Why Works",
+		"body": "Routes requests to the core service.",
+		"refs": [
+			"docs/notes-2.md"
+		]
+	},
+	"card-1673": {
+		"area": "Section 35",
+		"title": "Why Missing",
+		"body": "Depends on the cache being warm.",
+		"refs": [
+			"docs/notes-9.md"
+		]
+	},
+	"card-1680": {
+		"area": "Section 35",
+		"title": "Why Partial",
+		"body": "Fails when the upstream is slow.",
+		"refs": [
+			"docs/notes-3.md"
+		]
+	},
+	"card-1687": {
+		"area": "Section 35",
+		"title": "Why Works",
+		"body": "Reads its settings from the config store at start.",
+		"refs": [
+			"docs/notes-10.md"
+		]
+	},
+	"card-1694": {
+		"area": "Section 35",
+		"title": "Why Partial",
+		"body": "Owned by the platform team.",
+		"refs": [
+			"docs/notes-4.md"
+		]
+	},
+	"card-1701": {
+		"area": "Section 35",
+		"title": "Why Partial",
+		"body": "Drops messages over 1 MB.",
+		"refs": [
+			"docs/notes-11.md"
+		]
+	},
+	"card-1715": {
+		"area": "Section 36",
+		"title": "Why Works",
+		"body": "Planned for the next release.",
+		"refs": [
+			"docs/notes-12.md"
+		]
+	},
+	"card-1722": {
+		"area": "Section 36",
+		"title": "Why Partial",
+		"body": "Routes requests to the core service.",
+		"refs": [
+			"docs/notes-6.md"
+		]
+	},
+	"card-1729": {
+		"area": "Section 36",
+		"title": "Why Works",
+		"body": "Uses the shared database pool.",
+		"refs": [
+			"docs/notes-0.md"
+		]
+	},
+	"card-1736": {
+		"area": "Section 36",
+		"title": "Why Broken",
+		"body": "Seen working in the last demo.",
+		"refs": [
+			"docs/notes-7.md"
+		]
+	},
+	"card-1743": {
+		"area": "Section 36",
+		"title": "Why Planned",
+		"body": "Retries twice, then gives up and logs the failure.",
+		"refs": [
+			"docs/notes-1.md"
+		]
+	},
+	"card-1750": {
+		"area": "Section 36",
+		"title": "Why Missing",
+		"body": "Drops messages over 1 MB.",
+		"refs": [
+			"docs/notes-8.md"
+		]
+	},
+	"card-1757": {
+		"area": "Section 36",
+		"title": "Why Partial",
+		"body": "Routes requests to the core service.",
+		"refs": [
+			"docs/notes-2.md"
+		]
+	},
+	"card-1764": {
+		"area": "Section 37",
+		"title": "Why Partial",
+		"body": "Runs nightly at `02:00`.",
+		"refs": [
+			"docs/notes-9.md"
+		]
+	},
+	"card-1771": {
+		"area": "Section 37",
+		"title": "Why Broken",
+		"body": "Uses the shared database pool.",
+		"refs": [
+			"docs/notes-3.md"
+		]
+	},
+	"card-1778": {
+		"area": "Section 37",
+		"title": "Why Works",
+		"body": "- reads from the queue\n- writes to the index",
+		"refs": [
+			"docs/notes-10.md"
+		]
+	},
+	"card-1792": {
+		"area": "Section 37",
+		"title": "Why Planned",
+		"body": "Writes every event to the ledger.",
+		"refs": [
+			"docs/notes-11.md"
+		]
+	},
+	"card-1799": {
+		"area": "Section 37",
+		"title": "Why Broken",
+		"body": "Uses the shared database pool.",
+		"refs": [
+			"docs/notes-5.md"
+		]
+	},
+	"card-1806": {
+		"area": "Section 37",
+		"title": "Why Partial",
+		"body": "Runs nightly at `02:00`.",
+		"refs": [
+			"docs/notes-12.md"
+		]
+	},
+	"card-1813": {
+		"area": "Section 38",
+		"title": "Why Partial",
+		"body": "Reads its settings from the config store at start.",
+		"refs": [
+			"docs/notes-6.md"
+		]
+	},
+	"card-1820": {
+		"area": "Section 38",
+		"title": "Why Works",
+		"body": "Runs nightly at `02:00`.",
+		"refs": [
+			"docs/notes-0.md"
+		]
+	},
+	"card-1827": {
+		"area": "Section 38",
+		"title": "Why Partial",
+		"body": "- reads from the queue\n- writes to the index",
+		"refs": [
+			"docs/notes-7.md"
+		]
+	},
+	"card-1834": {
+		"area": "Section 38",
+		"title": "Why Missing",
+		"body": "Exists in code; not seen running.",
+		"refs": [
+			"docs/notes-1.md"
+		]
+	},
+	"card-1841": {
+		"area": "Section 38",
+		"title": "Why Works",
+		"body": "- reads from the queue\n- writes to the index",
+		"refs": [
+			"docs/notes-8.md"
+		]
+	},
+	"card-1848": {
+		"area": "Section 38",
+		"title": "Why Works",
+		"body": "Reads its settings from the config store at start.",
+		"refs": [
+			"docs/notes-2.md"
+		]
+	},
+	"card-1855": {
+		"area": "Section 38",
+		"title": "Why Missing",
+		"body": "Routes requests to the core service.",
+		"refs": [
+			"docs/notes-9.md"
+		]
+	},
+	"card-1869": {
+		"area": "Section 39",
+		"title": "Why Planned",
+		"body": "Routes requests to the core service.",
+		"refs": [
+			"docs/notes-10.md"
+		]
+	},
+	"card-1876": {
+		"area": "Section 39",
+		"title": "Why Works",
+		"body": "Logs are kept for 30 days.",
+		"refs": [
+			"docs/notes-4.md"
+		]
+	},
+	"card-1883": {
+		"area": "Section 39",
+		"title": "Why Works",
+		"body": "Writes every event to the ledger.",
+		"refs": [
+			"docs/notes-11.md"
+		]
+	},
+	"card-1890": {
+		"area": "Section 39",
+		"title": "Why Works",
+		"body": "Has **no tests** for the timeout path.",
+		"refs": [
+			"docs/notes-5.md"
+		]
+	},
+	"card-1897": {
+		"area": "Section 39",
+		"title": "Why Works",
+		"body": "Retries twice, then gives up and logs the failure.",
+		"refs": [
+			"docs/notes-12.md"
+		]
+	},
+	"card-1904": {
+		"area": "Section 39",
+		"title": "Why Works",
+		"body": "Runs nightly at `02:00`.",
+		"refs": [
+			"docs/notes-6.md"
+		]
+	},
+	"card-1911": {
+		"area": "Section 40",
+		"title": "Why Missing",
+		"body": "Exists in code; not seen running.",
+		"refs": [
+			"docs/notes-0.md"
+		]
+	},
+	"card-1918": {
+		"area": "Section 40",
+		"title": "Why Works",
+		"body": "Owned by the platform team.",
+		"refs": [
+			"docs/notes-7.md"
+		]
+	},
+	"card-1925": {
+		"area": "Section 40",
+		"title": "Why Planned",
+		"body": "- reads from the queue\n- writes to the index",
+		"refs": [
+			"docs/notes-1.md"
+		]
+	},
+	"card-1932": {
+		"area": "Section 40",
+		"title": "Why Works",
+		"body": "Has **no tests** for the timeout path.",
+		"refs": [
+			"docs/notes-8.md"
+		]
+	},
+	"card-1946": {
+		"area": "Section 40",
+		"title": "Why Works",
+		"body": "Reads its settings from the config store at start.",
+		"refs": [
+			"docs/notes-9.md"
+		]
+	},
+	"card-1953": {
+		"area": "Section 40",
+		"title": "Why Partial",
+		"body": "Writes every event to the ledger.",
+		"refs": [
+			"docs/notes-3.md"
+		]
+	}
+}

@@ -182,7 +182,32 @@
     renderer() { return ""; },
   };
 
-  const extensions = [callout, mathBlock, commentBlock, footnoteDef, wikilink, highlight, commentInline, tag, mathInline, footnoteRef];
+  // Linen 2 (Lane F, BLK and NOTE): :w[Broken] is a status word; :note[term]{#id} opens the note with that id.
+  // blocks.js dresses both on the page.
+  const statusWord = {
+    name: "statusWord",
+    level: "inline",
+    start(src) { const i = near(src).indexOf(":w["); return i < 0 ? undefined : i; },
+    tokenizer(src) {
+      const m = /^:w\[([^\]\n]{1,40})\]/.exec(src);
+      return m && m[1].trim() ? { type: "statusWord", raw: m[0], word: m[1].trim() } : undefined;
+    },
+    renderer(t) { return `<span class="lw" data-w="${escapeHTML(t.word)}">${escapeHTML(t.word)}</span>`; },
+  };
+  const noteTerm = {
+    name: "noteTerm",
+    level: "inline",
+    start(src) { const i = near(src).indexOf(":note["); return i < 0 ? undefined : i; },
+    tokenizer(src) {
+      const m = /^:note\[([^\]\n]+)\]\{#([^}\s]+)\}/.exec(src);
+      return m ? { type: "noteTerm", raw: m[0], id: m[2], tokens: this.lexer.inlineTokens(m[1]) } : undefined;
+    },
+    renderer(t) { return `<span class="lnote" data-note="${escapeHTML(t.id)}" tabindex="0">${this.parser.parseInline(t.tokens)}</span>`; },
+  };
+
+  const extensions = [callout, mathBlock, commentBlock, footnoteDef, wikilink, highlight, commentInline, statusWord, noteTerm, tag, mathInline, footnoteRef];
+  // Fenced Loom blocks (BLK-2 to BLK-6): placeholders like diagrams, filled by blocks.js after sanitising.
+  const LOOM_BLOCKS = new Set(["tiles", "cards", "steps", "bar", "side"]);
 
   // A ```math fence is display math; a ```mermaid fence becomes a diagram placeholder; other code keeps
   // its language for the highlighter, which runs later and only near the screen.
@@ -191,6 +216,7 @@
       const lang = (token.lang || "").trim().split(/\s+/)[0].toLowerCase();
       if (lang === "math") return `<div class="math display" data-k="${stash(token.text)}"></div>\n`;
       if (lang === "mermaid") return `<div class="mermaid-src" data-k="${stash(token.text)}"></div>\n`;
+      if (LOOM_BLOCKS.has(lang)) return `<div class="lblk-src" data-lang="${lang}" data-k="${stash(token.text)}"></div>\n`;
       const label = lang ? `<span class="lang">${escapeHTML(lang)}</span>` : "";
       return `<pre class="code" data-lang="${escapeHTML(lang)}">${label}<code>${escapeHTML(token.text)}</code></pre>\n`;
     },

@@ -1,0 +1,210 @@
+/* Loom blocks in notes (PRD-2 BLK, WORDS, NOTE; syntax in docs/FORMAT.md). Tokens from page.css only: no colour is
+   written here, so Paper and Night come from the same variables. Status shapes are drawn in ink (--accent), so Night
+   draws them light; rust is for failure only and gains an ink hairline in Night (WORDS-2). */
+
+/* ---------- status words (WORDS-2): the word, backed by its shape ---------- */
+.lw {
+  display: inline-block; font: 500 10.5px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase;
+  padding: .42em .7em .32em; border: 1px solid var(--accent); border-radius: 2px; color: var(--head); background: var(--raised);
+  vertical-align: .14em; white-space: nowrap; unicode-bidi: isolate;
+}
+.lw.ar { letter-spacing: 0; text-transform: none; font-size: 12px; padding: .28em .7em .2em; }
+.lw.s-threads { padding-inline-start: 1.8em; background: repeating-linear-gradient(135deg, transparent 0 2.6px, var(--accent) 2.6px 3.6px) 0 0 / 1.05em 100% no-repeat, var(--raised); }
+[dir="rtl"] .lw.s-threads, .lw.s-threads:dir(rtl) { background-position: 100% 0, 0 0; }
+.lw.s-solid { background: var(--accent); color: var(--on-accent); }
+.lw.s-rust { background: var(--rust); border-color: var(--rust); color: var(--paper); }
+.lw.s-dashed { border-style: dashed; }
+.lw.s-dotted { border-style: dotted; border-width: 1.5px; }
+html[data-theme="night"] .lw.s-rust { border-color: var(--accent); }
+/* The quiet word (WORDS-1) reads as plain text: the usual state does not repeat as a pill. */
+.lw.quiet { border: 0; background: none; padding: 0; font: inherit; letter-spacing: 0; text-transform: none; color: inherit; vertical-align: baseline; }
+
+.lb-sw { display: inline-block; flex: none; width: 18px; height: 12px; box-sizing: border-box; border: 1.5px solid var(--accent); border-radius: 1px; background: var(--raised); vertical-align: -1px; }
+.lb-sw.s-threads { background: repeating-linear-gradient(135deg, transparent 0 3.2px, var(--accent) 3.2px 4.4px), var(--raised); }
+.lb-sw.s-solid { background: var(--accent); }
+.lb-sw.s-rust { background: var(--rust); border-color: var(--rust); }
+.lb-sw.s-dashed { border-style: dashed; background: transparent; }
+.lb-sw.s-dotted { border-style: dotted; border-width: 2px; background: transparent; }
+html[data-theme="night"] .lb-sw.s-rust { border-color: var(--accent); }
+
+/* ---------- blocks share the column; tiles and cards wrap on narrow widths ---------- */
+#doc > .blk[data-lblk] { container-type: inline-size; }
+#doc .lb { margin: 6px 0 22px; }
+
+/* tiles (BLK-2) */
+#doc .lb-tiles { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: 12px; }
+#doc .lt { position: relative; min-width: 0; display: flex; flex-direction: column; gap: 3px; padding: 12px 14px; background: var(--raised); border: 1px solid var(--line); border-radius: 2px; }
+#doc .lb-stat .lt-v { font: 300 34px/1.1 var(--serif); color: var(--head); overflow-wrap: anywhere; }
+#doc .lb-stat .lt-l { font: 400 13.5px/1.4 var(--sans); color: var(--text); display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+#doc .lb-fact .lt-l { font: 500 11px/1.3 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--quiet); display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+#doc .lb-fact .lt-l:dir(rtl) { letter-spacing: 0; text-transform: none; font-size: 12.5px; }
+#doc .lb-fact .lt-v { font: 500 17px/1.35 var(--sans); color: var(--head); margin-top: 2px; overflow-wrap: anywhere; }
+#doc .lt-v.lt-word { font-size: 0; line-height: 1; margin-top: 6px; }
+#doc .lt-v.lt-word .lw { font-size: 11px; }
+#doc .lt-l p, #doc .lt-v p { margin: 0; }
+@container (max-width: 560px) {
+  #doc .lb-tiles:not([style*="--cols:1"]) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  #doc .lb-stat .lt-v { font-size: 26px; }
+  #doc .lt { padding: 10px; }
+}
+@container (max-width: 300px) { #doc .lb-tiles { grid-template-columns: minmax(0, 1fr); } }
+
+/* cards (BLK-3) */
+#doc .lb-cards { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: 14px; }
+#doc .lc {
+  position: relative; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding: 14px; background: var(--raised);
+  border: 1px solid var(--line); border-radius: 2px; box-shadow: 0 1px 2px rgba(40, 71, 52, .08), 0 8px 20px rgba(40, 71, 52, .06);
+}
+html[data-theme="night"] #doc .lc { box-shadow: none; }
+#doc .lc-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 18px; }
+#doc .lc-n { font: 300 26px/1 var(--serif); color: var(--head); }
+#doc .lc-e { margin-inline-end: auto; }
+#doc .lc-n + .lc-e { margin-inline-start: 10px; }
+#doc .lc-t { font: 300 19px/1.25 var(--serif); color: var(--head); overflow-wrap: anywhere; }
+#doc .lc-b { font-size: 15px; line-height: 1.5; color: var(--text); }
+#doc .lc-b p, #doc .lc-b ul, #doc .lc-b ol { margin: 0 0 8px; }
+#doc .lc-b > :last-child { margin-bottom: 0; }
+#doc .lc-link { margin-top: auto; padding-top: 4px; font: 500 13.5px var(--sans); }
+#doc .lc.tone-tint { background: var(--wash); box-shadow: none; }
+#doc .lc.tone-ink { background: var(--accent); color: var(--on-accent); border-color: var(--accent); box-shadow: none; }
+#doc .lc.tone-ink .lc-t, #doc .lc.tone-ink .lc-n, #doc .lc.tone-ink .lc-b, #doc .lc.tone-ink a { color: var(--on-accent); }
+#doc .lc.tone-ink .eyebrow { color: var(--on-accent); opacity: .75; }
+#doc .lc.tone-ink a { border-bottom-color: var(--on-accent); }
+#doc .lc.tone-dashed { background: transparent; border: 1px dashed var(--edge); box-shadow: none; }
+#doc .lc.tone-sticky { background: var(--soft); border-color: transparent; box-shadow: none; min-height: 150px; }
+#doc .lc.tone-sticky .lc-t { font: 500 15px/1.35 var(--sans); }
+@container (max-width: 640px) { #doc .lb-cards:not([style*="--cols:1"]) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }
+@container (max-width: 380px) { #doc .lb-cards { grid-template-columns: minmax(0, 1fr); } }
+
+/* noted tiles and cards: the corner thread (NOTE-1) */
+#doc .noted[data-lnote]::after {
+  content: ""; position: absolute; inset-inline-end: 8px; bottom: 8px; width: 7px; height: 7px;
+  border-inline-end: 1.6px solid var(--accent); border-bottom: 1.6px solid var(--accent); pointer-events: none;
+}
+#doc .lc.tone-ink.noted[data-lnote]::after { border-color: var(--on-accent); }
+#doc [data-lnote] { outline: none; }
+#doc [data-lnote].on, #doc [data-lnote]:focus-visible { box-shadow: 0 0 0 1.5px var(--accent); }
+
+/* steps (BLK-4): Loom's stage strip; level: the woven meter; count: "12 of 37" */
+#doc .lb-steps { display: flex; gap: 3px; list-style: none; padding: 0; }
+#doc .lb-steps .ls {
+  flex: 1; min-width: 0; height: 44px; margin: 0; display: flex; align-items: center; padding: 0 8px 0 22px; background: var(--wash); color: var(--head);
+  clip-path: polygon(0 0, calc(100% - 11px) 0, 100% 50%, calc(100% - 11px) 100%, 0 100%, 11px 50%);
+}
+#doc .lb-steps .ls:first-child { padding-inline-start: 14px; clip-path: polygon(0 0, calc(100% - 11px) 0, 100% 50%, calc(100% - 11px) 100%, 0 100%); }
+/* Right to left: the strip runs from the right and its chevrons point left, whether the direction sits on the list or
+   on its block. */
+#doc [dir="rtl"] > .lb-steps .ls, #doc .lb-steps[dir="rtl"] .ls { padding: 0 22px 0 8px; clip-path: polygon(11px 0, 100% 0, calc(100% - 11px) 50%, 100% 100%, 11px 100%, 0 50%); }
+#doc [dir="rtl"] > .lb-steps .ls:first-child, #doc .lb-steps[dir="rtl"] .ls:first-child { padding-inline-start: 14px; clip-path: polygon(11px 0, 100% 0, 100% 100%, 11px 100%, 0 50%); }
+#doc .lb-steps .ls.past { background: var(--soft); }
+#doc .lb-steps .ls.cur { background: var(--accent); color: var(--on-accent); }
+#doc .ls-l { font: 500 10.5px/1.25 var(--sans); letter-spacing: .12em; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#doc [dir="rtl"] > .lb-steps .ls-l, #doc .lb-steps[dir="rtl"] .ls-l { letter-spacing: 0; text-transform: none; font-size: 12.5px; }
+@container (max-width: 420px) { #doc .lb-steps .ls { height: 38px; padding-inline: 16px 4px; } #doc .ls-l { font-size: 9px; letter-spacing: .06em; } }
+
+#doc .lb-level { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+#doc .lv-th { display: inline-flex; gap: 3px; }
+#doc .th { position: relative; display: inline-block; width: 12px; height: 12px; }
+#doc .th::before { content: ""; position: absolute; background: currentColor; border-radius: 2px; }
+#doc .th.h::before { left: 1px; right: 1px; top: 4.5px; height: 3px; }
+#doc .th.v::before { top: 1px; bottom: 1px; left: 4.5px; width: 3px; }
+#doc .th.done { color: var(--accent); }
+#doc .th.todo { color: var(--edge); }
+#doc .lb-level .lv-n { font: 500 13.5px var(--sans); color: var(--head); }
+#doc .lv-l { font-size: 15px; color: var(--text); }
+#doc .lb-count { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+#doc .lb-count .lv-n { font: 300 22px/1.2 var(--serif); color: var(--quiet); }
+#doc .lb-count .lv-n b { font: 300 42px/1 var(--serif); color: var(--head); }
+
+/* bar (BLK-6): segments by count; the word and count inside when they fit, else in the key, so colour is never the
+   only signal */
+#doc .lb-cap { font: 500 11px var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--quiet); margin-bottom: 8px; }
+#doc .bar-row { display: flex; gap: 2px; height: 30px; }
+#doc .bs {
+  flex-basis: 0; min-width: 6px; box-sizing: border-box; border: 1.5px solid var(--accent); border-radius: 1px; background: var(--raised);
+  font: 500 12px/27px var(--sans); color: var(--head); padding: 0 8px; white-space: nowrap; overflow: hidden;
+}
+#doc .bs-t { display: inline-block; vertical-align: top; }
+#doc .bs.s-threads { padding-inline-start: 20px; background: repeating-linear-gradient(135deg, transparent 0 4.5px, var(--accent) 4.5px 5.7px) 0 0 / 12px 100% no-repeat, var(--raised); }
+#doc .lb-bar[dir="rtl"] .bs.s-threads, #doc [dir="rtl"] .bs.s-threads { background-position: 100% 0, 0 0; }
+#doc .bs.s-solid { background: var(--accent); color: var(--on-accent); }
+#doc .bs.s-rust { background: var(--rust); border-color: var(--rust); color: var(--paper); }
+#doc .bs.s-dashed { border-style: dashed; background: transparent; }
+#doc .bs.s-dotted { border-style: dotted; border-width: 2px; background: transparent; }
+html[data-theme="night"] #doc .bs.s-rust { border-color: var(--accent); }
+#doc .bar-key { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; font: 500 13px var(--sans); color: var(--head); }
+#doc .bk { display: inline-flex; align-items: center; gap: 7px; }
+
+/* table marks (BLK-7): an anchored row, and quiet verdicts */
+#doc .lb-v { margin-inline-start: 6px; font: 500 .92em var(--sans); }
+#doc .lb-v.v-good::before { content: "✓"; color: var(--quiet); }
+#doc .lb-v.v-bad::before { content: "✕"; color: var(--rust); }
+html[data-theme="night"] #doc .lb-v.v-bad::before { color: var(--paper); }
+#doc tr:target td, #doc tr:target th { background: var(--wash); }
+
+/* notes on terms (NOTE-1) and footnote marks while their card is open (BLK-1) */
+#doc .lnote { border-bottom: 1px dotted var(--edge); cursor: default; outline: none; }
+#doc .lnote.on, #doc .lnote:focus-visible { background: var(--wash); }
+#doc sup.fnref a.on { background: var(--accent); color: var(--on-accent); border-radius: 2px; }
+
+/* ---------- the note card: solid paper beside the block, never over it ---------- */
+.lnote-card {
+  position: absolute; z-index: 8; box-sizing: border-box; padding: 14px 16px; background: var(--raised); color: var(--text);
+  border: 1px solid var(--line); border-radius: 2px; box-shadow: 0 14px 34px rgba(40, 71, 52, .18);
+  font: 400 14.5px/1.5 var(--body-face); text-align: start;
+}
+html[data-theme="night"] .lnote-card { box-shadow: 0 14px 34px rgba(0, 0, 0, .35); }
+.lnote-card .eyebrow { display: block; margin-bottom: 4px; }
+.lnote-card .ln-t { font: 300 22px/1.25 var(--serif); color: var(--head); margin: 2px 0 8px; }
+.lnote-card .ln-s { margin: 0 0 8px; }
+.lnote-card .ln-b p { margin: 0 0 10px; }
+.lnote-card .ln-b > :last-child, .lnote-card .ln-b li:last-child > p { margin-bottom: 0; }
+.lnote-card a { color: var(--head); text-decoration: none; border-bottom: 1px solid var(--edge); }
+.lnote-card code { font: 13px/1.5 var(--mono); background: var(--wash); padding: 1px 4px; border-radius: 2px; overflow-wrap: anywhere; }
+.lnote-card .ln-f { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 4px 0 10px; font-size: 13.5px; }
+.lnote-card .ln-f dt { color: var(--quiet); } .lnote-card .ln-f dd { margin: 0; }
+.lnote-card .ln-r { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; border-top: 1px solid var(--line); padding-top: 10px; margin-top: 4px; }
+.lnote-card .ln-r .eyebrow { margin-bottom: 2px; }
+.lnote-card code.ln-ref { background: none; padding: 0; color: var(--head); cursor: copy; direction: ltr; unicode-bidi: isolate; }
+.lnote-card code.ln-ref[data-copied]::after { content: "  " attr(data-copied); font: 500 12px var(--sans); color: var(--quiet); }
+
+/* ---------- the legend (WORDS-3): the words this note uses, once, under the header ---------- */
+#note-header .lb-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: -10px 0 24px; font: 400 13px/1.4 var(--sans); color: var(--text); }
+#note-header .lb-legend .lg { display: inline-flex; align-items: center; gap: 7px; }
+#note-header .lb-legend b { font-weight: 500; color: var(--head); }
+#note-header .lb-legend i { font-style: normal; color: var(--quiet); }
+#note-header .lead + .lb-legend { margin-top: -14px; }
+
+/* ---------- page layouts (BLK-0) ---------- */
+#note-header .lead { font: 400 19px/1.55 var(--body-face); color: var(--text); margin: -8px 0 26px; }
+/* wide: Loom's 1180 px page; prose keeps its measure, blocks, tables and code take the width */
+#pane.lb-wide #doc > .blk.wide { max-width: min(1180px, 100%); }
+/* sheet: wide with a 320 px side column for side blocks, once the window has room for both */
+#pane.lb-sheet { container-type: inline-size; }
+@container (min-width: 1000px) {
+  #pane.lb-sheet #note-header, #pane.lb-sheet #doc { max-width: 1180px; margin-inline: auto; }
+  #pane.lb-sheet #doc { padding-inline-end: 360px; }
+  #pane.lb-sheet #doc > .blk { margin-inline-start: 0; }
+  #pane.lb-sheet #doc > .blk.wide { max-width: 100%; }
+  #pane.lb-sheet #doc > .blk.side { float: inline-end; clear: inline-end; width: 320px; max-width: none; margin-inline-end: -360px; margin-inline-start: 0; }
+}
+#doc .lb-side { font-size: 15px; line-height: 1.55; color: var(--text); border-inline-start: 2px solid var(--line); padding-inline-start: 14px; margin: 4px 0 18px; }
+#doc .lb-side > :last-child { margin-bottom: 0; }
+
+/* ---------- the numbered sources: print and PDF only (NOTE-3) ---------- */
+#doc .lnotes { border-top: 1px solid var(--line); margin-top: 30px; padding-top: 10px; font-size: 15px; }
+#doc .lnotes > .eyebrow { margin-bottom: 8px; }
+#doc .lnotes ol { padding-inline-start: 22px; }
+#doc .lnotes li { margin: 0 0 10px; }
+#doc .lnotes .ln-t { font-weight: 500; color: var(--head); }
+#doc .lnotes .ln-r { display: flex; flex-direction: column; gap: 2px; }
+#doc .lnotes .ln-r .eyebrow { display: none; }
+#doc .lnotes code.ln-ref { font-size: 12.5px; background: none; padding: 0; }
+@media print {
+  #doc > .lnotes-blk[hidden] { display: block !important; }
+  #doc .lnote-num[hidden] { display: inline !important; font: 500 .68em var(--sans); vertical-align: super; margin-inline-start: 1px; }
+  .lnote-card { display: none !important; }
+  #doc .lc { box-shadow: none; }
+  #doc .lb, #doc .lt, #doc .lc { break-inside: avoid; }
+  #pane.lb-sheet #doc > .blk.side { float: none; width: auto; margin: 0 0 14px; }
+}

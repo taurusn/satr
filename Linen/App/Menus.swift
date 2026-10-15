@@ -14,6 +14,7 @@ enum Menus {
         appMenu.addItem(.separator())
         add(appMenu, String(localized: "Settings…"), #selector(AppDelegate.showSettings(_:)), ",", target: app)
         add(appMenu, String(localized: "Make Linen the Default Reader…"), #selector(AppDelegate.makeDefaultReader(_:)), "", target: app)
+        add(appMenu, String(localized: "Install Command for Agents…"), #selector(AppDelegate.installCommand(_:)), "", target: app)
         appMenu.addItem(.separator())
         appMenu.addItem(withTitle: String(localized: "Hide Linen"), action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
         add(appMenu, String(localized: "Hide Others"), #selector(NSApplication.hideOtherApplications(_:)), "h", [.command, .option])
@@ -37,6 +38,7 @@ enum Menus {
         add(file, String(localized: "Open in Editor"), #selector(DocumentWindow.openInEditor(_:)), "e", [.command, .shift])
         add(file, String(localized: "Reveal in Finder"), #selector(DocumentWindow.revealInFinder(_:)), "r", [.command, .shift])
         file.addItem(.separator())
+        add(file, String(localized: "Export…"), #selector(DocumentWindow.exportDocument(_:)), "e", [.command, .option])
         add(file, String(localized: "Page Setup…"), #selector(NSApplication.runPageLayout(_:)), "p", [.command, .shift])
         add(file, String(localized: "Print…"), #selector(DocumentWindow.printDocument(_:)), "p")
 
@@ -63,6 +65,9 @@ enum Menus {
         view.items.last?.isHidden = true
         add(view, String(localized: "Smaller Text"), #selector(DocumentWindow.zoomOut(_:)), "-")
         add(view, String(localized: "Actual Size"), #selector(DocumentWindow.zoomReset(_:)), "0")
+        add(view, String(localized: "Zoom to 100%"), #selector(DocumentWindow.zoomActual(_:)), "1")
+        add(view, String(localized: "As List"), #selector(DocumentWindow.toggleList(_:)), "l", [.command, .option])
+        add(view, String(localized: "Run Page Scripts"), #selector(DocumentWindow.togglePageScripts(_:)), "")
         view.addItem(.separator())
         let encodingItem = NSMenuItem(title: String(localized: "Text Encoding"), action: nil, keyEquivalent: "")
         let encodings = NSMenu(title: String(localized: "Text Encoding"))

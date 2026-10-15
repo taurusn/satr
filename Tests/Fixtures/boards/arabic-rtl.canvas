@@ -1,0 +1,16 @@
+{
+	"nodes":[
+		{"id":"s1","type":"group","x":0,"y":0,"width":1000,"height":400,"label":"الواجهة"},
+		{"id":"a1","type":"text","text":"## البوابة\n\nتوجه الطلبات.","x":40,"y":60,"width":280,"height":120},
+		{"id":"a2","type":"text","text":"## الطابور\n\nيرتب المهام.","x":360,"y":60,"width":280,"height":120},
+		{"id":"a3","type":"text","text":"## السجل\n\nيحفظ الأحداث.","x":680,"y":60,"width":280,"height":120},
+		{"id":"a4","type":"text","text":"## التقارير\n\nتلخص الأسبوع.","x":680,"y":220,"width":280,"height":120},
+		{"id":"s2","type":"group","x":0,"y":600,"width":1000,"height":300,"label":"النواة"},
+		{"id":"a5","type":"text","text":"## المخزن\n\nيحفظ الملفات.","x":360,"y":660,"width":280,"height":120}
+	],
+	"edges":[
+		{"id":"r1","fromNode":"a3","toNode":"a2"},
+		{"id":"r2","fromNode":"a2","toNode":"a1"}
+	],
+	"linen":{"dir":"rtl","title":"خريطة النظام"}
+}

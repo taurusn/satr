@@ -248,12 +248,24 @@
 
     const blocks = [];
     let line = 1 + fm.lines;
+    const fnDefs = [];
     for (const t of tokens) {
       const raw = t.raw || "";
       const start = line;
       line += countLines(raw);
-      if (t.type === "space" || t.type === "footnoteDef" || t.type === "def" || t.type === "commentBlock") continue;
+      if (t.type === "footnoteDef") { fnDefs.push({ raw, start, end: start + countLines(raw.replace(/\n+$/, "")) }); continue; }
+      if (t.type === "space" || t.type === "def" || t.type === "commentBlock") continue;
       for (const piece of chunk(t, start)) blocks.push(piece);
+    }
+    // The footnotes, lifted to the end of the page, are one source-backed block (Linen 2, BLK-1): its hash covers the
+    // definitions and the order the text numbers them in, so an edited note is marked, a reader's place inside the
+    // list holds, and `linen open --line` reaches a definition.
+    if (footnoteDefs.length) {
+      const order = footnoteDefs.map((d) => `${d.id}=${footnotes[d.id]}`).join(",");
+      // Every definition counts, nested ones too, so editing any of them changes this block.
+      const body = footnoteDefs.map((d) => d.raw || "").join("");
+      const lines = fnDefs.length ? [fnDefs[0].start, fnDefs[fnDefs.length - 1].end] : [line, line];
+      blocks.push({ kind: "md", token: { type: "footnoteList", raw: body }, hash: hash("footnotes\u0000" + order + "\u0000" + body), lines });
     }
     return { blocks, yaml: fm.yaml, links: tokens.links || {}, footnotes, footnoteDefs, logLike: false };
   }

@@ -1,0 +1,13 @@
+{
+	"nodes":[
+		{"type":"text","text":"No id","x":0,"y":0,"width":200,"height":100},
+		{"id":"","type":"text","text":"Empty id","x":320,"y":0,"width":280,"height":140},
+		{"id":"a","type":"text","text":"First a","x":0,"y":200,"width":280,"height":140},
+		{"id":"a","type":"text","text":"Second a","x":320,"y":200,"width":280,"height":140},
+		{"id":"b","type":"text","text":"B","x":640,"y":200,"width":280,"height":140}
+	],
+	"edges":[
+		{"id":"dup","fromNode":"a","toNode":"b"},
+		{"id":"dup","fromNode":"b","toNode":"a"}
+	]
+}

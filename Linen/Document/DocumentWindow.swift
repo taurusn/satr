@@ -8,12 +8,15 @@ import WebKit
 @MainActor
 final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDelegate, NSToolbarDelegate, NSMenuItemValidation {
     private(set) var url: URL
-    private var vault: Vault
+    private(set) var vault: Vault
     private var index: VaultIndex
     private(set) var web: WKWebView!
     private let local = LocalScheme()
     private let remote = RemoteScheme()
     private var watcher: FileWatcher?
+    /// A board's sidecar notes (`map.canvas.notes.json`, NOTE-2), watched beside it so a note change redraws the board.
+    private var sidecarWatcher: FileWatcher?
+    private(set) var sidecarText: String?
     private var encoding: String.Encoding?
     private var encodingNote: String?
     private var rawData: Data?
@@ -27,6 +30,14 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
     private var forward: [Step] = []
     private var pendingPlace: [String: Any]?
     private var pendingHeading: String?
+    /// A node or line `linen open` asked for, shown once the document has rendered (CLI-6, BRD-26).
+    private var pendingReveal: [String: Any]?
+    /// On a board, the view the page last reported at rest (selected node, node in view, unread changes), for agents (MCP-9).
+    private(set) var lastView: [String: Any]?
+    /// An `.html` tab shows a sealed page (PAGE-1 to PAGE-12) instead of the note renderer.
+    private(set) var pageController: SealedPageController?
+    private var lastPageFind = ""
+    private var pageWatch: Timer?
     private var outlineShown = Settings.outlineShown
     private var zoom: Double = Settings.defaultZoom
     private var outsideAllowed: [String: FileID] = [:]
@@ -82,6 +93,7 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
     func build() {
         guard !built, let window else { return }
         built = true
+        if kind == .page { buildPage(in: window); return }
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .nonPersistent()
         config.preferences.javaScriptCanOpenWindowsAutomatically = false
@@ -108,7 +120,79 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
         startWatching()
     }
 
+    /// A sealed page: its own web view, scheme handlers and data store, never shared with notes or boards (PAGE-1).
+    private func buildPage(in window: NSWindow) {
+        let c = SealedPageController(url: url, theme: Settings.theme(for: window.effectiveAppearance))
+        c.onTitle = { [weak self] t in self?.updateTitle(t) }
+        // Links a page may open in Linen still pass Linen's one link gate (SAFE-4), always into a tab of their own.
+        c.onOpenInLinen = { [weak self] u, _ in self?.openLocalFile(u, newTab: true, place: nil, heading: nil) }
+        pageController = c
+        c.view.frame = window.contentView?.bounds ?? .zero
+        c.view.autoresizingMask = [.width, .height]
+        window.contentView = c.view
+        watchPage()
+        Library.shared.noteOpened(url)
+        NowState.changed()
+    }
+
+    /// A page is watched by its metadata only: the sealed scheme is the one thing that reads its bytes (with its
+    /// 50 MB limit), so a huge file can never be pulled into Linen by the watcher. A change reloads once it settles.
+    private func watchPage() {
+        pageWatch?.invalidate()
+        var last = Self.signature(url)
+        var pending = false
+        pageWatch = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, self.kind == .page else { return }
+                let now = Self.signature(self.url)
+                if now == nil { if self.fileState == nil { self.showState(Self.goneState(for: self.url)) }; return }
+                if self.fileState != nil { self.clearState(); pending = true }
+                if now != last { last = now; pending = true; return }   // still changing: wait for it to settle
+                if pending { pending = false; self.pageController?.reload() }
+            }
+        }
+    }
+
+    private static func signature(_ u: URL) -> [Int]? {
+        var st = stat()
+        guard stat(u.path, &st) == 0 else { return nil }
+        return [Int(st.st_ino), Int(st.st_size), Int(st.st_mtimespec.tv_sec), Int(st.st_mtimespec.tv_nsec)]
+    }
+
+    /// Paper or Night for a page, when the setting or the system look changes (PAGE-4).
+    func applyPageTheme() {
+        guard let pageController, let window else { return }
+        pageController.setTheme(Settings.theme(for: window.effectiveAppearance))
+    }
+
+    @objc func togglePageScripts(_ sender: Any?) {
+        guard let pageController else { NSSound.beep(); return }
+        pageController.runScripts(!pageController.scriptsOn)
+    }
+
+    private func findInPage(backwards: Bool, ask: Bool) {
+        guard let pageController, let window else { return }
+        if ask || lastPageFind.isEmpty {
+            let alert = NSAlert()
+            alert.messageText = String(localized: "Find in Page")
+            let field = NSSearchField(frame: NSRect(x: 0, y: 0, width: 260, height: 24))
+            field.stringValue = lastPageFind
+            alert.accessoryView = field
+            alert.addButton(withTitle: String(localized: "Find"))
+            alert.addButton(withTitle: String(localized: "Cancel"))
+            alert.window.initialFirstResponder = field
+            alert.beginSheetModal(for: window) { [weak self] r in
+                guard r == .alertFirstButtonReturn, let self else { return }
+                self.lastPageFind = field.stringValue
+                Task { @MainActor in if !(await pageController.find(self.lastPageFind, backwards: backwards)) { NSSound.beep() } }
+            }
+            return
+        }
+        Task { @MainActor in if !(await pageController.find(lastPageFind, backwards: backwards)) { NSSound.beep() } }
+    }
+
     private func startWatching() {
+        if kind == .page { watchPage(); return }   // pages: metadata only, never their bytes
         watcher?.stop()
         watcher = nil
         haveContent = false
@@ -130,12 +214,58 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
         }
         watcher = w
         w.start()
+        startSidecar()
+    }
+
+    /// A file and its sidecars travel together (NOTE-2): a board or a note watches its notes file
+    /// (`map.canvas.notes.json`, `report.md.notes.json`), present or not.
+    private func startSidecar() {
+        sidecarWatcher?.stop()
+        sidecarWatcher = nil
+        sidecarText = nil
+        guard kind == .board || (kind == .note && !isPlain) else { return }
+        let s = FileWatcher(url: URL(fileURLWithPath: url.path + ".notes.json")) { [weak self] event in
+            MainActor.assumeIsolated { self?.sidecarEvent(event) }
+        }
+        sidecarWatcher = s
+        s.start()
+    }
+
+    private func sidecarEvent(_ event: FileWatcher.Event) {
+        switch event {
+        case let .content(data, generation, inBurst):
+            let fresh = TextDecoder.decode(data, override: nil).text
+            guard fresh != sidecarText else { return }
+            sidecarText = fresh
+            // The notes' first read can land after the board has loaded without them: that is a change too.
+            if haveContent, pageReady, !inBurst { sendUpdate(inBurst: false) }
+            _ = generation
+        case .missing, .unreadable:
+            guard sidecarText != nil else { return }
+            sidecarText = nil
+            if haveContent, pageReady { sendUpdate(inBurst: false) }
+        case .quiet, .moved:
+            break
+        }
+    }
+
+    private func sendUpdate(inBurst: Bool) {
+        version += 1
+        var msg: [String: Any] = ["type": "update", "docId": docID, "text": text, "sidecar": sidecarText ?? NSNull(), "inBurst": inBurst, "version": version, "meta": meta()]
+        if kind == .board { msg["kind"] = "board" }
+        send(msg)
     }
 
     private func fileEvent(_ event: FileWatcher.Event) {
         switch event {
         case let .content(data, generation, inBurst):
             clearState()
+            // A page reloads itself from disk through its sealed scheme, holding its scroll (PAGE-5).
+            if kind == .page {
+                if haveContent && generation > 0 && !inBurst { pageController?.reload() }
+                haveContent = true
+                return
+            }
             rawData = data
             let decoded = TextDecoder.decode(data, override: encoding ?? EncodingChoice.stored(for: url))
             if encoding == nil {
@@ -147,8 +277,7 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
                 haveContent = true
                 if pageReady { sendLoad() }
             } else if pageReady {
-                version += 1
-                send(["type": "update", "text": text, "inBurst": inBurst, "version": version, "meta": meta()])
+                sendUpdate(inBurst: inBurst)
             }
             // The index catches up once writes settle; a burst marks it out of date until then.
             if inBurst { indexDirty = true } else { indexDirty = false; let u = url; Task { await index.update(changed: [u]) } }
@@ -171,6 +300,7 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
             }
             updateTitle(nil)
             onChange?()
+            startSidecar()   // the notes file travels with the board's new name
             let new = url, newIndex = index, oldIndex = Library.shared.index(for: VaultLocator.vault(for: old))
             Task {
                 await oldIndex.update(changed: [old])
@@ -184,6 +314,20 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
 
     private var isPlain: Bool { url.pathExtension.lowercased() == "txt" }
 
+    /// What a tab shows: a note (Markdown or text), a board (JSON Canvas) or a sealed page (HTML).
+    enum Kind { case note, board, page }
+
+    static func kind(of u: URL) -> Kind? {
+        switch u.pathExtension.lowercased() {
+        case "md", "markdown", "mdown", "mkd", "txt": .note
+        case "canvas": .board
+        case "html", "htm": .page
+        default: nil
+        }
+    }
+
+    var kind: Kind { Self.kind(of: url) ?? .note }
+
     private func sendLoad() {
         local.reset()
         remote.allowed = Settings.remoteImagesAlways || remoteApproved
@@ -194,7 +338,20 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
             "version": version, "allowRemote": remote.allowed, "meta": meta(),
         ]
         let stored = Library.shared.places.place(for: url)
-        if let p = pendingPlace { msg["place"] = p } else if let p = stored {
+        // The notes are read before the first load, so a board never loads without them and then "changes" when they
+        // arrive (that made false change marks on a first open; Codex verification 2).
+        if sidecarText == nil, kind == .board || (kind == .note && !isPlain),
+           let data = try? Data(contentsOf: URL(fileURLWithPath: url.path + ".notes.json")) {
+            sidecarText = TextDecoder.decode(data, override: nil).text
+        }
+        msg["sidecar"] = sidecarText ?? NSNull()
+        if kind == .board {
+            msg["kind"] = "board"
+            msg["refPath"] = Self.referencePath(for: url)
+            if let p = pendingPlace { msg["place"] = p } else if let b = stored?.board {
+                msg["place"] = ["kind": "board", "cx": b.cx, "cy": b.cy, "zoom": b.zoom, "node": b.node ?? NSNull(), "mode": b.mode]
+            }
+        } else if let p = pendingPlace { msg["place"] = p } else if let p = stored {
             msg["place"] = ["hash": p.blockHash, "index": p.blockIndex, "offset": p.offset, "quote": p.quote, "atEnd": p.atEnd]
             msg["grown"] = p.atEnd
         }
@@ -250,7 +407,11 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
 
     fileprivate func received(_ body: Any) {
         guard let msg = body as? [String: Any], let type = msg["type"] as? String else { return }
+        // A message from the document this tab showed before a navigation is about that one, never this one.
+        if ["rendered", "view", "place", "baseline", "openReference"].contains(type), let d = msg["docId"] as? String, d != docID { return }
         switch type {
+        case "openReference":
+            openReference(msg["path"] as? String ?? "", line: msg["line"] as? Int)
         case "ready":
             Log.write("page ready for \(url.lastPathComponent)")
             pageReady = true
@@ -262,6 +423,13 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
         case "rendered":
             updateTitle(msg["title"] as? String)
             if let h = pendingHeading { pendingHeading = nil; send(["type": "command", "name": "heading", "text": h]) }
+            if let r = pendingReveal { pendingReveal = nil; send(r) }
+            NowState.changed()
+        case "view":
+            var v = msg
+            v.removeValue(forKey: "type")
+            lastView = v
+            NowState.changed()
         case "place":
             if let p = msg["place"] as? [String: Any] { storePlace(p) }
         case "baseline":
@@ -305,6 +473,13 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
     }
 
     private func storePlace(_ p: [String: Any]) {
+        if p["kind"] as? String == "board" {
+            guard let cx = p["cx"] as? Double, let cy = p["cy"] as? Double, let z = p["zoom"] as? Double else { return }
+            let node = p["node"] as? String
+            let view = BoardView(cx: cx, cy: cy, zoom: z, node: node, mode: p["mode"] as? String ?? "canvas")
+            Library.shared.places.set(Place(blockHash: node ?? "", blockIndex: 0, offset: 0, quote: "", zoom: zoom, atEnd: false, date: Date(), board: view), for: url)
+            return
+        }
         guard let hash = p["hash"] as? String else { return }
         let place = Place(blockHash: hash, blockIndex: p["index"] as? Int ?? 0, offset: p["offset"] as? Double ?? 0,
                           quote: p["quote"] as? String ?? "", zoom: zoom, atEnd: p["atEnd"] as? Bool ?? false, date: Date())
@@ -394,11 +569,13 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
         if alert.runModal() == .alertFirstButtonReturn { NSWorkspace.shared.open(u) }
     }
 
-    static func isReadable(_ u: URL) -> Bool { ["md", "markdown", "mdown", "mkd", "txt"].contains(u.pathExtension.lowercased()) }
+    static func isReadable(_ u: URL) -> Bool { kind(of: u) != nil }
 
     /// Follows a link in this tab (adding a back step) or in a new tab beside it.
     func navigate(to dest: URL, newTab: Bool, place: [String: Any]?, heading: String?) {
-        if newTab {
+        // A page tab shows one page for its life (its seal is built for that file and folder), so anything opened from
+        // it, and any page opened from a note or board, goes into a tab beside this one (PAGE-1).
+        if newTab || kind == .page || Self.kind(of: dest) == .page {
             (NSApp.delegate as? AppDelegate)?.open(dest, besides: self)
             return
         }
@@ -416,6 +593,7 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
             encoding = nil
             encodingNote = nil
             docID = UUID().uuidString
+            lastView = nil
             outsideAllowed.removeAll()
             remoteApproved = false
             rawData = nil
@@ -433,7 +611,52 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
         }
     }
 
+    /// A source in a note card (`path:line`, BRD-6) opens in the editor, only when it resolves inside this file's vault or
+    /// git repository; anything else is refused.
+    private func openReference(_ path: String, line: Int?) {
+        guard !path.isEmpty else { return }
+        var root = vault.root.standardizedFileURL
+        var dir = url.deletingLastPathComponent()
+        while dir.path != "/" {
+            if FileManager.default.fileExists(atPath: dir.appendingPathComponent(".git").path) { root = dir; break }
+            dir = dir.deletingLastPathComponent()
+        }
+        let expanded = (path as NSString).expandingTildeInPath
+        let target = (expanded.hasPrefix("/") ? URL(fileURLWithPath: expanded) : root.appendingPathComponent(expanded)).standardizedFileURL.resolvingSymlinksInPath()
+        let base = root.resolvingSymlinksInPath().path
+        guard target.path.hasPrefix(base + "/"), FileManager.default.fileExists(atPath: target.path) else { NSSound.beep(); return }
+        if Self.kind(of: target) != nil {
+            // A note, board or page opens in Linen, at the line when one is given.
+            let doc = (NSApp.delegate as? AppDelegate)?.open(target, besides: self)
+            if let line { doc?.reveal(node: nil, line: line) }
+        } else {
+            Editors.open(target, vault: vault)   // other files open in the editor (no line: editors take it differently)
+        }
+    }
+
+    /// Shows a board's node or a note's line, now if the document has rendered, else when it does.
+    func reveal(node: String?, line: Int?) {
+        var msg: [String: Any]
+        if let node, kind == .board { msg = ["type": "command", "name": "goNode", "id": node] }
+        else if let line, kind == .note { msg = ["type": "command", "name": "line", "line": line] }
+        else { return }
+        msg["select"] = true
+        if pageReady && haveContent { send(msg) } else { pendingReveal = msg }
+    }
+
     @objc func goBack(_ sender: Any?) {
+        // On a board, Back first returns to the previous view (BRD-7), then to the previous file.
+        if kind == .board {
+            Task { @MainActor in
+                if (await command("back") as? Bool) == true { return }
+                self.goBackInFiles()
+            }
+            return
+        }
+        goBackInFiles()
+    }
+
+    private func goBackInFiles() {
         guard let step = back.popLast() else { NSSound.beep(); return }
         Task { @MainActor in
             let here = await command("place") as? [String: Any]
@@ -636,9 +859,9 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
 
     // MARK: Menu actions
 
-    @objc func showFind(_ sender: Any?) { Task { _ = await command("find") } }
-    @objc func findNextMatch(_ sender: Any?) { Task { _ = await command("findNext") } }
-    @objc func findPreviousMatch(_ sender: Any?) { Task { _ = await command("findPrevious") } }
+    @objc func showFind(_ sender: Any?) { if kind == .page { findInPage(backwards: false, ask: true) } else { Task { _ = await command("find") } } }
+    @objc func findNextMatch(_ sender: Any?) { if kind == .page { findInPage(backwards: false, ask: false) } else { Task { _ = await command("findNext") } } }
+    @objc func findPreviousMatch(_ sender: Any?) { if kind == .page { findInPage(backwards: true, ask: false) } else { Task { _ = await command("findPrevious") } } }
     @objc func findSelection(_ sender: Any?) { Task { _ = await command("findSelection") } }
     @objc func nextChange(_ sender: Any?) { Task { if (await command("nextChange") as? Bool) != true { NSSound.beep() } } }
     @objc func previousChange(_ sender: Any?) { Task { if (await command("previousChange") as? Bool) != true { NSSound.beep() } } }
@@ -654,21 +877,32 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
         send(["type": "command", "name": "outline", "show": outlineShown, "overlay": width < 220 + 640 + 80])
     }
 
-    @objc func zoomIn(_ sender: Any?) { setZoom(zoom + 0.1) }
-    @objc func zoomOut(_ sender: Any?) { setZoom(zoom - 0.1) }
-    @objc func zoomReset(_ sender: Any?) { setZoom(Settings.defaultZoom) }
+    // On a board ⌘+ and ⌘− zoom the board, ⌘0 fits it and ⌘1 shows it at 100 percent (BRD-7); on a note they set text size.
+    @objc func zoomIn(_ sender: Any?) { kind == .board ? boardCommand("zoomIn") : setZoom(zoom + 0.1) }
+    @objc func zoomOut(_ sender: Any?) { kind == .board ? boardCommand("zoomOut") : setZoom(zoom - 0.1) }
+    @objc func zoomReset(_ sender: Any?) { kind == .board ? boardCommand("fit") : setZoom(Settings.defaultZoom) }
+    @objc func zoomActual(_ sender: Any?) { boardCommand("zoom100") }
+    @objc func toggleList(_ sender: Any?) { boardCommand("toggleList") }
+    private func boardCommand(_ name: String) { Task { _ = await command(name) } }
     private func setZoom(_ z: Double) {
         zoom = min(2.0, max(0.7, (z * 10).rounded() / 10))
         web?.pageZoom = zoom
         Task { if let p = await command("place") as? [String: Any] { storePlace(p) } }
     }
 
-    @objc func reloadDocument(_ sender: Any?) { startWatching() }
+    @objc func reloadDocument(_ sender: Any?) { if kind == .page { pageController?.reload() } else { startWatching() } }
     @objc func revealInFinder(_ sender: Any?) { NSWorkspace.shared.activateFileViewerSelecting([url]) }
     @objc func openInEditor(_ sender: Any?) { Editors.open(url, vault: vault) }
 
     @objc func copyReference(_ sender: Any?) {
         Task { @MainActor in
+            // A board builds its own reference (BRD-26: path#id, the line range, its sidecar key and its text).
+            if kind == .board {
+                guard let r = await command("copyReference", ["refPath": Self.referencePath(for: url)]) as? [String: Any], let t = r["text"] as? String else { NSSound.beep(); return }
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(t, forType: .string)
+                return
+            }
             guard let r = await command("copyReference") as? [String: Any], let start = r["start"] as? Int, let end = r["end"] as? Int else { NSSound.beep(); return }
             let lines = text.components(separatedBy: "\n")
             let lo = max(1, start), hi = min(lines.count, max(start, end))
@@ -691,6 +925,10 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
     }
 
     @objc func printDocument(_ sender: Any?) {
+        if kind == .page, let window, let op = pageController?.printOperation(with: NSPrintInfo.shared) {
+            op.runModal(for: window, delegate: nil, didRun: nil, contextInfo: nil)
+            return
+        }
         guard let window, let web else { return }
         Task { @MainActor in
             let info = await command("prepareForPrint") as? [String: Any]
@@ -700,8 +938,18 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
     }
 
     func validateMenuItem(_ item: NSMenuItem) -> Bool {
+        // Page tabs first: the note-only commands are off there, never silently doing nothing.
+        if kind == .page {
+            switch item.action {
+            case #selector(toggleOutline(_:)), #selector(copyReference(_:)), #selector(zoomIn(_:)), #selector(zoomOut(_:)),
+                 #selector(zoomReset(_:)), #selector(zoomActual(_:)), #selector(toggleList(_:)), #selector(findSelection(_:)),
+                 #selector(showProperties(_:)), #selector(chooseEncoding(_:)), #selector(nextChange(_:)), #selector(previousChange(_:)):
+                return false
+            default: break
+            }
+        }
         switch item.action {
-        case #selector(goBack(_:)): return !back.isEmpty
+        case #selector(goBack(_:)): return !back.isEmpty || kind == .board
         case #selector(goForward(_:)): return !forward.isEmpty
         case #selector(toggleOutline(_:)):
             item.title = outlineShown ? String(localized: "Hide Outline") : String(localized: "Show Outline")
@@ -709,7 +957,26 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
         case #selector(chooseEncoding(_:)):
             let mine = (item.representedObject as? UInt).map { String.Encoding(rawValue: $0) }
             item.state = mine == encodingChoice ? .on : .off
-            return rawData != nil
+            return rawData != nil && kind == .note
+        case #selector(zoomActual(_:)), #selector(toggleList(_:)):
+            return kind == .board
+        case #selector(togglePageScripts(_:)):
+            item.title = pageController?.scriptsOn == true ? String(localized: "Turn Off Page Scripts") : String(localized: "Run Page Scripts")
+            return kind == .page
+        case #selector(toggleOutline(_:)) where kind == .page, #selector(copyReference(_:)) where kind == .page,
+             #selector(zoomIn(_:)) where kind == .page, #selector(zoomOut(_:)) where kind == .page, #selector(zoomReset(_:)) where kind == .page:
+            return false
+        case #selector(zoomIn(_:)):
+            item.title = kind == .board ? String(localized: "Zoom In") : String(localized: "Larger Text")
+            return true
+        case #selector(zoomOut(_:)):
+            item.title = kind == .board ? String(localized: "Zoom Out") : String(localized: "Smaller Text")
+            return true
+        case #selector(zoomReset(_:)):
+            item.title = kind == .board ? String(localized: "Zoom to Fit") : String(localized: "Actual Size")
+            return true
+        case #selector(showProperties(_:)):
+            return kind == .note
         default: return true
         }
     }
@@ -720,6 +987,7 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
         build()
         send(["type": "focus", "key": true])
         keepTabBarVisible()
+        NowState.changed()
     }
 
     func windowDidResignKey(_ notification: Notification) {
@@ -749,10 +1017,22 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
 
     private func unload() {
         guard built else { return }
+        // An idle page tab lets its page go too: its scripts, watchdog and web content process (built again on return).
+        if kind == .page {
+            pageWatch?.invalidate()
+            pageWatch = nil
+            pageController?.close()
+            pageController?.view.removeFromSuperview()
+            pageController = nil
+            built = false
+            return
+        }
         Task { @MainActor in
             if let p = await command("place") as? [String: Any] { storePlace(p) }
             watcher?.stop()
             watcher = nil
+            sidecarWatcher?.stop()
+            sidecarWatcher = nil
             remote.close()
             web?.removeFromSuperview()
             web = nil
@@ -769,9 +1049,16 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
         }
         watcher?.stop()
         watcher = nil
+        sidecarWatcher?.stop()
+        sidecarWatcher = nil
         stopStateTimer()
         remote.close()
+        pageWatch?.invalidate()
+        pageWatch = nil
+        pageController?.close()
+        pageController = nil
         onClose?(self)
+        NowState.changed()
     }
 
     private func keepTabBarVisible() {

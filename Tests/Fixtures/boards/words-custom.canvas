@@ -1,0 +1,85 @@
+{
+	"nodes":[
+		{
+			"id":"live1",
+			"type":"text",
+			"text":"## live1\n\nState Live",
+			"x":0,
+			"y":0,
+			"width":280,
+			"height":140,
+			"linen":{"word":"Live"}
+		},
+		{
+			"id":"live2",
+			"type":"text",
+			"text":"## live2\n\nState Live",
+			"x":320,
+			"y":0,
+			"width":280,
+			"height":140,
+			"linen":{"word":"Live"}
+		},
+		{
+			"id":"shaky",
+			"type":"text",
+			"text":"## shaky\n\nState Shaky",
+			"x":640,
+			"y":0,
+			"width":280,
+			"height":140,
+			"linen":{"word":"Shaky"}
+		},
+		{
+			"id":"down",
+			"type":"text",
+			"text":"## down\n\nState Down",
+			"x":960,
+			"y":0,
+			"width":280,
+			"height":140,
+			"linen":{"word":"Down"}
+		},
+		{
+			"id":"idea",
+			"type":"text",
+			"text":"## idea\n\nState Idea",
+			"x":0,
+			"y":200,
+			"width":280,
+			"height":140,
+			"linen":{"word":"Idea"}
+		},
+		{
+			"id":"stop",
+			"type":"text",
+			"text":"## stop\n\nState متوقف",
+			"x":320,
+			"y":200,
+			"width":280,
+			"height":140,
+			"linen":{"word":"متوقف"}
+		},
+		{
+			"id":"hot",
+			"type":"text",
+			"text":"## hot\n\nState Hot",
+			"x":640,
+			"y":200,
+			"width":280,
+			"height":140,
+			"linen":{"word":"Hot"}
+		}
+	],
+	"edges":[],
+	"linen":{
+		"words":[
+			{"word":"Live","shape":"outline","quiet":true,"meaning":"Running in production"},
+			{"word":"Shaky","shape":"threads","meaning":"Works with known gaps"},
+			{"word":"Down","shape":"rust","meaning":"Failed in the last run"},
+			{"word":"Idea","shape":"dotted","quiet":true},
+			{"word":"متوقف","shape":"solid","meaning":"أوقف عمدا"},
+			{"word":"Hot","shape":"rust","meaning":"Many requests"}
+		]
+	}
+}

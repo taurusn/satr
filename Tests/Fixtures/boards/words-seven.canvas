@@ -1,0 +1,36 @@
+{
+	"nodes":[
+		{
+			"id":"x1",
+			"type":"text",
+			"text":"## x1\n\nState One",
+			"x":0,
+			"y":0,
+			"width":280,
+			"height":140,
+			"linen":{"word":"One"}
+		},
+		{
+			"id":"x7",
+			"type":"text",
+			"text":"## x7\n\nState Seven",
+			"x":320,
+			"y":0,
+			"width":280,
+			"height":140,
+			"linen":{"word":"Seven"}
+		}
+	],
+	"edges":[],
+	"linen":{
+		"words":[
+			{"word":"One","shape":"outline"},
+			{"word":"Two","shape":"threads"},
+			{"word":"Three","shape":"solid"},
+			{"word":"Four","shape":"dashed"},
+			{"word":"Five","shape":"dotted"},
+			{"word":"Six","shape":"outline"},
+			{"word":"Seven","shape":"outline"}
+		]
+	}
+}

@@ -1,0 +1,5 @@
+{
+	"n-approve": {"area": "Approve", "title": "Every decision is refused", "body": "Approve and Return both answer 403 `decision_forbidden`, and the page shows nothing. The check reads the reviewer's role where it should read the approver's.", "state": "Broken", "refs": ["server/approvals.py:118", "walk/approver.md, step 4"]},
+	"n-broken": {"area": "Map", "title": "Ten broken boxes", "body": "Two share one cause; the rest are independent.", "fields": {"Counted": "14 October", "By": "the map's own words"}},
+	"n-review": "Review works for one team only."
+}

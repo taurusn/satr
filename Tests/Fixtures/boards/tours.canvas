@@ -1,0 +1,31 @@
+{
+	"nodes":[
+		{"id":"t1","type":"text","text":"## Start","x":0,"y":0,"width":280,"height":140},
+		{"id":"t2","type":"text","text":"## Middle","x":320,"y":0,"width":280,"height":140},
+		{"id":"t3","type":"text","text":"## End","x":640,"y":0,"width":280,"height":140}
+	],
+	"edges":[
+		{"id":"te1","fromNode":"t1","toNode":"t2"},
+		{"id":"te2","fromNode":"t2","toNode":"t3"}
+	],
+	"linen":{
+		"tours":[
+			{
+				"title":"The happy path",
+				"lead":"From start to end.",
+				"steps":[
+					{
+						"nodes":["t1"],
+						"text":"Begin here."
+					},
+					{
+						"nodes":["t2","t3"],
+						"edges":["te2"],
+						"text":"Then on."
+					}
+				]
+			},
+			"not a tour"
+		]
+	}
+}

@@ -7,6 +7,10 @@
   <link rel="stylesheet" href="fonts.css">
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
   <link rel="stylesheet" href="page.css">
+  <!-- Linen 2 boards (Lane B) -->
+  <link rel="stylesheet" href="board.css">
+  <!-- Linen 2 blocks, words and notes in notes (Lane F) -->
+  <link rel="stylesheet" href="blocks.css">
 </head>
 <body>
   <div id="shell">
@@ -46,6 +50,13 @@
   <script src="extensions.js"></script>
   <script src="lexer.js"></script>
   <script src="diff.js"></script>
+  <!-- Linen 2 boards (Lane B): the model and the board view, before page.js, which routes boards to them -->
+  <script src="board-model.js"></script>
+  <script src="board.js"></script>
+  <!-- Linen 2 blocks in notes (Lane F): page.js calls it while rendering -->
+  <script src="blocks.js"></script>
   <script src="page.js"></script>
+  <script src="layout.js"></script>
+  <script src="canvas-writer.js"></script>
 </body>
 </html>

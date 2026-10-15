@@ -1,0 +1,16 @@
+{
+	"nodes":[
+		null,
+		42,
+		"card",
+		{"id":"valid","type":"text","text":"Valid","x":0,"y":0,"width":280,"height":140},
+		{"id":"numtext","type":"text","text":12,"x":320,"y":0,"width":200,"height":100},
+		{"id":"badlinen","type":"text","text":"Linen as text","x":640,"y":0,"width":280,"height":140,"linen":"card"},
+		{"id":"valid2","type":"text","text":"Valid too","x":960,"y":0,"width":280,"height":140}
+	],
+	"edges":[
+		{"fromNode":"valid","toNode":"valid2"},
+		{"id":"e-bad-from","fromNode":5,"toNode":"valid"},
+		{"id":"e-ok","fromNode":"valid","toNode":"valid2"}
+	]
+}

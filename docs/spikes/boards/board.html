@@ -1,0 +1,208 @@
+<!doctype html>
+<!-- Spike B(a): can a DOM + SVG board of 500 and 2,000 nodes pan and zoom at 60 fps in WebKit?
+     One transformed world layer; nodes are absolutely placed elements; connectors are one SVG; only nodes near the
+     view are in the DOM; semantic zoom swaps detail at thresholds. A scripted run pans and zooms for a few seconds
+     each and reports frame durations through webkit.messageHandlers.spike (or the console). -->
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --paper:#F6F3EB; --paper-2:#FBF9F4; --ink:#284734; --ink-2:#1F3328; --sage:#8FA394; --rule:#DAD5C8; --tint-1:#E3E7DF; --tint-2:#C9D3CA; --rust:#9C4A2E; --inv:1; }
+  html, body { margin:0; height:100%; overflow:hidden; background:var(--paper); font:15px/1.5 -apple-system, "Thmanyah Sans", sans-serif; color:var(--ink-2); }
+  #view { position:absolute; inset:0; overflow:hidden; touch-action:none;
+          background-image: radial-gradient(circle, rgba(143,163,148,.45) 1px, transparent 1.2px); background-size:22px 22px; }
+  #world { position:absolute; left:0; top:0; transform-origin:0 0; }
+  #world.moving { will-change:transform; }
+  svg#edges { position:absolute; left:0; top:0; overflow:visible; pointer-events:none; }
+  svg#edges path { fill:none; stroke:var(--ink-2); stroke-width:1.5; vector-effect:non-scaling-stroke; }
+  svg#edges.scaling path { vector-effect:none; }
+  .sec { position:absolute; background:rgba(227,231,223,.45); border:1px solid var(--rule); border-radius:2px; }
+  .sec > .lbl { position:absolute; left:0; bottom:100%; transform-origin:0 100%; transform:scale(var(--inv)); white-space:nowrap;
+                font:500 11px/1.4 -apple-system, sans-serif; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-2); padding-bottom:6px; }
+  .n { position:absolute; box-sizing:border-box; background:var(--paper); border:1px solid var(--rule); border-radius:2px;
+       box-shadow:0 1px 2px rgba(40,71,52,.08); padding:12px 14px; overflow:hidden; contain:layout paint style; }
+  .n .st { display:inline-block; font:500 10px/1 -apple-system, sans-serif; letter-spacing:.12em; text-transform:uppercase; padding:3px 6px; border:1px solid var(--ink); border-radius:2px; color:var(--ink); }
+  .n .st.fail { background:var(--rust); border-color:var(--rust); color:var(--paper); }
+  .n h3 { margin:6px 0 4px; font:300 19px/1.25 Georgia, "Thmanyah Serif Display", serif; color:var(--ink); }
+  .n p { margin:0; }
+  .far .n p { display:none; }
+  .areas .n, .hidecards .n { display:none; }
+  .far .n h3 { font-size:calc(19px * min(var(--inv), 2.4)); }
+</style></head>
+<body><div id="view"><div id="world"><svg id="edges"></svg></div><canvas id="areas" style="position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;display:none"></canvas></div>
+<script>
+(() => {
+  const P = new URLSearchParams(location.search);
+  const N = +(P.get("n") || 500), E = +(P.get("e") || Math.round(N * 1.4)), CULL = P.get("cull") !== "0";
+  // v1: everything per frame. v2: transform only mid-gesture, detail at rest. v3: v2, and nothing mounts mid-gesture
+  // (cards not yet in the DOM are drawn as their shapes on one canvas), and at rest cards mount a few per frame.
+  // v4: v3, and the world layer is composited (will-change) only while cards are mounted above the areas level;
+  // crossing into areas mid-gesture hides the mounted cards (the canvas draws them) and drops the layer.
+  const VER = +(P.get("v") || 1), V2 = VER >= 2, V3 = VER >= 3, V4 = VER >= 4;
+  let farNow = false;
+  const post = (m) => { try { webkit.messageHandlers.spike.postMessage(m); } catch (_) { fetch("/report", { method: "POST", body: JSON.stringify(m) }).catch(() => console.log(JSON.stringify(m))); } };
+  const view = document.getElementById("view"), world = document.getElementById("world"), svg = document.getElementById("edges");
+  // A board like the reference map: lanes of sections, cards of mixed length, Arabic in some.
+  const words = "gateway queue worker store index ledger policy ballot minutes intake review approve record export audit token session cache".split(" ");
+  const ar = "طلب مراجعة اعتماد سجل محضر لجنة تصويت";
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const text = (k) => Array.from({ length: k }, () => words[Math.floor(rnd() * words.length)]).join(" ");
+  const lanes = Math.max(4, Math.round(Math.sqrt(N / 12))), perLane = Math.ceil(N / lanes);
+  const W = 260, H0 = 120, GX = 40, GY = 28, cols = 3;
+  const nodes = [], sections = [];
+  for (let l = 0; l < lanes; l++) {
+    const x0 = l * (cols * (W + GX) + 120), y0 = 0;
+    let maxY = 0;
+    for (let i = 0; i < perLane && nodes.length < N; i++) {
+      const c = i % cols, r = Math.floor(i / cols);
+      const h = H0 + Math.floor(rnd() * 3) * 24;
+      const x = x0 + 30 + c * (W + GX), y = y0 + 40 + r * (H0 + 72 + GY);
+      nodes.push({ id: "n" + nodes.length, x, y, w: W, h, title: text(2), body: text(10 + Math.floor(rnd() * 14)) + (rnd() < .2 ? " " + ar : ""), st: rnd() < .08 ? "broken" : rnd() < .5 ? "works" : "partial" });
+      maxY = Math.max(maxY, y + h);
+    }
+    sections.push({ x: x0, y: y0, w: cols * (W + GX) + 20, h: maxY + 40, label: "Lane " + (l + 1) });
+  }
+  const edges = [];
+  for (let i = 0; i < E; i++) {
+    const a = nodes[Math.floor(rnd() * nodes.length)], b = nodes[Math.min(nodes.length - 1, Math.max(0, nodes.indexOf(a) + 1 + Math.floor(rnd() * 8)))];
+    if (a !== b) edges.push([a, b]);
+  }
+  // Sections and edges are cheap and always present; nodes are culled.
+  for (const s of sections) {
+    const d = document.createElement("div"); d.className = "sec";
+    d.style.cssText = `left:${s.x}px;top:${s.y}px;width:${s.w}px;height:${s.h}px`;
+    d.innerHTML = `<div class="lbl">${s.label}</div>`; world.append(d);
+  }
+  if (P.get("ns") === "0") svg.classList.add("scaling");  // strokes scale with the board: no repaint on zoom
+  const bw = Math.max(...sections.map(s => s.x + s.w)), bh = Math.max(...sections.map(s => s.y + s.h));
+  svg.setAttribute("width", bw); svg.setAttribute("height", bh);
+  svg.innerHTML = edges.map(([a, b]) => { const x1 = a.x + a.w, y1 = a.y + a.h / 2, x2 = b.x, y2 = b.y + b.h / 2, mx = (x1 + x2) / 2;
+    return `<path d="M${x1} ${y1}C${mx} ${y1} ${mx} ${y2} ${x2} ${y2}"/>`; }).join("");
+  const mounted = new Map();
+  const make = (n) => { const d = document.createElement("div"); d.className = "n";
+    d.style.cssText = `left:${n.x}px;top:${n.y}px;width:${n.w}px;height:${n.h}px`;
+    d.innerHTML = `<span class="st ${n.st === "broken" ? "fail" : ""}">${n.st}</span><h3>${n.title}</h3><p dir="auto">${n.body}</p>`; return d; };
+  let cam = { x: 0, y: 0, s: 1 };
+  const vw = () => view.clientWidth, vh = () => view.clientHeight;
+  function cull() {
+    const m = 400 / cam.s, l = -cam.x / cam.s - m, t = -cam.y / cam.s - m, r = l + vw() / cam.s + 2 * m, b = t + vh() / cam.s + 2 * m;
+    for (const n of nodes) {
+      const inView = !CULL || (n.x < r && n.x + n.w > l && n.y < b && n.y + n.h > t);
+      const has = mounted.get(n.id);
+      if (inView && !has) { const d = make(n); world.append(d); mounted.set(n.id, d); }
+      else if (!inView && has) { has.remove(); mounted.delete(n.id); }
+    }
+  }
+  let lastLod = null;
+  const cv = document.getElementById("areas"), ctx = cv.getContext("2d");
+  const AREAS = .3;  // below this scale, boxes are shapes on one canvas (BRD-8 "areas")
+  function drawAreas() {
+    const dpr = devicePixelRatio, w = vw(), h = vh();
+    if (cv.width !== w * dpr) { cv.width = w * dpr; cv.height = h * dpr; }
+    ctx.setTransform(dpr * cam.s, 0, 0, dpr * cam.s, dpr * cam.x, dpr * cam.y);
+    ctx.clearRect(-cam.x / cam.s, -cam.y / cam.s, w / cam.s, h / cam.s);
+    for (const n of nodes) { ctx.fillStyle = n.st === "broken" ? "#9C4A2E" : n.st === "partial" ? "#C9D3CA" : "#F6F3EB"; ctx.fillRect(n.x, n.y, n.w, n.h); }
+    ctx.strokeStyle = "#284734"; ctx.lineWidth = 1 / cam.s;
+    for (const n of nodes) if (n.st === "works") ctx.strokeRect(n.x, n.y, n.w, n.h);
+  }
+  let areasOn = false;
+  function setAreas(on) {
+    if (on === areasOn) return; areasOn = on;
+    cv.style.display = on ? "block" : "none";
+    world.classList.toggle("areas", on);
+  }
+  // v3: shapes for cards in view that are not mounted; at rest, mount by budget, nearest the centre first.
+  function ghosts() {
+    if (P.get("gh") === "0") return;  // experiment: no shapes canvas
+    const dpr = devicePixelRatio, w = vw(), h = vh();
+    if (cv.width !== w * dpr) { cv.width = w * dpr; cv.height = h * dpr; }
+    cv.style.display = "block";
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
+    ctx.setTransform(dpr * cam.s, 0, 0, dpr * cam.s, dpr * cam.x, dpr * cam.y);
+    const l = -cam.x / cam.s, t = -cam.y / cam.s, r = l + w / cam.s, b = t + h / cam.s;
+    ctx.lineWidth = 1 / cam.s; ctx.strokeStyle = "#284734";
+    for (const n of nodes) {
+      if ((mounted.has(n.id) && !farNow) || n.x > r || n.x + n.w < l || n.y > b || n.y + n.h < t) continue;
+      ctx.fillStyle = n.st === "broken" ? "#9C4A2E" : n.st === "partial" ? "#C9D3CA" : "#F6F3EB";
+      ctx.fillRect(n.x, n.y, n.w, n.h);
+      if (n.st === "works") ctx.strokeRect(n.x, n.y, n.w, n.h);
+    }
+  }
+  let queue = [], pumping = false;
+  const BUDGET = +(P.get("budget") || 24);
+  function settle() {
+    const areas = cam.s < AREAS;
+    world.style.setProperty("--inv", (1 / cam.s).toFixed(3));
+    const lod = cam.s < .45 ? "far" : "near";
+    if (lod !== lastLod) { world.classList.toggle("far", lod === "far"); lastLod = lod; }
+    const m = .5 * Math.max(vw(), vh()) / cam.s, l = -cam.x / cam.s - m, t = -cam.y / cam.s - m, r = l + vw() / cam.s + 2 * m, b = t + vh() / cam.s + 2 * m;
+    const want = new Set();
+    if (!areas) for (const n of nodes) if (n.x < r && n.x + n.w > l && n.y < b && n.y + n.h > t) want.add(n.id);
+    for (const [id, d] of mounted) if (!want.has(id)) { d.remove(); mounted.delete(id); }
+    const cx = (vw() / 2 - cam.x) / cam.s, cy = (vh() / 2 - cam.y) / cam.s, dist = (n) => Math.hypot(n.x + n.w / 2 - cx, n.y + n.h / 2 - cy);
+    queue = nodes.filter(n => want.has(n.id) && !mounted.has(n.id)).sort((a, b) => dist(a) - dist(b));
+    ghosts();
+    if (!pumping && queue.length) pump();
+  }
+  function pump() {
+    pumping = true;
+    requestAnimationFrame(() => {
+      for (let k = 0; k < BUDGET && queue.length; k++) { const n = queue.shift(); const d = make(n); world.append(d); mounted.set(n.id, d); }
+      ghosts();
+      if (queue.length) pump(); else pumping = false;
+    });
+  }
+  function apply(full) {
+    world.style.transform = `translate(${cam.x}px, ${cam.y}px) scale(${cam.s})`;
+    if (V3) {
+      if (V4) { const far = cam.s < AREAS; if (far !== farNow) { farNow = far; world.classList.toggle("hidecards", far); if (far) world.classList.remove("moving"); } }
+      if (full) settle(); else ghosts(); return;
+    }
+    if (V2) {
+      if (areasOn) drawAreas();
+      if (!full) return;
+      setAreas(cam.s < AREAS); if (areasOn) drawAreas();
+    }
+    world.style.setProperty("--inv", (1 / cam.s).toFixed(3));
+    const lod = cam.s < .45 ? "far" : "near";
+    if (lod !== lastLod) { world.classList.toggle("far", lod === "far"); lastLod = lod; }
+    if (full && !(V2 && areasOn)) cull();
+  }
+  function fit() { cam.s = Math.min(vw() / bw, vh() / bh) * .95; cam.x = (vw() - bw * cam.s) / 2; cam.y = (vh() - bh * cam.s) / 2; apply(true); }
+  // Interactive: wheel pans, ctrl/cmd-wheel (pinch) zooms around the pointer.
+  let cullTimer = 0;
+  const later = () => { clearTimeout(cullTimer); cullTimer = setTimeout(() => { world.classList.remove("moving"); if (V3) apply(true); else cull(); }, 120); };
+  view.addEventListener("wheel", (e) => { e.preventDefault(); if (!(V4 && farNow)) world.classList.add("moving");
+    if (e.ctrlKey || e.metaKey) { const k = Math.exp(-e.deltaY * .01), s = Math.min(4, Math.max(.02, cam.s * k)); cam.x = e.clientX - (e.clientX - cam.x) * s / cam.s; cam.y = e.clientY - (e.clientY - cam.y) * s / cam.s; cam.s = s; }
+    else { cam.x -= e.deltaX; cam.y -= e.deltaY; }
+    apply(false); later(); }, { passive: false });
+  // Scripted run: pan at 100%, zoom from fit to 150% and back, pan at overview. Frame deltas from rAF.
+  async function run(name, frames, step) {
+    const d = []; let prev = performance.now(); if (P.get("wc") !== "0" && !(V4 && cam.s < AREAS)) world.classList.add("moving");  // wc=0: no will-change
+    for (let i = 0; i < frames; i++) { step(i); if (V3) apply(false); else { apply(V2 ? false : i % 6 === 0); if (V2 && i % 6 === 0 && !areasOn) cull(); } await new Promise(r => requestAnimationFrame(r)); const now = performance.now(); d.push(now - prev); prev = now; }
+    // The gesture rests: measure the frames until the detail is back (one frame for v1 and v2, the mount queue for v3).
+    world.classList.remove("moving"); apply(true);
+    const s = []; let p2 = performance.now();
+    do { await new Promise(r => requestAnimationFrame(r)); const now = performance.now(); s.push(now - p2); p2 = now; } while (V3 && pumping && s.length < 600);
+    const raw = d.slice();
+    d.sort((a, b) => a - b); const q = (p) => d[Math.min(d.length - 1, Math.floor(p * d.length))];
+    const slowAt = raw.map((x, i) => x > 25 ? i : -1).filter(i => i >= 0).slice(0, 24);
+    return { name, frames, p50: +q(.5).toFixed(2), p95: +q(.95).toFixed(2), max: +d[d.length - 1].toFixed(2), dropped: d.filter(x => x > 25).length, slowAt,
+             settleFrames: s.length, settleMax: +Math.max(...s).toFixed(1), mounted: mounted.size };
+  }
+  async function bench() {
+    const t0 = performance.now(); fit(); await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const firstPaint = +(performance.now() - t0).toFixed(1);
+    const out = { v: VER, n: nodes.length, e: edges.length, cull: CULL, firstPaint, w: vw(), h: vh(), dpr: devicePixelRatio, runs: [] };
+    cam = { x: -100, y: -50, s: 1 }; apply(true); await new Promise(r => setTimeout(r, 300));
+    out.runs.push(await run("pan at 100%", 180, () => { cam.x -= 8; cam.y -= 2; }));
+    fit(); await new Promise(r => setTimeout(r, 300));
+    const cx = vw() / 2, cy = vh() / 2;
+    out.runs.push(await run("zoom fit to 150%", 180, () => { const s = cam.s * 1.02; cam.x = cx - (cx - cam.x) * s / cam.s; cam.y = cy - (cy - cam.y) * s / cam.s; cam.s = Math.min(1.5, s); }));
+    out.runs.push(await run("zoom back out", 180, () => { const s = cam.s / 1.02; cam.x = cx - (cx - cam.x) * s / cam.s; cam.y = cy - (cy - cam.y) * s / cam.s; cam.s = s; }));
+    fit(); await new Promise(r => setTimeout(r, 300));
+    out.runs.push(await run("pan at overview", 180, () => { cam.x -= 3; }));
+    post({ type: "bench", ...out });
+  }
+  if (P.get("bench") === "1") setTimeout(bench, 300); else fit();
+})();
+</script></body></html>

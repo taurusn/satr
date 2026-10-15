@@ -43,6 +43,22 @@ struct StoreTests {
         #expect(FileIdentity.resolve(Data("not a bookmark".utf8)) == nil)
     }
 
+    @Test("A board's view persists, and places written by Linen 1 (no board field) still load")
+    func boardPlaces() throws {
+        let folder = TempFolder()
+        let store = PlaceStore(directory: folder.url)
+        var p = place(3)
+        p.board = BoardView(cx: 1200.5, cy: -40, zoom: 0.73, node: "n-17", mode: "list")
+        store.set(p, forKey: "board")
+        store.flush()
+        #expect(PlaceStore(directory: folder.url).place(forKey: "board")?.board == p.board)
+
+        let old = Data(#"{"blockHash":"h","blockIndex":2,"offset":0.5,"quote":"q","zoom":1,"atEnd":false,"date":800000000}"#.utf8)
+        let decoded = try JSONDecoder().decode(Place.self, from: old)
+        #expect(decoded.board == nil)
+        #expect(decoded.blockIndex == 2)
+    }
+
     @Test("Places persist through flush and a new store")
     func placesPersist() {
         let folder = TempFolder()

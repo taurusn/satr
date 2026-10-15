@@ -20,6 +20,19 @@
 | `make reload` | Rewrites a copy of the Ferry PRD 30 times and measures how far the reading line drifts |
 | `make lint` | Checks that the page and the app use only the design tokens |
 | `make install` | Release build copied to `/Applications/Linen.app` and verified with `codesign` |
+| `node Tests/board-model.test.js` | The board model's tests (fixtures in `Tests/Fixtures/boards/`, also run once in bare JavaScriptCore) |
+| `node Tests/Fixtures/boards/gen.js` | Rewrites the board fixtures and the synthetic `big-500` and `big-2000` boards |
+| `node Tests/layout.test.js` | Layout and the Obsidian-style file writer |
+| `node Tests/board-author.test.js` | The board author behind `write_board` and `edit_board` |
+| `node Tests/mcp.test.js` | `linen mcp` over stdio in both protocol eras (needs `make build` first) |
+
+## The `linen` command
+
+The agent kit's command (`Tools/linen/`) is built with the app and embedded at `Linen.app/Contents/Helpers/linen`; Linen > Install Command for Agents… links `~/.local/bin/linen` to it. It finds the renderer inside its own app bundle; set `LINEN_RENDERER=/path/to/Renderer` to run it against the source folder while developing. How agents use it: `docs/FORMAT.md`.
+
+```sh
+build/DerivedData/Build/Products/Debug/Linen.app/Contents/Helpers/linen check Tests/Fixtures/boards/kinds.canvas
+```
 
 ## Fonts
 

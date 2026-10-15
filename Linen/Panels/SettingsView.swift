@@ -35,11 +35,72 @@ struct SettingsView: View {
                     .labelsHidden().frame(width: 220)
                 }
                 row("Remote images") { segmented(Binding(get: { remoteAlways ? "always" : "ask" }, set: { remoteAlways = $0 == "always" }), [("ask", "Ask per file"), ("always", "Always load")]) }
+                pages
                 Spacer()
             }
             .padding(.horizontal, 40).padding(.top, 44)
         }
-        .onAppear { editors = Editors.available() }
+        .onAppear { editors = Editors.available(); trusted = TrustedFolders.all }
+    }
+
+    // MARK: Pages (PAGE-7, SYS-2)
+
+    @State private var trusted: [String] = []
+
+    /// Page scripts run by default only in these folders and their subfolders; everywhere else a page opens with
+    /// scripts off and one click to run it.
+    private var pages: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Eyebrow(text: "Pages").padding(.top, 22).padding(.bottom, 6)
+            Text("Scripts run in pages from these folders and the folders inside them. Pages from anywhere else open with scripts off.")
+                .font(Tok.sans(13)).foregroundStyle(palette.quiet).fixedSize(horizontal: false, vertical: true).padding(.bottom, 6)
+            ForEach(trusted, id: \.self) { path in
+                HStack {
+                    Text(path.replacingOccurrences(of: FileManager.default.homeDirectoryForCurrentUser.path, with: "~"))
+                        .font(Tok.sans(13.5)).foregroundStyle(palette.text).lineLimit(1).truncationMode(.middle)
+                    Spacer()
+                    Button("Remove") { TrustedFolders.remove(path); trusted = TrustedFolders.all }
+                        .buttonStyle(.plain).font(Tok.sans(13)).foregroundStyle(palette.quiet)
+                }
+                .padding(.vertical, 8)
+                .overlay(alignment: .bottom) { Rectangle().fill(palette.line).frame(height: 1) }
+            }
+            if trusted.isEmpty {
+                Text("No trusted folders yet.").font(Tok.sans(13.5)).foregroundStyle(palette.quiet).padding(.vertical, 8)
+            }
+            Button("Add Folder…") {
+                let panel = NSOpenPanel()
+                panel.canChooseFiles = false
+                panel.canChooseDirectories = true
+                panel.allowsMultipleSelection = false
+                if panel.runModal() == .OK, let u = panel.url { TrustedFolders.add(u.path); trusted = TrustedFolders.all }
+            }
+            .buttonStyle(.plain).font(Tok.sans(13, medium: true)).foregroundStyle(palette.accent).padding(.top, 8)
+            // The seal's self-test (PAGE-10): one line, the one place its state shows.
+            HStack {
+                Text(sealLine).font(Tok.sans(13)).foregroundStyle(palette.quiet).fixedSize(horizontal: false, vertical: true)
+                Spacer()
+                Button("Check Now") { Task { @MainActor in _ = await PageSelfTest.shared.run(); sealLine = Self.describe() } }
+                    .buttonStyle(.plain).font(Tok.sans(13, medium: true)).foregroundStyle(palette.accent)
+            }
+            .padding(.top, 10)
+            .onAppear { sealLine = Self.describe() }
+            .onReceive(NotificationCenter.default.publisher(for: PageSelfTest.changed)) { _ in sealLine = Self.describe() }
+        }
+    }
+
+    @State private var sealLine = ""
+
+    static func describe() -> String {
+        let t = PageSelfTest.shared
+        switch t.state {
+        case .running: return String(localized: "Checking the page seal…")
+        case .failed(let why): return why.hasPrefix("Page scripts are off") ? why : String(localized: "Page scripts are off: \(why)")
+        case .passed, .idle:
+            if let why = t.blockReason { return String(localized: "Page scripts are off: \(why)") }
+            if let d = t.lastRun { return String(localized: "The page seal passed its check on \(d.formatted(date: .abbreviated, time: .shortened)).") }
+            return String(localized: "The page seal has not been checked yet.")
+        }
     }
 
     private func row<C: View>(_ title: LocalizedStringKey, @ViewBuilder _ content: () -> C) -> some View {

@@ -1,0 +1,27 @@
+{
+	"nodes":[
+		{
+			"id":"outer",
+			"type":"group",
+			"x":0,
+			"y":0,
+			"width":1200,
+			"height":800,
+			"label":"Platform",
+			"background":"assets/ground.png",
+			"backgroundStyle":"ratio",
+			"linen":{"title":"Platform services"}
+		},
+		{"id":"inner","type":"group","x":40,"y":80,"width":520,"height":680,"label":"Edge"},
+		{"id":"inner2","type":"group","x":620,"y":80,"width":540,"height":600,"label":"Core"},
+		{"id":"deeper","type":"group","x":60,"y":300,"width":480,"height":400,"label":"Workers"},
+		{"id":"c1","type":"text","text":"## Gateway\n\nFront door.","x":60,"y":120,"width":280,"height":140},
+		{"id":"c2","type":"text","text":"## Queue worker\n\nDrains jobs.","x":80,"y":340,"width":280,"height":140},
+		{"id":"c3","type":"text","text":"## Ledger\n\nKeeps events.","x":640,"y":120,"width":280,"height":140},
+		{"id":"loose","type":"text","text":"A card outside every section.","x":1300,"y":0,"width":280,"height":140}
+	],
+	"edges":[
+		{"id":"e1","fromNode":"c1","toNode":"c2"},
+		{"id":"e2","fromNode":"c1","toNode":"c3","label":"writes"}
+	]
+}

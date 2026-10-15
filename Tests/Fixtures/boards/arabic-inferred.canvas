@@ -1,0 +1,8 @@
+{
+	"nodes":[
+		{"id":"i1","type":"text","text":"## البوابة\n\nتوجه الطلبات.","x":0,"y":0,"width":280,"height":140},
+		{"id":"i2","type":"text","text":"## السجل\n\nيحفظ الأحداث.","x":320,"y":0,"width":280,"height":140},
+		{"id":"i3","type":"text","text":"Gateway","x":640,"y":0,"width":280,"height":140}
+	],
+	"edges":[]
+}

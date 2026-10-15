@@ -1,0 +1,12 @@
+{
+	"nodes":[
+		{"id":"en1","type":"text","text":"## Gateway\n\nRoutes requests.","x":0,"y":0,"width":280,"height":140},
+		{"id":"en2","type":"text","text":"## Ledger\n\nKeeps events.","x":320,"y":0,"width":280,"height":140},
+		{"id":"ar1","type":"text","text":"## البوابة\n\nتوجه الطلبات إلى الخدمة.","x":640,"y":0,"width":280,"height":140},
+		{"id":"mixed-ltr","type":"text","text":"Linen سطر reader","x":0,"y":200,"width":280,"height":140},
+		{"id":"mixed-rtl","type":"text","text":"سطر Linen قارئ","x":320,"y":200,"width":280,"height":140}
+	],
+	"edges":[
+		{"id":"m1","fromNode":"en1","toNode":"ar1"}
+	]
+}

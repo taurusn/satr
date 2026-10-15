@@ -1,0 +1,105 @@
+{
+	"nodes":[
+		{
+			"id":"w1",
+			"type":"text",
+			"text":"## w1\n\nState Works",
+			"x":0,
+			"y":0,
+			"width":280,
+			"height":140,
+			"linen":{"word":"Works"}
+		},
+		{
+			"id":"w2",
+			"type":"text",
+			"text":"## w2\n\nState Works",
+			"x":320,
+			"y":0,
+			"width":280,
+			"height":140,
+			"linen":{"word":"Works"}
+		},
+		{
+			"id":"w3",
+			"type":"text",
+			"text":"## w3\n\nState Works",
+			"x":640,
+			"y":0,
+			"width":280,
+			"height":140,
+			"linen":{"word":"Works"}
+		},
+		{
+			"id":"p1",
+			"type":"text",
+			"text":"## p1\n\nState Partial",
+			"x":0,
+			"y":200,
+			"width":280,
+			"height":140,
+			"linen":{"word":"Partial"}
+		},
+		{
+			"id":"p2",
+			"type":"text",
+			"text":"## p2\n\nState Partial",
+			"x":320,
+			"y":200,
+			"width":280,
+			"height":140,
+			"linen":{"word":"Partial"}
+		},
+		{
+			"id":"b1",
+			"type":"text",
+			"text":"## b1\n\nState Broken",
+			"x":640,
+			"y":200,
+			"width":280,
+			"height":140,
+			"linen":{"word":"Broken"}
+		},
+		{
+			"id":"b2",
+			"type":"text",
+			"text":"## b2\n\nState broken",
+			"x":960,
+			"y":200,
+			"width":280,
+			"height":140,
+			"linen":{"word":"broken"}
+		},
+		{
+			"id":"m1",
+			"type":"text",
+			"text":"## m1\n\nState Missing",
+			"x":0,
+			"y":400,
+			"width":280,
+			"height":140,
+			"linen":{"word":"Missing"}
+		},
+		{
+			"id":"pl1",
+			"type":"text",
+			"text":"## pl1\n\nState Planned",
+			"x":320,
+			"y":400,
+			"width":280,
+			"height":140,
+			"linen":{"word":"Planned"}
+		},
+		{
+			"id":"u1",
+			"type":"text",
+			"text":"## u1\n\nState Unknown",
+			"x":640,
+			"y":400,
+			"width":280,
+			"height":140,
+			"linen":{"word":"Unknown"}
+		}
+	],
+	"edges":[]
+}

@@ -15,8 +15,8 @@ settings:
     CODE_SIGN_STYLE: Automatic
     CODE_SIGN_IDENTITY: "Apple Development"
     ENABLE_HARDENED_RUNTIME: YES
-    MARKETING_VERSION: "1.0"
-    CURRENT_PROJECT_VERSION: "1"
+    MARKETING_VERSION: "2.0"
+    CURRENT_PROJECT_VERSION: "2"
     ENABLE_USER_SCRIPT_SANDBOXING: NO
     DEAD_CODE_STRIPPING: YES
 packages:
@@ -32,6 +32,13 @@ targets:
       - package: LinenKit
       - target: LinenQuickLook
         embed: true
+      # The agent kit's command (CLI-1). Contents/Helpers, not Contents/MacOS: "linen" and "Linen" are one name on a
+      # case-insensitive disk.
+      - target: LinenCommand
+        embed: true
+        copy:
+          destination: wrapper
+          subpath: Contents/Helpers
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.hatim.linen
@@ -44,6 +51,20 @@ targets:
       - name: Copy renderer and fonts
         script: bash "$SRCROOT/Scripts/copy-renderer.sh" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/renderer"
         basedOnDependencyAnalysis: false
+  LinenCommand:
+    type: tool
+    platform: macOS
+    sources:
+      - path: Tools/linen
+      # The vault gate's descriptor walk (SAFE-2), shared with the app so the command reads files the same way.
+      - path: Linen/Document/SafeOpen.swift
+    dependencies:
+      - package: LinenKit
+    settings:
+      base:
+        PRODUCT_NAME: linen
+        PRODUCT_BUNDLE_IDENTIFIER: com.hatim.linen.command
+        SKIP_INSTALL: YES
   LinenQuickLook:
     type: app-extension
     platform: macOS

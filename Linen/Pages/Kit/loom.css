@@ -1,0 +1,82 @@
+/* The Loom kit (PRD-2 PAGE-3), served by Linen at linen-kit://kit/loom.css to pages that link it:
+   <link rel="stylesheet" href="linen-kit://kit/loom.css">
+   Loom's tokens, the Thmanyah faces (served by Linen, never carried by the page), base type, the weave, and Paper
+   and Night following Linen's appearance through data-linen-theme on the root. Outside Linen the link fails and
+   the page falls back to system fonts. Tokens match Renderer/page.css and Linen/Design/Tokens.swift. */
+@font-face { font-family: "Linen Sans"; font-weight: 400; src: url("fonts/thmanyahsans-Regular.otf") format("opentype"); }
+@font-face { font-family: "Linen Sans"; font-weight: 500; src: url("fonts/thmanyahsans-Medium.otf") format("opentype"); }
+@font-face { font-family: "Linen Sans"; font-weight: 600 700; src: url("fonts/thmanyahsans-Bold.otf") format("opentype"); }
+@font-face { font-family: "Linen Serif Display"; font-weight: 300; src: url("fonts/thmanyahserifdisplay-Light.otf") format("opentype"); }
+@font-face { font-family: "Linen Serif Text"; font-weight: 400; src: url("fonts/thmanyahseriftext-Regular.otf") format("opentype"); }
+@font-face { font-family: "Linen Serif Text"; font-weight: 500 700; src: url("fonts/thmanyahseriftext-Medium.otf") format("opentype"); }
+
+:root {
+  --paper: #F6F3EB; --paper-2: #FBF9F4; --ink: #284734; --ink-2: #1F3328; --sage: #8FA394; --rule: #DAD5C8;
+  --tint-1: #E3E7DF; --tint-2: #C9D3CA; --tint-3: #A9B8AC; --rust: #9C4A2E;
+
+  --ground: var(--paper); --raised: var(--paper-2); --text: var(--ink-2); --head: var(--ink); --quiet: var(--ink-2);
+  --line: var(--rule); --wash: var(--tint-1); --soft: var(--tint-2); --edge: var(--tint-3); --accent: var(--ink); --on-accent: var(--paper);
+  --fail: var(--rust);
+
+  --sans: "Linen Sans", -apple-system, "Geeza Pro", sans-serif;
+  --serif: "Linen Serif Display", Georgia, "Geeza Pro", serif;
+  --serif-text: "Linen Serif Text", Georgia, "Geeza Pro", serif;
+  --mono: "SF Mono", ui-monospace, Menlo, monospace;
+
+  --corner: 2px;
+  --shadow: 0 1px 2px rgba(31, 51, 40, .06), 0 8px 24px rgba(31, 51, 40, .08);
+  --ease-brand: cubic-bezier(.22, .8, .2, 1); --t-brand: .34s;
+  --weave: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Cg stroke='%23284734' stroke-opacity='.13' stroke-width='1.3' stroke-linecap='round'%3E%3Cpath d='M8.5 11h5M33 8.5v5M11 30.5v5M30.5 33h5'/%3E%3C/g%3E%3C/svg%3E");
+  color-scheme: light;
+}
+
+:root[data-linen-theme="night"] {
+  --ground: var(--ink-2); --raised: var(--ink); --text: var(--paper); --head: var(--paper); --quiet: var(--sage);
+  --line: rgba(246, 243, 235, .14); --wash: rgba(246, 243, 235, .07); --soft: rgba(246, 243, 235, .2); --edge: rgba(246, 243, 235, .3);
+  --accent: var(--paper); --on-accent: var(--ink-2);
+  --shadow: 0 1px 2px rgba(0, 0, 0, .2), 0 8px 24px rgba(0, 0, 0, .25);
+  --weave: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Cg stroke='%23F6F3EB' stroke-opacity='.09' stroke-width='1.3' stroke-linecap='round'%3E%3Cpath d='M8.5 11h5M33 8.5v5M11 30.5v5M30.5 33h5'/%3E%3C/g%3E%3C/svg%3E");
+  color-scheme: dark;
+}
+
+html { background: var(--ground); }
+body {
+  margin: 0; background: var(--ground); color: var(--text);
+  font: 400 17px/1.65 var(--sans);
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+}
+::selection { background: var(--soft); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+h1, .title { font: 300 40px/1.15 var(--serif); color: var(--head); margin: 6px 0 22px; }
+h2 { font: 300 26px/1.3 var(--serif); color: var(--head); margin: 30px 0 10px; }
+h3 { font: 500 19px/1.4 var(--sans); color: var(--head); margin: 24px 0 6px; }
+p { margin: 0 0 14px; }
+a { color: var(--head); text-decoration: none; border-bottom: 1px solid var(--edge); }
+code { font: .88em/1.55 var(--mono); background: var(--wash); padding: 1px 5px; border-radius: var(--corner); }
+hr { border: 0; border-top: 1px solid var(--line); margin: 28px 0; }
+table { border-collapse: collapse; font: 400 15px/1.5 var(--sans); }
+th, td { border-bottom: 1px solid var(--line); padding: 7px 12px; text-align: start; vertical-align: top; }
+th { font-weight: 500; color: var(--head); border-bottom-color: var(--edge); }
+
+/* The suite's parts, all prefixed `loom-` so a page's own class names never collide (docs/FORMAT.md). */
+.loom-page { max-width: 1180px; margin: 0 auto; padding: 40px 32px 80px; background: var(--ground); color: var(--text); }
+.loom-page > p, .loom-page > ul, .loom-page > ol, .loom-page > blockquote, .loom-measure { max-width: 578px; }
+.loom-weave { background-color: var(--ground); background-image: var(--weave); }
+.loom-eyebrow { font: 500 11px var(--sans); text-transform: uppercase; letter-spacing: .14em; color: var(--quiet); }
+:lang(ar) .loom-eyebrow, .loom-eyebrow:lang(ar) { letter-spacing: 0; text-transform: none; }
+.loom-title { font: 300 40px/1.15 var(--serif); color: var(--head); margin: 6px 0 22px; }
+.loom-lead { font: 400 19px/1.55 var(--sans); color: var(--text); max-width: 578px; }
+.loom-card { background: var(--raised); border: 1px solid var(--line); border-radius: var(--corner); box-shadow: var(--shadow); padding: 14px; }
+.loom-card-title { font: 300 19px/1.3 var(--serif); color: var(--head); margin: 0 0 6px; }
+.loom-sticky { background: var(--wash); border-radius: var(--corner); padding: 14px; font: 500 15px/1.45 var(--sans); }
+.loom-pill { display: inline-block; font: 500 10.5px/1 var(--sans); text-transform: uppercase; letter-spacing: .12em; color: var(--head);
+  border: 1px solid var(--head); border-radius: 999px; padding: 4px 8px; }
+:lang(ar) .loom-pill, .loom-pill:lang(ar) { letter-spacing: 0; text-transform: none; }
+.loom-pill.loom-fail { background: var(--fail); border-color: var(--fail); color: var(--paper); }
+:root[data-linen-theme="night"] .loom-pill.loom-fail { box-shadow: 0 0 0 1px var(--paper); }
+.loom-button { font: 500 12.5px var(--sans); color: var(--head); background: transparent; border: 1px solid var(--head); border-radius: var(--corner); padding: 6px 12px; }
+.loom-button.loom-primary { background: var(--accent); color: var(--on-accent); }
+.loom-rule { border-top: 1px solid var(--line); }
+.loom-quiet { color: var(--quiet); }
+[data-note] { text-decoration: underline dotted var(--edge); text-underline-offset: 3px; cursor: help; }

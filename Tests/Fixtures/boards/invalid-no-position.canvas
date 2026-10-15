@@ -1,0 +1,13 @@
+{
+	"nodes":[
+		{"id":"ok1","type":"text","text":"Placed","x":0,"y":0,"width":280,"height":140},
+		{"id":"nopos","type":"text","text":"No x","y":0,"width":200,"height":100},
+		{"id":"nosize","type":"text","text":"No width","x":0,"y":200,"height":100},
+		{"id":"zero","type":"text","text":"Zero width","x":320,"y":200,"width":0,"height":140},
+		{"id":"strpos","type":"text","text":"x as text","x":"10","y":400,"width":200,"height":100},
+		{"id":"frac","type":"text","text":"Half a pixel","x":640,"y":0.5,"width":280,"height":140}
+	],
+	"edges":[
+		{"id":"to-unplaced","fromNode":"ok1","toNode":"nopos"}
+	]
+}

@@ -16,7 +16,7 @@ struct WelcomeView: View {
                 LinenMark().stroke(palette.head, style: StrokeStyle(lineWidth: 2.6, lineCap: .round)).frame(width: 84, height: 37)
                 Eyebrow(text: "Linen").padding(.top, 2)
                 Text("What are we reading?").font(Tok.serif(40)).foregroundStyle(palette.head)
-                Text("Drop a .md or .txt file here")
+                Text("Drop a note, a board or a page here")
                     .font(Tok.sans(14)).foregroundStyle(palette.text)
                     .frame(maxWidth: .infinity).frame(height: 76)
                     .background(palette.raised.opacity(0.7))

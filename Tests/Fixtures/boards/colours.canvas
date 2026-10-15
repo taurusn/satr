@@ -1,0 +1,17 @@
+{
+	"nodes":[
+		{"id":"preset-1","type":"text","text":"Preset 1","x":0,"y":0,"width":280,"height":140,"color":"1"},
+		{"id":"preset-2","type":"text","text":"Preset 2","x":320,"y":0,"width":280,"height":140,"color":"2"},
+		{"id":"preset-3","type":"text","text":"Preset 3","x":640,"y":0,"width":280,"height":140,"color":"3"},
+		{"id":"preset-4","type":"text","text":"Preset 4","x":960,"y":0,"width":280,"height":140,"color":"4"},
+		{"id":"preset-5","type":"text","text":"Preset 5","x":1280,"y":0,"width":280,"height":140,"color":"5"},
+		{"id":"preset-6","type":"text","text":"Preset 6","x":1600,"y":0,"width":280,"height":140,"color":"6"},
+		{"id":"hex","type":"text","text":"Hex colour","x":0,"y":200,"width":280,"height":140,"color":"#4A6B57"},
+		{"id":"bad-seven","type":"text","text":"Not a preset","x":320,"y":200,"width":280,"height":140,"color":"7"},
+		{"id":"bad-number","type":"text","text":"A number","x":640,"y":200,"width":280,"height":140,"color":12}
+	],
+	"edges":[
+		{"id":"col-edge","fromNode":"preset-1","toNode":"preset-2","color":"3"},
+		{"id":"hex-edge","fromNode":"preset-2","toNode":"preset-3","color":"#123456"}
+	]
+}

@@ -16,9 +16,11 @@ public struct Place: Codable, Sendable, Equatable {
     public var atEnd: Bool
     /// When the place was recorded.
     public var date: Date
+    /// On a board, the view instead of a reading line (BRD-15); nil for notes and in places stored by Linen 1.
+    public var board: BoardView?
 
     /// Makes a place.
-    public init(blockHash: String, blockIndex: Int, offset: Double, quote: String, zoom: Double, atEnd: Bool, date: Date) {
+    public init(blockHash: String, blockIndex: Int, offset: Double, quote: String, zoom: Double, atEnd: Bool, date: Date, board: BoardView? = nil) {
         self.blockHash = blockHash
         self.blockIndex = blockIndex
         self.offset = offset
@@ -26,6 +28,31 @@ public struct Place: Codable, Sendable, Equatable {
         self.zoom = zoom
         self.atEnd = atEnd
         self.date = date
+        self.board = board
+    }
+}
+
+/// Where a board was being read: the view's centre in board coordinates, its zoom, the node nearest the centre
+/// and whether it showed as a canvas or as a list (BRD-15, BRD-23).
+public struct BoardView: Codable, Sendable, Equatable {
+    /// The view's centre, in board coordinates.
+    public var cx: Double
+    /// The view's centre, in board coordinates.
+    public var cy: Double
+    /// Board zoom, 1 meaning 100 percent.
+    public var zoom: Double
+    /// The id of the node nearest the centre, to hold it when the board changes.
+    public var node: String?
+    /// "canvas" or "list".
+    public var mode: String
+
+    /// Makes a board view.
+    public init(cx: Double, cy: Double, zoom: Double, node: String?, mode: String) {
+        self.cx = cx
+        self.cy = cy
+        self.zoom = zoom
+        self.node = node
+        self.mode = mode
     }
 }
 

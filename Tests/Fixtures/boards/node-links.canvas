@@ -1,0 +1,11 @@
+{
+	"nodes":[
+		{"id":"source","type":"text","text":"See [[node-links.canvas#target]] and [[other.canvas#n9]] and [the target](#target).","x":0,"y":0,"width":280,"height":140},
+		{"id":"target","type":"text","text":"## Target\n\nLinks land here.","x":320,"y":0,"width":280,"height":140},
+		{"id":"note-sub","type":"file","file":"notes/Plan.md","x":640,"y":0,"width":280,"height":160,"subpath":"#Scope"},
+		{"id":"board-sub","type":"file","file":"maps/system.canvas","x":960,"y":0,"width":280,"height":160,"subpath":"#gateway"}
+	],
+	"edges":[
+		{"id":"ln1","fromNode":"source","toNode":"target"}
+	]
+}

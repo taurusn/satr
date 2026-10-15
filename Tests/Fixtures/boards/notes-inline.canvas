@@ -1,0 +1,60 @@
+{
+	"nodes":[
+		{
+			"id":"n1",
+			"type":"text",
+			"text":"## Gateway\n\nFront door.",
+			"x":0,
+			"y":0,
+			"width":280,
+			"height":140,
+			"linen":{
+				"word":"Partial",
+				"note":{
+					"area":"Edge",
+					"title":"Why partial",
+					"body":"Retries work; **timeouts** do not.",
+					"state":"Partial",
+					"refs":["src/gateway.ts:40-52"],
+					"fields":{"Owner":"Platform","Seen":"2026-10-01"}
+				}
+			}
+		},
+		{
+			"id":"n2",
+			"type":"text",
+			"text":"## Ledger",
+			"x":320,
+			"y":0,
+			"width":280,
+			"height":140,
+			"linen":{"note":"just a string"}
+		},
+		{
+			"id":"n3",
+			"type":"text",
+			"text":"## Queue",
+			"x":640,
+			"y":0,
+			"width":280,
+			"height":140,
+			"linen":{
+				"note":{
+					"title":"Refs",
+					"refs":["a.md",7]
+				}
+			}
+		}
+	],
+	"edges":[
+		{
+			"id":"e1",
+			"fromNode":"n1",
+			"toNode":"n2",
+			"label":"writes",
+			"linen":{
+				"note":{"title":"Edge note","body":"Writes every event."}
+			}
+		}
+	]
+}

@@ -1,0 +1,12 @@
+{
+	"nodes":[
+		{"id":"a","type":"text","text":"A","x":0,"y":0,"width":280,"height":140},
+		{"id":"b","type":"text","text":"B","x":320,"y":0,"width":280,"height":140}
+	],
+	"edges":[
+		{"id":"to-ghost","fromNode":"a","toNode":"ghost"},
+		{"id":"from-ghost","fromNode":"ghost","toNode":"b"},
+		{"id":"ghosts","fromNode":"ghost1","toNode":"ghost2"},
+		{"id":"fine","fromNode":"a","toNode":"b"}
+	]
+}

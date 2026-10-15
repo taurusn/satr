@@ -1,0 +1,10 @@
+{
+	"nodes":[
+		{"id":"sticker","type":"sticker","x":0,"y":0,"width":200,"height":100},
+		{"id":"typeless","text":"No type","x":320,"y":0,"width":200,"height":100},
+		{"id":"fine","type":"text","text":"Fine","x":0,"y":200,"width":280,"height":140}
+	],
+	"edges":[
+		{"id":"to-sticker","fromNode":"fine","toNode":"sticker"}
+	]
+}

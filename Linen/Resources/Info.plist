@@ -45,6 +45,41 @@
 			<key>LSHandlerRank</key>
 			<string>Alternate</string>
 		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Board</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>org.jsoncanvas.canvas</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Page</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.html</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>Linen command</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>linen</string>
+			</array>
+		</dict>
 	</array>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
@@ -100,6 +135,23 @@
 				<key>public.mime-type</key>
 				<array>
 					<string>text/markdown</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.json</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>JSON Canvas board</string>
+			<key>UTTypeIdentifier</key>
+			<string>org.jsoncanvas.canvas</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>canvas</string>
 				</array>
 			</dict>
 		</dict>

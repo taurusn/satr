@@ -1,0 +1,69 @@
+{
+	"nodes":[
+		{
+			"id":"lanes",
+			"type":"group",
+			"x":0,
+			"y":0,
+			"width":1000,
+			"height":600,
+			"label":"Lanes",
+			"linen":{"layout":"lanes"}
+		},
+		{"id":"l1","type":"text","text":"Lane card","x":40,"y":60,"width":280,"height":140},
+		{
+			"id":"grid",
+			"type":"group",
+			"x":1100,
+			"y":0,
+			"width":1000,
+			"height":600,
+			"label":"Grid",
+			"linen":{"layout":"grid","cols":3,"gap":24}
+		},
+		{"id":"g1","type":"text","text":"Grid card","x":1140,"y":60,"width":280,"height":140},
+		{
+			"id":"stack",
+			"type":"group",
+			"x":0,
+			"y":800,
+			"width":1000,
+			"height":600,
+			"label":"Stack",
+			"linen":{"layout":"stack","gap":16}
+		},
+		{"id":"s1","type":"text","text":"Stack card","x":40,"y":860,"width":280,"height":140},
+		{
+			"id":"layered",
+			"type":"group",
+			"x":1100,
+			"y":800,
+			"width":1000,
+			"height":600,
+			"label":"Layered",
+			"linen":{"layout":"layered"}
+		},
+		{"id":"y1","type":"text","text":"Layered card","x":1140,"y":860,"width":280,"height":140},
+		{
+			"id":"spiral",
+			"type":"group",
+			"x":0,
+			"y":1600,
+			"width":600,
+			"height":400,
+			"label":"Spiral",
+			"linen":{"layout":"spiral","cols":"three"}
+		},
+		{
+			"id":"bad-layout",
+			"type":"text",
+			"text":"A card cannot lay out",
+			"x":700,
+			"y":1600,
+			"width":280,
+			"height":140,
+			"linen":{"layout":"grid"}
+		}
+	],
+	"edges":[]
+}

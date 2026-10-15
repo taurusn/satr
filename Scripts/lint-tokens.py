@@ -22,7 +22,10 @@ else:
     loom = hexes(table)
     loom.add("1F3A2A")  # the one pressed shade, named in DESIGN.md section 2
 
-for name in ["Renderer/page.css", "Linen/Design/Tokens.swift", "LinenQuickLook/PreviewViewController.swift", "Linen/Document/DocumentWindow.swift"]:
+for name in ["Renderer/page.css", "Renderer/board.css", "Renderer/blocks.css", "Renderer/board.js", "Renderer/blocks.js",
+             "Linen/Pages/Kit/loom.css", "Linen/Design/Tokens.swift", "LinenQuickLook/PreviewViewController.swift", "Linen/Document/DocumentWindow.swift"]:
+    if not (ROOT / name).exists():
+        continue
     used = hexes((ROOT / name).read_text())
     if loom is not None:
         extra = sorted(used - loom)

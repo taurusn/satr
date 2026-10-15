@@ -2,6 +2,16 @@
   "sourceLanguage" : "en",
   "strings" : {
     "" : {},
+    "%@ is not Linen's command, so Linen left it alone. Move it away and try again." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "‏%@ ليس أمر سطر، فتركه سطر كما هو. انقله إلى مكان آخر ثم حاول مجددًا."
+          }
+        }
+      }
+    },
     "%lld notes called %@" : {
       "localizations" : {
         "ar" : {
@@ -18,12 +28,42 @@
         }
       }
     },
+    "%lld × %lld px is past the PNG limit even at 1x; export one section per file" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "‏%lld × %lld بكسل أكبر من حد PNG حتى بمقياس 1x؛ صدّر كل قسم في ملف"
+          }
+        }
+      }
+    },
+    "%lld × %lld px is past the PNG limit; %lldx fits" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "‏%lld × %lld بكسل أكبر من حد PNG؛ يناسبه %lldx"
+          }
+        }
+      }
+    },
     "%lld%%" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld%%"
+          }
+        }
+      }
+    },
+    "%lldx" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lldx"
           }
         }
       }
@@ -54,6 +94,56 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "الحجم الفعلي"
+          }
+        }
+      }
+    },
+    "Add" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إضافة"
+          }
+        }
+      }
+    },
+    "Add Folder…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أضف مجلدًا…"
+          }
+        }
+      }
+    },
+    "Add Linen to Claude Code" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أضف سطر إلى Claude Code"
+          }
+        }
+      }
+    },
+    "Add Linen to Codex" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أضف سطر إلى Codex"
+          }
+        }
+      }
+    },
+    "Agents can now run linen check, layout, shot, open and mcp." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يستطيع الوكلاء الآن تشغيل linen check وlayout وshot وopen وmcp."
           }
         }
       }
@@ -98,6 +188,16 @@
         }
       }
     },
+    "As List" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كقائمة"
+          }
+        }
+      }
+    },
     "Ask per file" : {
       "localizations" : {
         "ar" : {
@@ -124,6 +224,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "رجوع"
+          }
+        }
+      }
+    },
+    "Board" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لوحة"
           }
         }
       }
@@ -218,6 +328,16 @@
         }
       }
     },
+    "Drop a note, a board or a page here" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أفلت ملاحظة أو لوحة أو صفحة هنا"
+          }
+        }
+      }
+    },
     "Edit" : {
       "localizations" : {
         "ar" : {
@@ -234,6 +354,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "الدخول في وضع ملء الشاشة"
+          }
+        }
+      }
+    },
+    "Export" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تصدير"
+          }
+        }
+      }
+    },
+    "Export…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تصدير…"
           }
         }
       }
@@ -348,6 +488,16 @@
         }
       }
     },
+    "Install Command for Agents…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ثبّت الأمر للوكلاء…"
+          }
+        }
+      }
+    },
     "Larger" : {
       "localizations" : {
         "ar" : {
@@ -368,6 +518,16 @@
         }
       }
     },
+    "Letter" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Letter"
+          }
+        }
+      }
+    },
     "Linen" : {
       "localizations" : {
         "ar" : {
@@ -378,12 +538,72 @@
         }
       }
     },
+    "Linen and your agents" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سطر ووكلاؤك"
+          }
+        }
+      }
+    },
+    "Linen can also add itself to your coding agents as an MCP server, so they can make boards, check them, see them as Linen draws them and open them for you:" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يستطيع سطر أيضًا أن يضيف نفسه إلى وكلاء البرمجة لديك خادمَ MCP، فيصنعون اللوحات ويفحصونها ويرونها كما يرسمها سطر ويفتحونها لك:"
+          }
+        }
+      }
+    },
+    "Linen could not install the command" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر على سطر تثبيت الأمر"
+          }
+        }
+      }
+    },
+    "Linen could not lay out this note for PDF: %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر على سطر تنضيد هذه الملاحظة لملف PDF: ‏%@"
+          }
+        }
+      }
+    },
     "Linen could not read this file" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "تعذّر على سطر قراءة هذا الملف"
+          }
+        }
+      }
+    },
+    "Linen could not read this note for HTML: %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر على سطر قراءة هذه الملاحظة لتصديرها HTML: ‏%@"
+          }
+        }
+      }
+    },
+    "Linen could not write %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر على سطر كتابة %@"
           }
         }
       }
@@ -528,6 +748,26 @@
         }
       }
     },
+    "No trusted folders yet." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا مجلدات موثوقة بعد."
+          }
+        }
+      }
+    },
+    "Not Now" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ليس الآن"
+          }
+        }
+      }
+    },
     "Not downloaded" : {
       "localizations" : {
         "ar" : {
@@ -648,6 +888,16 @@
         }
       }
     },
+    "Outside sections" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خارج الأقسام"
+          }
+        }
+      }
+    },
     "Page Setup…" : {
       "localizations" : {
         "ar" : {
@@ -658,12 +908,42 @@
         }
       }
     },
+    "Pages" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الصفحات"
+          }
+        }
+      }
+    },
+    "Pages export once sealed pages are in this build." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تُصدَّر الصفحات حين تصل الصفحات المعزولة إلى هذا الإصدار."
+          }
+        }
+      }
+    },
     "Paper" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "ورق"
+          }
+        }
+      }
+    },
+    "Paper background" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خلفية ورقية"
           }
         }
       }
@@ -728,6 +1008,16 @@
         }
       }
     },
+    "Remove" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إزالة"
+          }
+        }
+      }
+    },
     "Reveal Folder" : {
       "localizations" : {
         "ar" : {
@@ -744,6 +1034,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "إظهار في Finder"
+          }
+        }
+      }
+    },
+    "Scale" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المقياس"
+          }
+        }
+      }
+    },
+    "Scripts run in pages from these folders and the folders inside them. Pages from anywhere else open with scripts off." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعمل البرامج النصية في الصفحات من هذه المجلدات وما بداخلها. الصفحات من أي مكان آخر تُفتح والبرامج النصية متوقفة."
+          }
+        }
+      }
+    },
+    "Section" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قسم"
           }
         }
       }
@@ -858,6 +1178,26 @@
         }
       }
     },
+    "Something else is already called linen" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يوجد شيء آخر باسم linen"
+          }
+        }
+      }
+    },
+    "Sources" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المصادر"
+          }
+        }
+      }
+    },
     "Text Encoding" : {
       "localizations" : {
         "ar" : {
@@ -888,12 +1228,72 @@
         }
       }
     },
+    "That area is too large for a PNG" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذه المساحة أكبر من أن تكون صورة PNG"
+          }
+        }
+      }
+    },
+    "That section is no longer on this board" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يعد هذا القسم في اللوحة"
+          }
+        }
+      }
+    },
     "The disk holding this file is not connected" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "القرص الذي يحمل هذا الملف غير متصل"
+          }
+        }
+      }
+    },
+    "The linen command is installed" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ثُبّت أمر linen"
+          }
+        }
+      }
+    },
+    "There is nothing to draw in that area" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا شيء يُرسم في هذه المساحة"
+          }
+        }
+      }
+    },
+    "This board has nothing to export" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا شيء في هذه اللوحة يُصدَّر"
+          }
+        }
+      }
+    },
+    "This board has nothing to export yet." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا شيء في هذه اللوحة يُصدَّر بعد."
           }
         }
       }
@@ -934,6 +1334,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ثمانية بلا تذييل"
+          }
+        }
+      }
+    },
+    "Untitled section" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قسم بلا عنوان"
           }
         }
       }
@@ -994,6 +1404,56 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تكبير وتصغير"
+          }
+        }
+      }
+    },
+    "Zoom In" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تكبير"
+          }
+        }
+      }
+    },
+    "Zoom Out" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تصغير"
+          }
+        }
+      }
+    },
+    "Zoom to 100%" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تكبير إلى ١٠٠٪"
+          }
+        }
+      }
+    },
+    "Zoom to Fit" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ملاءمة"
+          }
+        }
+      }
+    },
+    "the note did not render" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم تُعرض الملاحظة"
           }
         }
       }

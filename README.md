@@ -10,7 +10,14 @@
   In Arabic it is <em>سطر</em>, "line".
 </p>
 
-Linen opens the notes, plans and PRDs you and your agents write, and keeps your place while they are rewritten under you. It reads; it never edits. Open in Editor hands the file to Obsidian or your editor of choice.
+Linen opens the notes, plans, boards and PRDs you and your agents write, and keeps your place while they are rewritten under you. It reads; it never edits. Open in Editor hands the file to Obsidian or your editor of choice.
+
+## New in Linen 2
+
+- **Boards.** JSON Canvas files (`.canvas`, the format Obsidian uses) open as boards: sections, cards, stickies, shapes and connectors, a status word per box drawn as its own shape when zoomed out, a legend that works like find, notes with sources on hover, change marks per box, a List view, and right-to-left Arabic boards. Linen's own fields ride in a `linen` object that Obsidian keeps.
+- **Loom blocks in notes.** Tiles, cards, steps, a bar, status words (`:w[Broken]`) and footnotes as cards, written as fenced YAML so the note stays readable anywhere.
+- **For coding agents.** A `linen` command (`check`, `layout`, `shot`, `open`) and an MCP server (`linen mcp`) that Claude Code, Codex and other agents add once: they describe a board's sections and boxes and Linen lays it out, change boxes by id, check files, see them as Linen draws them, and open them without stealing focus. How to write for Linen: `docs/FORMAT.md`.
+- **Export.** A board as a vector PDF with searchable text (Arabic included) or a PNG; a note as a PDF or one self-contained HTML file.
 
 ## What it does
 
@@ -42,9 +49,11 @@ The Thmanyah faces are copied into the app at build time from `~/Library/Fonts`;
 | --- | --- |
 | `Linen/` | The app: windows and tabs, menus, panels, printing, the link gate and the local and remote image handlers |
 | `LinenKit/` | The model, tested on its own: vault index and link rules, file watcher, text decoding, place and baseline stores |
-| `Renderer/` | The page: lexing in a worker, sanitising, rendering in slices, place keeping, change marks, find |
+| `Renderer/` | The page: lexing in a worker, sanitising, rendering in slices, place keeping, change marks, find; the board model, view, layout and author; Loom blocks |
+| `Tools/linen/` | The `linen` command and its MCP server |
 | `LinenQuickLook/` | The Quick Look extension |
-| `docs/PRD.md` | The product: requirements, design contract, architecture, review log and build log |
+| `docs/PRD.md`, `docs/PRD-2.md` | The product: requirements, design contract, architecture, review logs and build logs (Linen 1, Linen 2) |
+| `docs/FORMAT.md` | How agents write boards, notes and pages for Linen |
 | `docs/research/`, `docs/spikes/`, `docs/reviews/` | What the PRD was built on |
 
 Linen grew out of Satr 1.2.1, whose sources (`Sources/`, `Resources/`, `package.json`) are still in the tree for reference.

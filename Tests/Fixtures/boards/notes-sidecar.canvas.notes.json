@@ -1,0 +1,13 @@
+{
+	"n1": {
+		"area": "Edge",
+		"title": "From the sidecar",
+		"body": "Kept beside the board."
+	},
+	"e1": {
+		"title": "Edge from the sidecar"
+	},
+	"ghost": {
+		"title": "No node has this id"
+	}
+}

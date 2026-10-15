@@ -44,7 +44,8 @@
     for (const [k, v] of Object.entries(vars || {})) out = out.replaceAll(`{${k}}`, v);
     return out;
   };
-  const num = (n) => Number(n).toLocaleString(lang === "ar" ? "ar" : "en");
+  // "ar" alone gives Western digits in this WebKit; the numbering system has to be asked for (ARB-4).
+  const num = (n) => Number(n).toLocaleString(lang === "ar" ? "ar-u-nu-arab" : "en");
 
   const state = {
     docId: null, name: "", path: "", plain: false, version: 0,
@@ -152,6 +153,7 @@
     return out;
   }
   const SKIP_DIR = new Set(["CODE", "PRE", "A", "KBD", "SUP"]);
+  const SKIP_ITEM = new Set([...SKIP_DIR, "UL", "OL"]); // a list item's own text, without the lists inside it
   function directionOf(el, fallback) {
     const t = textWithout(el, SKIP_DIR);
     const r = count(t, RTL_RE), l = count(t, LTR_RE);
@@ -192,7 +194,10 @@
 
   // ---------- rendering blocks ----------
   const WIDE_TYPES = new Set(["code", "table"]);
-  let mermaidCount = 0;
+  let mermaidCount = 0, mermaidSeq = 0, mermaidGen = 0;
+  // A Map used as an LRU: a hit moves the key to the end, inserts evict from the front.
+  const lruGet = (m, k) => { if (!m.has(k)) return undefined; const v = m.get(k); m.delete(k); m.set(k, v); return v; };
+  const lruSet = (m, k, v, cap) => { m.delete(k); m.set(k, v); while (m.size > cap) m.delete(m.keys().next().value); }; // the budget (50 per document) and a never-reused id counter
   const lazy = new IntersectionObserver((entries) => {
     for (const e of entries) if (e.isIntersecting) { lazy.unobserve(e.target); fill(e.target); }
   }, { rootMargin: "1400px 0px" });
@@ -213,15 +218,18 @@
     const list = [b.token];
     list.links = state.ctx.links || {};
     let out;
-    try { out = marked.parser(list); } catch (_) { out = `<p>${D.escapeHTML(b.token.raw || "")}</p>`; }
+    // The lifted footnotes are a block of their own (lexer.js; Lane F, BLK-1).
+    if (b.token.type === "footnoteList") el.classList.add("footnotes-blk");
+    try { out = b.token.type === "footnoteList" ? footnotesHTML() : marked.parser(list); } catch (_) { out = `<p>${D.escapeHTML(b.token.raw || "")}</p>`; }
     el.innerHTML = DOMPurify.sanitize(out, PURIFY);
     if (WIDE_TYPES.has(b.token.type) || el.querySelector(":scope > .mermaid-src, :scope > .math.display")) el.classList.add("wide");
+    if (window.LinenBlocks) window.LinenBlocks.expand(el, b); // Linen 2 blocks, words, note terms (Lane F)
     decorate(el, b);
     // The block takes its leading element's direction, so its change mark sits on that side (LIVE-5): code, math
-    // and diagrams read left to right; a table by its own direction.
-    const ltrTypes = b.token.type === "code" || el.querySelector(":scope > .math.display, :scope > .mermaid-src");
+    // and diagrams read left to right; a table by its own direction; a Loom block by its text (Lane F).
+    const ltrTypes = (b.token.type === "code" && !el.dataset.lblk) || el.querySelector(":scope > .math.display, :scope > .mermaid-src");
     const first = el.firstElementChild, table = first && first.querySelector("table[dir]");
-    const lead = ltrTypes ? "ltr" : (first && first.getAttribute("dir")) || (table && table.getAttribute("dir"));
+    const lead = ltrTypes ? "ltr" : el.dataset.lblk ? directionOf(el, state.docDir) || state.docDir : (first && first.getAttribute("dir")) || (table && table.getAttribute("dir"));
     if (lead) el.setAttribute("dir", lead);
     b.nodes = el.getElementsByTagName("*").length + 1; // elements, for the DOM budget (SAFE-5)
     return el;
@@ -231,7 +239,18 @@
     let hi = 0;
     el.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((h) => { h.id = (b.ids && b.ids[hi++]) || slugify(h.textContent); });
     // Direction (ARB-1): lists take one direction; then each block element.
-    el.querySelectorAll("ul, ol").forEach((list) => { const d = directionOf(list, state.docDir); if (d) list.setAttribute("dir", d); });
+    el.querySelectorAll("ul, ol").forEach((list) => {
+      const d = directionOf(list, state.docDir);
+      if (d) list.setAttribute("dir", d);
+      // An item in the other script takes its own direction, so its punctuation lands at its own end (Lane F).
+      const ld = d || state.docDir;
+      for (const li of list.children) {
+        if (li.tagName !== "LI") continue;
+        const own = textWithout(li, SKIP_ITEM), r = count(own, RTL_RE), l = count(own, LTR_RE);
+        const id = r + l === 0 ? null : r / (r + l) > 0.6 ? "rtl" : r / (r + l) < 0.4 ? "ltr" : null;
+        if (id && id !== ld) li.setAttribute("dir", id);
+      }
+    });
     el.querySelectorAll("p, h1, h2, h3, h4, h5, h6, blockquote, .callout, td, th, dt, dd, figcaption, summary").forEach((n) => {
       if (n.closest("li") && n.tagName === "P") return;
       const d = directionOf(n, state.docDir);
@@ -319,13 +338,17 @@
     } else if (n.classList.contains("mermaid-src")) {
       if (mermaidCount >= 50 || n.dataset.src.length > 20000) { failDiagram(n, t("Too large to draw here.")); return; }
       const key = `${html.dataset.theme}\u0000${n.dataset.src}`;
+      const gen = mermaidGen;
       try {
-        let svg = mermaidSVG.get(key);
+        let svg = lruGet(mermaidSVG, key);
         if (!svg) {
           await loadMermaid();
+          if (gen !== mermaidGen || !n.isConnected) return; // the document changed while Mermaid loaded
           mermaidCount++;
-          ({ svg } = await window.mermaid.render(`linen-mermaid-${mermaidCount}`, n.dataset.src));
-          mermaidSVG.set(key, svg);
+          ({ svg } = await window.mermaid.render(`linen-mermaid-${++mermaidSeq}`, n.dataset.src));
+          if (gen !== mermaidGen || !n.isConnected) return; // finished after the document changed: dropped
+          lruSet(mermaidSVG, key, svg, 200); // bounded, least recently used first
+          if (mermaidHeights.size > 400) mermaidHeights.delete(mermaidHeights.keys().next().value);
         }
         n.innerHTML = svg;
         requestAnimationFrame(() => { mermaidHeights.set(n.dataset.src, n.offsetHeight); n.style.removeProperty("--h"); });
@@ -353,11 +376,12 @@
       return;
     }
     if (/^data:/i.test(src) || !src) return;
-    img.dataset.req = `path:${decodeURI(src)}`;
+    img.dataset.req = `path:${safeDecode(src)}`;
     img.removeAttribute("src");
     imageWaits.push(img);
   }
   const hostOf = (u) => { try { return new URL(u).host; } catch (_) { return t("the web"); } };
+  const safeDecode = (u) => { try { return decodeURI(u); } catch (_) { return u; } }; // `bad%zz.png` stays as written
   function blockImage(img, text, action, msg) {
     const box = document.createElement("div");
     box.className = "blocked";
@@ -421,6 +445,7 @@
     $("note-title").setAttribute("dir", d);
     $("note-header").setAttribute("dir", d); // the eyebrow lines up with its title
     $("note-header").hidden = state.plain;
+    if (window.LinenBlocks) window.LinenBlocks.header($("eyebrow"), $("note-title"), $("note-header")); // linen: eyebrow, lead (Lane F)
     let preamble = [];
     if (titleIndex > 0 && blocks[0].kind === "md" && blocks[0].token.type === "heading") preamble = blocks.slice(0, titleIndex).map((b) => b.hash);
     else if (titleIndex < 0 && blocks[0] && blocks[0].kind === "md" && blocks[0].token.type === "heading" && /^for future claude/i.test(blocks[0].token.text)) {
@@ -674,6 +699,7 @@
   }
   addEventListener("wheel", (e) => {
     if (e.ctrlKey) return; // a pinch
+    if (html.classList.contains("board-mode")) return; // a board pans with two fingers (Lane B)
     const now = performance.now();
     if (!swipe || now - swipe.last > 200) swipe = { dx: 0, dy: 0, done: false, blocked: scrollsSideways(e.target) };
     swipe.last = now;
@@ -861,6 +887,8 @@
 
   async function load(msg) {
     const token = ++state.renderToken;
+    mermaidCount = 0;
+    mermaidGen++;
     // The old page's timers stop before anything names the new document (acknowledgements, announcements).
     clearTimeout(seenTimer);
     seenEls = [];
@@ -885,6 +913,7 @@
     state.ctx = { links: result.links, footnotes: result.footnotes, footnoteDefs: result.footnoteDefs };
     D.context = state.ctx;
     state.yaml = parseYAML(result.yaml);
+    if (window.LinenBlocks) window.LinenBlocks.configure(result.yaml, msg.sidecar); // linen: settings, sidecar notes (Lane F)
     html.classList.toggle("log", !!result.logLike);
     assignIds(result.blocks);
     for (const b of state.blocks) if (b.el) resize.unobserve(b.el);
@@ -929,7 +958,8 @@
       applyHeaderToBlocks(header);
       post({ type: "firstPaint", version: msg.version || 0 });
     }
-    if (state.ctx.footnoteDefs.length) appendFootnotes();
+    // The footnotes are a block of their own now (lexer.js, Lane F).
+    if (window.LinenBlocks) keepPlace(() => window.LinenBlocks.finish(docEl)); // noted items, sources for print (Lane F)
     applyHeaderToBlocks(header);
     keepPlace(() => applyMarks(true));
     buildOutline();
@@ -941,14 +971,14 @@
       if (firstNew) jumpTo(firstNew);
     }
     heard = state.blocks.slice();
-    post({ type: "rendered", title: $("note-title").textContent, blocks: state.blocks.length, words: wordCount() });
+    post({ type: "rendered", title: $("note-title").textContent, blocks: state.blocks.length, words: wordCount(), docId: state.docId });
   }
 
   // A reload (LIVE-2 to LIVE-4): diff, patch only what changed, keep the place. A load still parsing starts over
   // with the newer text, so it keeps its place.
   let updateSeq = 0, quietSeq = 0;
   async function update(msg) {
-    if (state.loading) return load({ ...state.loading, text: msg.text, version: msg.version });
+    if (state.loading) return load({ ...state.loading, text: msg.text, version: msg.version, ...("sidecar" in msg ? { sidecar: msg.sidecar } : {}) });
     const seq = ++updateSeq;
     const token = ++state.renderToken;
     state.held = null;
@@ -978,6 +1008,7 @@
     state.ctx = { links: result.links, footnotes: result.footnotes, footnoteDefs: result.footnoteDefs };
     D.context = state.ctx;
     state.yaml = parseYAML(result.yaml);
+    if (window.LinenBlocks) window.LinenBlocks.configure(result.yaml, msg.sidecar); // Lane F
     assignIds(result.blocks);
     const blocks = result.blocks.length > MAX_BLOCKS ? result.blocks.slice(0, MAX_BLOCKS) : result.blocks;
     let capped = blocks.length < result.blocks.length;
@@ -1027,7 +1058,7 @@
       else anchorNew = next.find((b, j) => newToOld.has(j) && newToOld.get(j) > anchorOldIndex) || null;
     }
     // Patch the DOM in order, reusing kept elements.
-    docEl.querySelectorAll(":scope > .gap, :scope > .preamble-toggle, :scope > .footnotes-blk").forEach((g) => g.remove());
+    docEl.querySelectorAll(":scope > .gap, :scope > .preamble-toggle, :scope > .lnotes-blk").forEach((g) => g.remove());
     oldBlocks.forEach((b, o) => { if (!keptOld.has(o) && b.el && b.el.isConnected) { resize.unobserve(b.el); b.el.remove(); } });
     let cursor = docEl.firstChild;
     for (const b of next) {
@@ -1040,7 +1071,8 @@
     if (capped) showNotice(tooLong(next.length)); else $("notice").hidden = true;
     banner("size", big || result.tooBig ? t("This document is too large to typeset, so it is shown as plain text.") : null);
     setArabic(msg.text);
-    if (state.ctx.footnoteDefs.length) appendFootnotes();
+    // The footnotes are a block of their own now (lexer.js, Lane F).
+    if (window.LinenBlocks) window.LinenBlocks.finish(docEl); // Lane F
     const header = headerFor(state.blocks);
     applyHeaderToBlocks(header);
     applyMarks(false);
@@ -1105,19 +1137,17 @@
     getSelection().addRange(r);
   }
 
-  function appendFootnotes() {
+  // The footnotes list, rendered as the source-backed block lexer.js lifts to the end (Lane F, BLK-1). Each item carries
+  // its own number, the one its references show.
+  function footnotesHTML() {
     const defs = state.ctx.footnoteDefs.slice().sort((a, b) => (state.ctx.footnotes[a.id] || 0) - (state.ctx.footnotes[b.id] || 0));
     const items = defs.map((d) => {
       let inner;
       try { inner = marked.parser([{ type: "paragraph", raw: "", text: "", tokens: d.tokens }]); } catch (_) { inner = ""; }
       const id = D.escapeHTML(d.id);
-      return `<li id="fn-${id}">${inner.replace(/<\/p>\s*$/, ` <a class="back" href="#fnref-${id}" aria-label="${D.escapeHTML(t("Back to text"))}">↩</a></p>`)}</li>`;
+      return `<li id="fn-${id}" value="${Number(state.ctx.footnotes[d.id]) || 0}">${inner.replace(/<\/p>\s*$/, ` <a class="back" href="#fnref-${id}" aria-label="${D.escapeHTML(t("Back to text"))}">↩</a></p>`)}</li>`;
     }).join("");
-    const el = document.createElement("div");
-    el.className = "blk footnotes-blk";
-    el.innerHTML = DOMPurify.sanitize(`<section class="footnotes"><ol>${items}</ol></section>`, PURIFY);
-    el.querySelectorAll("img").forEach(prepareImage);
-    docEl.appendChild(el);
+    return `<section class="footnotes"><ol>${items}</ol></section>`;
   }
   function showNotice(text) { const n = $("notice"); n.textContent = text; n.hidden = false; }
   // The banner over the page holds one line per key ("size": shown as plain text; "rewritten": LIVE-5). It sits
@@ -1386,6 +1416,20 @@
     }
   }
   async function route(msg) {
+    // Linen 2 boards (Lane B): a board's load, update and commands go to board.js; settings and focus reach both.
+    const board = window.LinenBoard;
+    if (msg.type === "focus") state.keyWindow = !!msg.key;
+    if (board && msg.type === "settings") { applySettings(msg); board.settings(msg); return true; }
+    if (board && board.handles(msg)) {
+      if (msg.type === "load") { // Lane B: the board takes the tab; a note still rendering stops here
+        ++state.renderToken;
+        state.loading = null;
+        if (worker && pending.size) { worker.terminate(); for (const p of pending.values()) p.resolve(null); pending.clear(); startWorker(); }
+        mermaidCount = 0;
+        mermaidGen++;
+      }
+      return board.receive(msg);
+    }
     switch (msg.type) {
       case "load": await load(msg); return true;
       case "update": await update(msg); return true;
@@ -1419,6 +1463,23 @@
         const h = [...docEl.querySelectorAll("h1, h2, h3, h4, h5, h6")].find((n) => n.textContent.trim().toLowerCase() === want || n.id === slugify(msg.text || ""));
         if (h) { h.scrollIntoView({ block: "start" }); scrollBy(0, -READ_LINE + 24); updateOutline(); }
         return !!h;
+      }
+      // `linen open --line n` (CLI-6, Lane F): the block holding source line n goes to the reading line; nothing selected.
+      case "line": {
+        const n = Math.max(1, Math.round(Number(msg.line)) || 1);
+        // The block whose lines hold n (the lifted footnotes sit last but name their own lines), else the next one.
+        let k = state.blocks.findIndex((b) => b.lines && b.lines[0] <= n && n <= b.lines[1]);
+        if (k < 0) k = state.blocks.findIndex((b) => b.lines && n <= b.lines[1]);
+        if (k < 0) k = state.blocks.length - 1;
+        if (k < 0) return false;
+        ensureRendered(k);
+        const b = state.blocks[Math.min(k, state.rendered - 1)];
+        if (!b || !b.el) return false;
+        if (b.el.classList.contains("pre")) { docEl.classList.add("pre-open"); const pt = docEl.querySelector(":scope > .preamble-toggle"); if (pt) pt.open = true; }
+        if (b.el.hidden || b.el.offsetParent === null) scrollTo(0, 0);
+        else scrollTo(0, scrollY + b.el.getBoundingClientRect().top - READ_LINE);
+        updateOutline();
+        return true;
       }
       default: return false;
     }
@@ -1455,6 +1516,14 @@
   }
 
   localizeChrome();
+  // Linen 2 boards (Lane B): board.js draws card text with the note pipeline, through these.
+  window.linenInternals = Object.assign(window.linenInternals || {}, {
+    marked, PURIFY, post, t, fold, directionOf, prepareImage, requestImages, nextFrame, fill, slugify,
+    lang: () => lang, keyWindow: () => state.keyWindow, mermaidBudget: () => 50 - mermaidCount, spendMermaid: (k) => { mermaidCount += k; }, mermaidGen: () => mermaidGen,
+    imgSourceCount: () => imgSources.size,
+    lruTest: () => { const m = new Map(); lruSet(m, "a", 1, 2); lruSet(m, "b", 2, 2); lruGet(m, "a"); lruSet(m, "c", 3, 2); return m.has("a") && !m.has("b") && m.has("c"); }, imgSource: (k) => imgSources.get(k),
+    decorate, activateMedia, // blocks.js renders a kept block again with the page's own decoration (Lane F)
+  });
   window.linen = { receive, version: 1 };
   if (window.matchMedia) {
     const mq = window.matchMedia("(prefers-contrast: more)");
