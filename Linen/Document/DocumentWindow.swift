@@ -83,6 +83,9 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
         if let place = Library.shared.places.place(for: self.url) { zoom = place.zoom > 0 ? place.zoom : zoom }
         updateTitle(nil)
         if buildNow { build() }
+        for name in [NSApplication.didBecomeActiveNotification, NSApplication.didResignActiveNotification] {
+            NotificationCenter.default.addObserver(self, selector: #selector(appActiveChanged), name: name, object: nil)
+        }
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
@@ -416,6 +419,7 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
             Log.write("page ready for \(url.lastPathComponent)")
             pageReady = true
             sendSettings()
+            sendFocus()
             applyOutline()
             if haveContent { sendLoad() }
         case "firstPaint":
@@ -983,9 +987,17 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
 
     // MARK: Window
 
+    /// The page counts a change mark as seen only while this is the key window of Linen in front. Opening a file
+    /// from `linen open` makes the window key behind another app; marks must not clear there unseen (Loom 2 spike M0).
+    private var pageIsKey: Bool { (window?.isKeyWindow ?? false) && NSApp.isActive }
+
+    private func sendFocus() { if pageReady { send(["type": "focus", "key": pageIsKey]) } }
+
+    @objc private func appActiveChanged(_ notification: Notification) { sendFocus() }
+
     func windowDidBecomeKey(_ notification: Notification) {
         build()
-        send(["type": "focus", "key": true])
+        sendFocus()
         keepTabBarVisible()
         NowState.changed()
     }
