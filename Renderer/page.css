@@ -218,6 +218,11 @@ html.ql #pane { margin: 0 !important; padding: 26px 34px 0; }
   .title { font-size: 30px; }
   #doc > .blk.wide { max-width: 100%; }
   #doc > .blk.chg::before { inset-inline-start: -10px; }
+  /* the find bar spans the phone, and its field takes what the buttons leave (L-1) */
+  #findbar { top: 8px; inset-inline: 8px; gap: 4px; padding: 6px; }
+  #findbar input { flex: 1 1 auto; min-width: 0; width: auto; }
+  #findbar button { padding: 2px 4px; }
+  #find-count { min-width: 0; white-space: nowrap; }
 }
 
 /* reduced motion and contrast (LOOK-4) */
