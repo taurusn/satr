@@ -1,4 +1,6 @@
+#if os(macOS)
 import AppKit
+#endif
 import Foundation
 
 /// Watches one open document and delivers its content whenever any writer saves it: in-place
@@ -98,7 +100,9 @@ public final class FileWatcher: @unchecked Sendable {
         quietItem?.cancel()
         missingItem?.cancel()
         if let presenter { NSFileCoordinator.removeFilePresenter(presenter) }
+        #if os(macOS)
         if let wakeObserver { NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver) }
+        #endif
     }
 
     /// Starts watching and delivers the current content as generation 0 (or `.missing` after 500 ms
@@ -162,7 +166,9 @@ public final class FileWatcher: @unchecked Sendable {
         disarmFile()
         if let presenter { NSFileCoordinator.removeFilePresenter(presenter) }
         presenter = nil
+        #if os(macOS)
         if let wakeObserver { NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver) }
+        #endif
         wakeObserver = nil
         lastSignature = nil
         lastPresent = nil
@@ -235,6 +241,8 @@ public final class FileWatcher: @unchecked Sendable {
     }
 
     private func observeWake() {
+        // The Mac's sleep and wake; an iPhone app is suspended instead and checks again when it returns.
+        #if os(macOS)
         guard wakeObserver == nil else { return }
         wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didWakeNotification, object: nil, queue: nil
@@ -242,6 +250,7 @@ public final class FileWatcher: @unchecked Sendable {
             guard let self else { return }
             self.queue.async { self.wake() }
         }
+        #endif
     }
 
     private func wake() {

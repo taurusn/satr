@@ -1,0 +1,41 @@
+# Spike I(a) lane log
+
+## CHECKPOINT
+- Written 2026-10-31 16:22. **Lane finished** by Hatim's call (through the lead): no more phone runs, the new build not installed.
+- Result in `README.md`. Gate 1 go. First paint met (500: p95 116 ms fresh page). Renderer bench p95 17 ms on both boards. Real-touch pans 2.21% dropped (touch-down frame); touch to frame p95 19 ms from the moving event. Gate 3 not measured.
+- The loop ran 486 s (14 rounds, 15:47:40 to 15:55:46), not 10 minutes; Hatim's touch broke the automation; the app was gone by 15:58:54 with no crash or jetsam report on the phone; its Activity Monitor trace never saved.
+- Not measured, by Hatim's call: memory (gate 3), Animation Hitches, 2,000-card touches and memory.
+- `App/Runner.swift` holds an unbuilt change (every mode ends and quits the app).
+- Simulator 0D2AF19A shut down by UDID at 16:22; no process of this lane is running.
+
+## Log
+- 14:57 Free disk 3.0 GB on /System/Volumes/Data, lower than the brief's 4.7 GB. Every build goes to `docs/spikes/ios/build/`; large traces get deleted after export.
+- 14:59 Read the brief and its sources. Plan: one iOS app hosting `Renderer/page.html` the way `DocumentWindow.swift` does (custom scheme `linen-app`, `linen-local` for images, the `linen` message handler, the error and CSP listener at document start). The renderer and the Thmanyah faces are copied into the app bundle at build time by `Scripts/copy-renderer.sh` (read and run as is, not changed). A bench mode driven by launch arguments writes results to the app's Documents for `devicectl device copy from`. Real touches for touch-to-frame come from an XCUITest target (pans with press-and-drag, pinches with `pinch(withScale:velocity:)`); page frame times from an injected rAF recorder; an independent frame read from xctrace on the device.
+- 15:02 Wrote the app: `project.yml` (XcodeGen; app `LinenSpike`, UI test bundle `LinenSpikeUITests`), `App/Page.swift` (schemes, bridge, loads as DocumentWindow sends them), `App/Runner.swift` (modes fixtures, paint, bench, touch, loop, idle), `App/recorder.js` (console capture and touch frame recorder, injected at document start), `UITests/GestureTests.swift`. The renderer and faces are copied in by `Scripts/copy-renderer.sh`, the fixtures by rsync, both at build time.
+- 15:10 First simulator build (Release, build-for-testing): 162 MB of derived data, app 11 MB. Booted sim 0D2AF19A with simctl (Simulator.app not opened).
+- 15:11 Fixtures run 1: 41 files, 0 console, 0 page errors. Snapshots checked by eye: Complete.md in Thmanyah serif and sans, the colours board at Fit as shapes (map level), big-500 opens as a List on the phone (BRD-24, as designed).
+- 15:13 `scripts/reference.js`: the renderer's problem lists from node on the Mac equal the simulator's for 41 of 41 files.
+- 15:15 Fixtures run 2 with a positive control after the counts: the capture saw `console.error` and the uncaught throw. The system-log route (private `_logsPageMessagesToSystemConsoleEnabled`, reads on) logged nothing for the control; dropped.
+- 15:16 Sim paint big-500 (20 runs each): warm p95 55 ms, cold p95 123 ms, List p95 117 ms. BRD-24 opens big-500 as a List on a phone; the runs use the place of the first section at reading zoom in Canvas (s = 0.73), as PRD-2 section 4 says.
+- 15:17 Sim renderer bench big-500, 3 x 180 frames per gesture: all p95 17 ms, dropped 0.19%, longest 32 ms.
+- 15:20 Sim XCUITest touches, first try: every one-finger pan moved 0 frames. Cause in board.js: a pointerdown on a card sets `pan: S.space || !card`, so a drag that starts on a card never pans (on the Mac it selects text). Pinches work (gesture events on the canvas).
+- 15:23 Second try from a ground point: only 6 of 20 started on the ground (after the first pan the board under the fixed point had moved). Third try, out-and-back pairs from the ground point: 20 of 20 moved; p95 19 ms, 0.69% dropped, longest 35; touch to first moved frame p95 21 ms.
+- 15:26 Sim big-2000: paint warm p95 60, cold p95 144, List p95 431 ms; bench p95 38 ms with 13% dropped (zoom and pan at overview 16 to 32%). The simulator draws on the Mac; the device decides.
+- 15:28 Device build and install (Release, automatic signing, 2U8YZJV343) worked first time, by CoreDevice id. Phone unlocked.
+- 15:28 Device fixtures: 41 files, 0 console, 0 page errors, 41 of 41 equal to the Mac reference. Pulled shots of the Arabic note, the Arabic board and Complete.md: Thmanyah, right-to-left, correct.
+- 15:29 Device paint big-500 and big-2000, numbers in the checkpoint.
+- 15:30 xctrace on the device: by CoreDevice id "No devices found"; by hardware id it hangs (no output after 2 min on a 12 s Activity Monitor recording).
+- 15:33 Device renderer bench big-500 (3 x 180 frames per gesture): all gestures p95 17 ms, 0.07% dropped, longest 30 ms.
+- 15:33 The 12 s Activity Monitor trace finished after all (about 3 min to attach): 29 MB, of which 27 MB is the template; samples about every 1 s; WebContent 160 MB with big-500 at reading zoom. `scripts/am-memory.py` reads the export (id/ref XML).
+- 15:37 Device XCUITest touches big-500: 20 ground pans p95 19 ms, 2.21% dropped (13 of 589), longest 36 ms; 11 of the 13 are frame 0, the frame in which the finger lands (21 to 36 ms on every pan); without frame 0, 0.37%. Touch to first moved frame: p95 19 ms from the event that moved the board, p95 36 ms from the first move event (moves under 3 px do not pan, by design). 15 pinches (a notification banner interrupted the run at t = 106 s): p95 18 ms, 0.79% dropped, longest 29. A drag from a card: 4 of 4 moved nothing on the device too.
+- 15:43 First loop try: xctrace "Timed out waiting for device to boot: Eight". Retried at 15:46: recording at once.
+- 15:46 The loop's launch failed silently: `devicectl device process launch ... -LinenMode loop -LinenBoard big-500 -LinenMinutes 10` answers "Unknown option '-L'" (the earlier runs with fewer arguments launched). Launched by hand with `--` before the app's arguments at 15:47:39; `device-run.sh` now passes `--`. The loop runs 15:47:40 to about 15:58; xctrace records 15:46:19 to 15:58:49.
+- 15:46 Diagnosis on the simulator (listener timing added to the recorder, behaviour unchanged): the page's pointer and touch handlers take 0 to 1 ms per gesture, so slow frames are rendering, not script. WebKit on iOS sends pointerdown before touchstart; the recorder now starts a gesture at either.
+- 15:55 The loop's last progress line: iteration 14 at 486 s (15:55:46). Nothing after.
+- 15:58 `device-run.sh` gave up at its 720 s limit (15:58:36). The app was not in the phone's process list at 15:58:54; lock state unlocked. Crash logs on the phone: none for LinenSpike, no JetsamEvent today after 00:48 (a UI test runner report at 15:42, from the reinstall during the first device touch run).
+- 15:58 xctrace reached its 750 s limit and printed "ending recording"; its trace data (62 MB) stopped changing at 15:58 and it never wrote the template.
+- 16:10 Rebuilt and installed the app (attach mode for the UI test, recorder starts at pointerdown). Device renderer bench big-2000: all p95 17, 0.22% dropped, longest 56 ms (zoom back out); pan at overview p95 20.
+- 16:13 Hatim rejected the big-2000 touch run and asked if the loop not stopping is intended. The app was still running on his phone in touch mode (that mode never ended on its own, with the idle timer off). Terminated pid 24219 on the phone. xctrace 26747 and the waiting shell loop were already gone. `build/loop-big-500.trace` will not export: "Document Missing Template Error".
+- 16:14 Runner.swift: every mode now ends with the idle timer back on and `exit(0)`; touch mode stops 30 s after the last gesture or after 6 minutes; idle mode after `-LinenMinutes` (2 by default). Not built yet.
+- 16:15 Hatim: he touched the phone's screen and broke the automation. That accounts for the loop stopping at 15:55 and the interrupted runs. Next: rebuild and install, then the memory loop under Activity Monitor, Animation Hitches during big-500 touches, big-2000 touches and memory, with the phone left alone for about 25 minutes.
+- 16:22 Lead, for Hatim: stop measuring, do not install the new build. README written. Shut down simulator 0D2AF19A by UDID; deleted build/DerivedData and the unexportable loop trace.

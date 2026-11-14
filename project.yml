@@ -3,6 +3,7 @@ options:
   bundleIdPrefix: com.hatim
   deploymentTarget:
     macOS: "15.0"
+    iOS: "18.0"
   createIntermediateGroups: true
   developmentLanguage: en
 settings:
@@ -39,6 +40,12 @@ targets:
         copy:
           destination: wrapper
           subpath: Contents/Helpers
+      # The link's helper (SYNC-2): a login item, registered with SMAppService from Settings > iPhone.
+      - target: LinenHelper
+        embed: true
+        copy:
+          destination: wrapper
+          subpath: Contents/Library/LoginItems
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.hatim.linen
@@ -51,6 +58,21 @@ targets:
       - name: Copy renderer and fonts
         script: bash "$SRCROOT/Scripts/copy-renderer.sh" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/renderer"
         basedOnDependencyAnalysis: false
+  # The Mac side of Linen's link to the iPhone (PRD-2 SYNC-2, section 9.3): no Dock icon, starts at login.
+  LinenHelper:
+    type: application
+    platform: macOS
+    sources:
+      - path: LinenHelper
+    dependencies:
+      - package: LinenKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.hatim.linen.helper
+        PRODUCT_NAME: LinenHelper
+        INFOPLIST_FILE: LinenHelper/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
   LinenCommand:
     type: tool
     platform: macOS
@@ -83,3 +105,66 @@ targets:
       - name: Copy renderer and fonts
         script: bash "$SRCROOT/Scripts/copy-renderer.sh" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/renderer"
         basedOnDependencyAnalysis: false
+  # Linen on iPhone (PRD-2 M11): iPhone only, the same renderer and LinenKit. Debug builds carry Tests/Fixtures for the
+  # fixture library; Release builds carry no test files.
+  Linen iOS:
+    type: application
+    platform: iOS
+    sources:
+      - path: LinenIOS
+        excludes:
+          - "UITests/**"
+      # Pages are sealed with the Mac's own seal (IOS-4), compiled unchanged.
+      - path: Linen/Pages/PageSeal.swift
+      - path: Linen/Pages/PageScheme.swift
+      - path: Linen/Pages/PageScripts.swift
+      - path: Linen/Document/SafeOpen.swift
+    dependencies:
+      - package: LinenKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.hatim.linen.ios
+        PRODUCT_NAME: Linen
+        INFOPLIST_FILE: LinenIOS/Resources/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_HARDENED_RUNTIME: NO
+        CODE_SIGN_IDENTITY: "Apple Development"
+    postCompileScripts:
+      - name: Copy renderer, fonts and kit
+        script: |
+          set -e
+          dest="$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH"
+          bash "$SRCROOT/Scripts/copy-renderer.sh" "$dest/renderer"
+          mkdir -p "$dest/kit" && cp "$SRCROOT/Linen/Pages/Kit/loom.css" "$dest/kit/loom.css"
+          if [ "$CONFIGURATION" = "Debug" ]; then
+            mkdir -p "$dest/fixtures"
+            rsync -a --delete --exclude '.DS_Store' --exclude 'gen.js' "$SRCROOT/Tests/Fixtures/" "$dest/fixtures/"
+          else
+            rm -rf "$dest/fixtures"
+          fi
+        basedOnDependencyAnalysis: false
+  Linen iOS UITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: LinenIOS/UITests
+    dependencies:
+      - target: Linen iOS
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.hatim.linen.ios.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TARGETED_DEVICE_FAMILY: "1"
+        TEST_TARGET_NAME: Linen iOS
+        ENABLE_HARDENED_RUNTIME: NO
+schemes:
+  Linen iOS:
+    build:
+      targets:
+        Linen iOS: all
+        Linen iOS UITests: [test]
+    test:
+      targets:
+        - Linen iOS UITests

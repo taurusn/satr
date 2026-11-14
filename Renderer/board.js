@@ -1794,6 +1794,8 @@
 
   // ---------- pointer and wheel ----------
   let drag = null, hoverRaf = 0, lastMove = null, inPinch = null;
+  const touches = new Set(); // fingers down on the board (iPhone): a second one hands the gesture to the pinch
+  let pressTimer = 0;
   function wire() {
     const C = R.canvas;
     C.addEventListener("wheel", (e) => {
@@ -1819,12 +1821,35 @@
       if (!S.active || e.button !== 0) return;
       const onUI = e.target.closest(".b-zpanel, .b-chip, .b-notecard, .b-line, .b-toast");
       if (onUI) return;
+      const touch = e.pointerType === "touch";
+      if (touch) {
+        if (e.isPrimary) touches.clear(); // the first finger of a new gesture: nothing stale can make it a pinch
+        touches.add(e.pointerId);
+        if (touches.size > 1) { if (drag) { drag.pan = false; drag.moved = true; } return; } // a pinch, and lifting is no tap
+      }
       const card = e.target.closest(".b-node");
-      drag = { x: e.clientX, y: e.clientY, tx: S.view.tx, ty: S.view.ty, moved: false, card, pan: S.space || !card, id: e.pointerId };
-      if (drag.pan) { C.setPointerCapture(e.pointerId); C.classList.add("grabbing"); }
+      // A finger pans from anywhere: on a phone at reading zoom cards cover most of the board (spike I(a), finding 1).
+      // A mouse drag that starts on a card still selects its text.
+      drag = { x: e.clientX, y: e.clientY, tx: S.view.tx, ty: S.view.ty, moved: false, card, pan: S.space || !card || touch, id: e.pointerId };
+      if (drag.pan) { C.setPointerCapture(e.pointerId); if (!touch) C.classList.add("grabbing"); }
+      if (touch) {
+        // A finger held still on a box copies its reference (BRD-26); the lift after it is not a tap.
+        clearTimeout(pressTimer);
+        const p = local(e), d = drag;
+        const pressed = card ? S.board.byId.get(card.dataset.id) : nodeAt(p.x, p.y);
+        if (pressed) pressTimer = setTimeout(() => {
+          if (drag !== d || d.moved) return;
+          d.pan = false;
+          d.moved = true;
+          S.focus = null; select(pressed.id); S.lit = pressed.id; lightEdges();
+          const r = copyReference();
+          if (r) post({ type: "copyText", text: r.text });
+        }, 500);
+      }
     });
     C.addEventListener("pointermove", (e) => {
       if (drag && drag.pan) {
+        if (e.pointerId !== drag.id) return;
         const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
         if (!drag.moved && Math.hypot(dx, dy) > 3) drag.moved = true;
         if (drag.moved) { S.view.tx = drag.tx + dx; S.view.ty = drag.ty + dy; gesture(); }
@@ -1835,7 +1860,8 @@
       if (!hoverRaf) hoverRaf = requestAnimationFrame(hoverFrame);
     });
     const end = (e) => {
-      if (!drag) return;
+      if (e.pointerType === "touch") { touches.delete(e.pointerId); clearTimeout(pressTimer); }
+      if (!drag || (e.pointerType === "touch" && e.pointerId !== drag.id)) return;
       const d = drag;
       drag = null;
       C.classList.remove("grabbing");
@@ -1843,6 +1869,14 @@
       if (d.moved) return;
       // A click: select the box under the pointer, or clear the selection on empty board.
       const p = local(e);
+      if (e.pointerType === "touch" && S.level !== "read") {
+        // A finger at the map and areas levels flies to the section it touched (IOS-3): boxes there are shapes too
+        // small to aim at; at reading zoom a tap selects the box and opens its note, below.
+        const hit = nodeAt(p.x, p.y);
+        const sec = (hit && hit.parent ? S.board.byId.get(hit.parent) : null) || sectionAt(p.x, p.y);
+        if (sec) { flyTo(fitView(sec, 40, 1.25)); return; }
+        if (hit) { flyTo(nodeView(hit, true)); return; }
+      }
       const n = d.card ? S.board.byId.get(d.card.dataset.id) : nodeAt(p.x, p.y);
       if (n) { S.focus = null; select(n.id); S.lit = n.id; lightEdges(); if (n.note && e.pointerType === "touch") openNote(n.id); } // a tap opens a note
       else if (S.selected) { S.selected = null; S.lit = null; refreshMarks(); lightEdges(); }

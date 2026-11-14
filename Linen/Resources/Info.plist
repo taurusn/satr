@@ -156,5 +156,7 @@
 			</dict>
 		</dict>
 	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Linen announces this Mac on the local network so your iPhone can find it and bring over the folders you keep there.</string>
 </dict>
 </plist>

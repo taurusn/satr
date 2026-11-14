@@ -142,9 +142,12 @@ final class PageScheme: NSObject, WKURLSchemeHandler {
     static func isBroadRoot(_ folder: URL) -> Bool {
         let u = folder.resolvingSymlinksInPath().standardizedFileURL
         let p = u.path
+        // On iOS a pin's generation folder is never a broad root; only a volume's root would be.
+        #if os(macOS)
         let home = FileManager.default.homeDirectoryForCurrentUser.resolvingSymlinksInPath().standardizedFileURL.path
         let tops = [home, "/"] + ["Desktop", "Documents", "Downloads"].map { home + "/" + $0 }
         if tops.contains(p) { return true }
+        #endif
         if (try? u.resourceValues(forKeys: [.isVolumeKey]))?.isVolume == true { return true }
         let parts = p.split(separator: "/")
         return parts.count == 2 && parts[0] == "Volumes"

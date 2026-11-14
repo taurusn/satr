@@ -93,13 +93,14 @@ enum PageScripts {
             if (e.pointerType === 'mouse') timer = setTimeout(() => show(el), 300);
           }, true);
           document.addEventListener('pointerout', (e) => {
-            if (!e.isTrusted) return;
+            // A finger also leaves the element right after it lifts; only a mouse leaving hides the card.
+            if (!e.isTrusted || e.pointerType !== 'mouse') return;
             const to = e.relatedTarget; if (current && to && (current.contains(to) || to === host)) return;
             if (noteOf(e.target)) hide();
           }, true);
           document.addEventListener('pointerup', (e) => {
             if (!e.isTrusted || e.pointerType === 'mouse' || !usesKit()) return;
-            const el = noteOf(e.target); if (el) { el === current ? hide() : show(el); }
+            const el = noteOf(e.target); if (el) { el === current ? hide() : show(el); } else if (current) hide();
           }, true);
           document.addEventListener('focusin', (e) => { const el = noteOf(e.target); if (el && usesKit()) show(el); }, true);
           document.addEventListener('focusout', () => hide(), true);

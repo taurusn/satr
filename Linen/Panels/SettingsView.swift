@@ -35,6 +35,11 @@ struct SettingsView: View {
                     .labelsHidden().frame(width: 220)
                 }
                 row("Remote images") { segmented(Binding(get: { remoteAlways ? "always" : "ask" }, set: { remoteAlways = $0 == "always" }), [("ask", "Ask per file"), ("always", "Always load")]) }
+                // SYS-2: pairing, paired phones and what is kept on the iPhone, in their own pane.
+                row("iPhone") {
+                    Button("Pair and Pinned Folders…") { IPhoneSettingsWindow.show() }
+                        .buttonStyle(.plain).font(Tok.sans(13, medium: true)).foregroundStyle(palette.accent)
+                }
                 pages
                 Spacer()
             }

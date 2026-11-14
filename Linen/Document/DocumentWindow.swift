@@ -7,7 +7,7 @@ import WebKit
 /// One tab: a document in a page, its file watcher, its history and its place (PRD 6.1 to 6.7).
 @MainActor
 final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDelegate, NSToolbarDelegate, NSMenuItemValidation {
-    private(set) var url: URL
+    private(set) var url: URL { didSet { updateIPhoneMark() } }
     private(set) var vault: Vault
     private var index: VaultIndex
     private(set) var web: WKWebView!
@@ -1000,6 +1000,8 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
         sendFocus()
         keepTabBarVisible()
         NowState.changed()
+        updateIPhoneMark()
+        if HelperClient.shared.enabled { HelperClient.shared.refresh() }
     }
 
     func windowDidResignKey(_ notification: Notification) {
@@ -1103,13 +1105,16 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
 
     // MARK: Toolbar
 
+    private var iphoneToolbarItem: NSToolbarItem?
+    nonisolated(unsafe) private var iphoneObserver: (any NSObjectProtocol)?
+
     private static let backItem = NSToolbarItem.Identifier("back"), forwardItem = NSToolbarItem.Identifier("forward"),
                       outlineItem = NSToolbarItem.Identifier("outline"), findItem = NSToolbarItem.Identifier("find"),
                       sizeItem = NSToolbarItem.Identifier("size"), editorItem = NSToolbarItem.Identifier("editor"),
-                      shareItem = NSToolbarItem.Identifier("share")
+                      shareItem = NSToolbarItem.Identifier("share"), iphoneItem = NSToolbarItem.Identifier("iphone")
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        [Self.backItem, Self.forwardItem, Self.outlineItem, .flexibleSpace, Self.findItem, Self.sizeItem, Self.editorItem, Self.shareItem]
+        [Self.backItem, Self.forwardItem, Self.outlineItem, .flexibleSpace, Self.findItem, Self.sizeItem, Self.editorItem, Self.iphoneItem, Self.shareItem]
     }
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] { toolbarDefaultItemIdentifiers(toolbar) }
@@ -1137,6 +1142,17 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
             group.label = String(localized: "Text Size")
             return group
         case Self.editorItem: return item(String(localized: "Open in Editor"), "square.and.pencil", #selector(openInEditor(_:)))
+        case Self.iphoneItem:
+            // SYNC-3 in the window itself: whether this file is on the iPhone, and the "On iPhone" popover.
+            let i = item(String(localized: "On iPhone"), "iphone", #selector(showOnIPhone(_:)))
+            iphoneToolbarItem = i
+            updateIPhoneMark()
+            if iphoneObserver == nil {
+                iphoneObserver = NotificationCenter.default.addObserver(forName: HelperClient.changed, object: nil, queue: .main) { [weak self] _ in
+                    MainActor.assumeIsolated { self?.updateIPhoneMark() }
+                }
+            }
+            return i
         case Self.shareItem:
             let s = NSSharingServicePickerToolbarItem(itemIdentifier: id)
             s.delegate = ShareDelegate.shared
@@ -1148,6 +1164,21 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
 
     @objc private func sizeGroup(_ sender: NSToolbarItemGroup) {
         sender.selectedIndex == 0 ? zoomOut(nil) : zoomIn(nil)
+    }
+
+    // MARK: On iPhone (SYNC-3)
+
+    func updateIPhoneMark() {
+        guard let i = iphoneToolbarItem else { return }
+        let m = OnIPhone.mark(for: url)
+        i.image = m.image
+        i.toolTip = m.tip
+        i.label = m.tip
+    }
+
+    @objc func showOnIPhone(_ sender: Any?) {
+        guard let i = iphoneToolbarItem else { return }
+        OnIPhone.popover(for: url, window: window).show(relativeTo: i)
     }
 }
 

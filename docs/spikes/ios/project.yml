@@ -1,0 +1,65 @@
+# Spike I(a): Linen's renderer in a WKWebView inside an iOS app. Generated into LinenSpike.xcodeproj (not committed).
+# The renderer, the Thmanyah faces and the test fixtures are copied into the app at build time; nothing in the main
+# Linen project changes.
+name: LinenSpike
+options:
+  bundleIdPrefix: com.hatim
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    DEVELOPMENT_TEAM: 2U8YZJV343
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    TARGETED_DEVICE_FAMILY: "1"
+    MARKETING_VERSION: "0.1"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  LinenSpike:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.hatim.linen.spike-ios
+        PRODUCT_NAME: LinenSpike
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UIFileSharingEnabled: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Linen Spike
+    postCompileScripts:
+      - name: Copy renderer, fonts and fixtures
+        script: |
+          set -e
+          dest="$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH"
+          bash "$SRCROOT/../../../Scripts/copy-renderer.sh" "$dest/renderer"
+          mkdir -p "$dest/fixtures"
+          rsync -a --delete --exclude '.DS_Store' --exclude 'gen.js' "$SRCROOT/../../../Tests/Fixtures/" "$dest/fixtures/"
+        basedOnDependencyAnalysis: false
+  LinenSpikeUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: UITests
+    dependencies:
+      - target: LinenSpike
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.hatim.linen.spike-ios.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: LinenSpike
+schemes:
+  LinenSpike:
+    build:
+      targets:
+        LinenSpike: all
+        LinenSpikeUITests: [test]
+    test:
+      targets:
+        - LinenSpikeUITests

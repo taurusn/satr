@@ -1,0 +1,1166 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "%@ is asleep": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ نائم"
+          }
+        }
+      }
+    },
+    "%@ is asleep · copies from %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ نائم · نسخ من %2$@"
+          }
+        }
+      }
+    },
+    "%@ · Not on this iPhone": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · ليس على هذا الآيفون"
+          }
+        }
+      }
+    },
+    "%@, named “%@”": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@، باسم «%2$@»"
+          }
+        }
+      }
+    },
+    "%lld changed since you read it": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld تغيير منذ قرأته"
+          }
+        }
+      }
+    },
+    "%lld of %lld": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld من %2$lld"
+          }
+        }
+      }
+    },
+    "Asked when you pair": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يُطلب عند الإقران"
+          }
+        }
+      }
+    },
+    "Back": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "رجوع"
+          }
+        }
+      }
+    },
+    "Camera": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الكاميرا"
+          }
+        }
+      }
+    },
+    "Camera access is off for Linen": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "وصول سطر إلى الكاميرا مغلق"
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إلغاء"
+          }
+        }
+      }
+    },
+    "Canvas": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اللوحة"
+          }
+        }
+      }
+    },
+    "Changed": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تغيّر"
+          }
+        }
+      }
+    },
+    "Changed since you read it": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تغيّر منذ قرأته"
+          }
+        }
+      }
+    },
+    "Changes are not marked in pages": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا تُعلَّم التغييرات في الصفحات"
+          }
+        }
+      }
+    },
+    "Check that your Mac shows the same six digits, then click Allow there.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تأكد أن جهاز الماك يعرض الأرقام الستة نفسها، ثم انقر «السماح» هناك."
+          }
+        }
+      }
+    },
+    "Done": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم"
+          }
+        }
+      }
+    },
+    "Everything kept on this iPhone from it is removed. Pair again to bring it back.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يُحذف كل ما حُفظ منه على هذا الآيفون. أقرنه من جديد لاستعادته."
+          }
+        }
+      }
+    },
+    "Find": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بحث"
+          }
+        }
+      }
+    },
+    "Finding your Mac": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يبحث عن جهاز الماك"
+          }
+        }
+      }
+    },
+    "Finishing %lld files paused when you left": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يُكمل %lld ملفات توقفت حين غادرت"
+          }
+        }
+      }
+    },
+    "Folders you keep on iPhone from your Mac arrive in the Library.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تصل إلى المكتبة المجلدات التي تحفظها على الآيفون من جهاز الماك."
+          }
+        }
+      }
+    },
+    "Forget this Mac": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "انسَ هذا الماك"
+          }
+        }
+      }
+    },
+    "Forget this Mac?": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أتنسى هذا الماك؟"
+          }
+        }
+      }
+    },
+    "If that was a mistake, pair again and click Allow on the Mac.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إن كان ذلك خطأً، أقرن من جديد وانقر «السماح» على الماك."
+          }
+        }
+      }
+    },
+    "In Linen on your Mac: Settings, iPhone, Pair. Linen will ask to find devices on your local network; that is how it reaches the Mac.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "في سطر على جهاز الماك: الإعدادات، الآيفون، إقران. سيطلب سطر إذنًا للعثور على الأجهزة في شبكتك المحلية؛ بهذا يصل إلى الماك."
+          }
+        }
+      }
+    },
+    "Installed from Xcode": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مثبّت من Xcode"
+          }
+        }
+      }
+    },
+    "JSON Canvas": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JSON Canvas"
+          }
+        }
+      }
+    },
+    "Keep the iPhone on the same Wi-Fi as the Mac, with the Mac awake, then try again.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أبقِ الآيفون على شبكة Wi-Fi نفسها التي عليها الماك، والماك مستيقظ، ثم حاول مجددًا."
+          }
+        }
+      }
+    },
+    "Kept here": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المحفوظ هنا"
+          }
+        }
+      }
+    },
+    "Larger text": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نص أكبر"
+          }
+        }
+      }
+    },
+    "Library": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المكتبة"
+          }
+        }
+      }
+    },
+    "Linen could not reach that Mac": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّر على سطر الوصول إلى ذلك الماك"
+          }
+        }
+      }
+    },
+    "Linen could not seal this page, so it shows its source": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّر على سطر عزل هذه الصفحة، فيعرض مصدرها"
+          }
+        }
+      }
+    },
+    "Linen does not open %@ from a page": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا يفتح سطر %@ من صفحة"
+          }
+        }
+      }
+    },
+    "Linen does not open %@: links": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا يفتح سطر روابط %@:"
+          }
+        }
+      }
+    },
+    "Linen on this iPhone": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "سطر على هذا الآيفون"
+          }
+        }
+      }
+    },
+    "Linen opens notes, boards and pages (.md, .txt, .canvas, .html); %@ is not one.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يفتح سطر الملاحظات واللوحات والصفحات (.md و.txt و.canvas و.html)، و%@ ليس منها."
+          }
+        }
+      }
+    },
+    "Linen opens notes, boards and pages only": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يفتح سطر الملاحظات واللوحات والصفحات فقط"
+          }
+        }
+      }
+    },
+    "Linen uses the camera only to read the pairing code on your Mac.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يستخدم سطر الكاميرا لقراءة رمز الإقران على جهاز الماك فقط."
+          }
+        }
+      }
+    },
+    "List": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "قائمة"
+          }
+        }
+      }
+    },
+    "Local network": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الشبكة المحلية"
+          }
+        }
+      }
+    },
+    "Local network access is off for Linen": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "وصول سطر إلى الشبكة المحلية مغلق"
+          }
+        }
+      }
+    },
+    "Look": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المظهر"
+          }
+        }
+      }
+    },
+    "Mac": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الماك"
+          }
+        }
+      }
+    },
+    "Mac not nearby": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الماك ليس قريبًا"
+          }
+        }
+      }
+    },
+    "Mac not nearby · copies from %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الماك ليس قريبًا · نسخ من %@"
+          }
+        }
+      }
+    },
+    "Next": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "التالي"
+          }
+        }
+      }
+    },
+    "Next match": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "التطابق التالي"
+          }
+        }
+      }
+    },
+    "Night": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ليل"
+          }
+        }
+      }
+    },
+    "No headings": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا عناوين"
+          }
+        }
+      }
+    },
+    "No more changes below": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا تغييرات أخرى بعد هذا"
+          }
+        }
+      }
+    },
+    "No note called %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا ملاحظة باسم %@"
+          }
+        }
+      }
+    },
+    "Not enough space on this iPhone · %@ needed": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا مساحة كافية على هذا الآيفون · يلزم %@"
+          }
+        }
+      }
+    },
+    "Not found": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "غير موجود"
+          }
+        }
+      }
+    },
+    "Not on this iPhone": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ليس على هذا الآيفون"
+          }
+        }
+      }
+    },
+    "Not opened": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لم يُفتح"
+          }
+        }
+      }
+    },
+    "Not paired": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "غير مقترن"
+          }
+        }
+      }
+    },
+    "Not paired with a Mac yet": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لم يُقرن بجهاز ماك بعد"
+          }
+        }
+      }
+    },
+    "Note": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ملاحظة"
+          }
+        }
+      }
+    },
+    "Nothing by that name": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا شيء بهذا الاسم"
+          }
+        }
+      }
+    },
+    "Nothing is kept on this iPhone yet": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا شيء محفوظ على هذا الآيفون بعد"
+          }
+        }
+      }
+    },
+    "OK": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حسنًا"
+          }
+        }
+      }
+    },
+    "Off": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مغلقة"
+          }
+        }
+      }
+    },
+    "On this iPhone": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "على هذا الآيفون"
+          }
+        }
+      }
+    },
+    "On your Mac, choose File › Keep on iPhone for a folder. It arrives here when the Mac is near.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "على جهاز الماك، اختر ملف › احفظ على الآيفون لمجلد. يصل إلى هنا حين يكون الماك قريبًا."
+          }
+        }
+      }
+    },
+    "On your Mac, open Settings, iPhone, Pair for a new code, then point at it again.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "على جهاز الماك، افتح الإعدادات، الآيفون، إقران لرمز جديد، ثم وجّه الكاميرا إليه مجددًا."
+          }
+        }
+      }
+    },
+    "On, for pairing only": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مفعّلة، للإقران فقط"
+          }
+        }
+      }
+    },
+    "Open": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "فتح"
+          }
+        }
+      }
+    },
+    "Open this address?": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أتفتح هذا العنوان؟"
+          }
+        }
+      }
+    },
+    "Opened on this iPhone": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "فُتح على هذا الآيفون"
+          }
+        }
+      }
+    },
+    "Outline": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المخطط"
+          }
+        }
+      }
+    },
+    "Page": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صفحة"
+          }
+        }
+      }
+    },
+    "Pages cannot use the camera or microphone": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا تستطيع الصفحات استخدام الكاميرا أو الميكروفون"
+          }
+        }
+      }
+    },
+    "Pair again": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أقرن من جديد"
+          }
+        }
+      }
+    },
+    "Pair with a Mac": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إقران بجهاز ماك"
+          }
+        }
+      }
+    },
+    "Pair with your Mac, then choose File › Keep on iPhone there for a folder. Files you open from Files or AirDrop also appear here.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أقرن الآيفون بجهاز الماك، ثم اختر هناك ملف › احفظ على الآيفون لمجلد. وتظهر هنا أيضًا الملفات التي تفتحها من تطبيق الملفات أو AirDrop."
+          }
+        }
+      }
+    },
+    "Paired": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الاقتران"
+          }
+        }
+      }
+    },
+    "Paired with %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اقترن بـ %@"
+          }
+        }
+      }
+    },
+    "Paper": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ورق"
+          }
+        }
+      }
+    },
+    "Point at the code": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "وجّه الكاميرا إلى الرمز"
+          }
+        }
+      }
+    },
+    "Point at the code in Linen's Settings on your Mac, under iPhone.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "وجّه الكاميرا إلى الرمز في إعدادات سطر على جهاز الماك، تحت الآيفون."
+          }
+        }
+      }
+    },
+    "Previous match": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "التطابق السابق"
+          }
+        }
+      }
+    },
+    "Receiving %lld of %lld files from %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يستلم %1$lld من %2$lld ملفات من %3$@"
+          }
+        }
+      }
+    },
+    "Reinstall from your Mac": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أعد التثبيت من جهاز الماك"
+          }
+        }
+      }
+    },
+    "Remove from this iPhone": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أزل من هذا الآيفون"
+          }
+        }
+      }
+    },
+    "Scripts are off for pages on this iPhone": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "البرامج النصية مغلقة للصفحات على هذا الآيفون"
+          }
+        }
+      }
+    },
+    "Search by name": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ابحث بالاسم"
+          }
+        }
+      }
+    },
+    "Settings": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الإعدادات"
+          }
+        }
+      }
+    },
+    "Settings › Linen › Camera": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الإعدادات › سطر › الكاميرا"
+          }
+        }
+      }
+    },
+    "Settings › Linen › Local Network": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الإعدادات › سطر › الشبكة المحلية"
+          }
+        }
+      }
+    },
+    "Share": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مشاركة"
+          }
+        }
+      }
+    },
+    "Smaller text": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نص أصغر"
+          }
+        }
+      }
+    },
+    "Stops opening on %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يتوقف عن الفتح في %@"
+          }
+        }
+      }
+    },
+    "System": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "النظام"
+          }
+        }
+      }
+    },
+    "Text size": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حجم النص"
+          }
+        }
+      }
+    },
+    "That code has expired": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "انتهت صلاحية هذا الرمز"
+          }
+        }
+      }
+    },
+    "That is not a Linen pairing code": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "هذا ليس رمز إقران سطر"
+          }
+        }
+      }
+    },
+    "The Mac did not answer": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لم يُجب الماك"
+          }
+        }
+      }
+    },
+    "The Mac is pairing another phone": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الماك يقترن بهاتف آخر"
+          }
+        }
+      }
+    },
+    "The Mac refused this iPhone": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "رفض الماك هذا الآيفون"
+          }
+        }
+      }
+    },
+    "The code did not match": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لم يتطابق الرمز"
+          }
+        }
+      }
+    },
+    "This Mac no longer knows this iPhone": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لم يعد هذا الماك يعرف هذا الآيفون"
+          }
+        }
+      }
+    },
+    "This copy": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "هذه النسخة"
+          }
+        }
+      }
+    },
+    "This copy of Linen stops opening in %lld days": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تتوقف هذه النسخة من سطر عن الفتح بعد %lld أيام"
+          }
+        }
+      }
+    },
+    "This file is no longer on this iPhone.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لم يعد هذا الملف على هذا الآيفون."
+          }
+        }
+      }
+    },
+    "This page draws with scripts, and scripts are off on this iPhone": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ترسم هذه الصفحة ببرامج نصية، والبرامج النصية مغلقة على هذا الآيفون"
+          }
+        }
+      }
+    },
+    "This page stopped Linen's view again; showing its source": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أوقفت هذه الصفحة عرض سطر مرة أخرى؛ يُعرض مصدرها"
+          }
+        }
+      }
+    },
+    "Try again": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حاول مجددًا"
+          }
+        }
+      }
+    },
+    "Turn it on in Settings › Linen › Local Network, then try again.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "فعّله من الإعدادات › سطر › الشبكة المحلية، ثم حاول مجددًا."
+          }
+        }
+      }
+    },
+    "Up to date with %@ · %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "محدّث مع %1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "Waiting for Allow": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بانتظار السماح"
+          }
+        }
+      }
+    },
+    "Yesterday": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أمس"
+          }
+        }
+      }
+    },
+    "a file": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ملفًا"
+          }
+        }
+      }
+    },
+    "a file outside this page's folder": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ملفًا خارج مجلد هذه الصفحة"
+          }
+        }
+      }
+    },
+    "the original file": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الملف الأصلي"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}
