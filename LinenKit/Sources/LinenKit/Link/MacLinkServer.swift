@@ -1,4 +1,5 @@
 import Darwin
+import dnssd
 import Foundation
 import Network
 
@@ -88,6 +89,10 @@ public final class MacLinkServer: @unchecked Sendable {
         public var pairing: Pairing
         public var totalLimit: Int64
         public var listening: Bool
+        /// The listener failed and is being made again (`listening` is false meanwhile).
+        public var restarting: Bool
+        /// How many times a failed listener was made again since the helper started.
+        public var restarts: Int
         public var port: UInt16?
         public var serviceName: String?
         public var problem: String?
@@ -169,36 +174,119 @@ public final class MacLinkServer: @unchecked Sendable {
 
     public func start() throws {
         try queue.sync {
-            guard listener == nil else { return }
-            let params = LinkTLS.parameters(identity: identity, queue: queue, peerToPeer: config.peerToPeer) { [weak self] hash in
-                self?.verify(hash) ?? false
-            }
-            let l = try NWListener(using: params, on: config.port)
-            if let name = config.serviceName { l.service = NWListener.Service(name: name, type: linenServiceType) }
-            l.serviceRegistrationUpdateHandler = { [weak self] change in
-                guard let self else { return }
-                if case let .add(endpoint) = change, case let .service(name, _, _, _) = endpoint { self.registeredName = name; self.changed() }
-            }
-            l.stateUpdateHandler = { [weak self] st in
-                guard let self else { return }
-                switch st {
-                case .ready: self.listening = true; self.problem = nil
-                case let .failed(e): self.listening = false; self.problem = "\(e)"
-                case let .waiting(e): self.listening = false; self.problem = "\(e)"
-                case .cancelled: self.listening = false
-                default: break
-                }
-                self.changed()
-            }
-            l.newConnectionHandler = { [weak self] c in self?.accept(c) }
-            l.start(queue: queue)
-            listener = l
+            guard !running else { return }
+            try makeListener()
+            running = true
             for p in persisted.pins { roots[p.info.id] = resolveRoot(p) }
         }
     }
 
+    /// Set between `start()` and `stop()`: while it is, a listener that fails is made again.
+    private var running = false
+    /// The pending restart of a failed listener, and how long the next one waits.
+    private var restart: DispatchWorkItem?
+    private var restartDelay: TimeInterval = 1
+    /// How many times a failed listener was made again (Settings and the tests read it).
+    private var restarts = 0
+    /// When the current listener became ready, and the delay the pending restart was given (tests).
+    private var readyAt: Date?
+    private var scheduledDelay: TimeInterval = 0
+
+    /// Makes and starts the listener; on the server's queue.
+    private func makeListener() throws {
+        let params = LinkTLS.parameters(identity: identity, queue: queue, peerToPeer: config.peerToPeer) { [weak self] hash in
+            self?.verify(hash) ?? false
+        }
+        let l = try NWListener(using: params, on: config.port)
+        if let name = config.serviceName { l.service = NWListener.Service(name: name, type: linenServiceType) }
+        l.serviceRegistrationUpdateHandler = { [weak self, weak l] change in
+            guard let self, let l, l === self.listener else { return }
+            if case let .add(endpoint) = change, case let .service(name, _, _, _) = endpoint { self.registeredName = name; self.changed() }
+        }
+        l.stateUpdateHandler = { [weak self, weak l] st in
+            guard let self, let l, l === self.listener else { return }
+            switch st {
+            case .ready:
+                self.listening = true
+                self.problem = nil
+                // The backoff resets only after a listener has held for a while (in listenerFailed): one that binds
+                // and then fails at once must not restart every second (review P2-3).
+                self.readyAt = Date()
+            case let .failed(e):
+                self.listenerFailed(e)
+            case let .waiting(e): self.listening = false; self.problem = "\(e)"
+            case .cancelled: self.listening = false
+            default: break
+            }
+            self.changed()
+        }
+        l.newConnectionHandler = { [weak self] c in self?.accept(c) }
+        l.start(queue: queue)
+        listener = l
+    }
+
+    /// A listener that fails stays failed, and nothing reaches the Mac while the helper keeps running: seen on
+    /// 2026-11-12, when mDNSResponder restarted ("Error advertising bonjour service: ServiceNotRunning") and the helper
+    /// listened nowhere for days while Settings still showed a pairing code. So it is made again, after 1 s, then up
+    /// to 30 s between tries. Sessions already open are separate connections and carry on.
+    private func listenerFailed(_ e: NWError) {
+        listening = false
+        problem = "\(e)"
+        listener?.cancel()
+        listener = nil
+        registeredName = nil
+        if let r = readyAt, Date().timeIntervalSince(r) > 30 { restartDelay = 1 }
+        readyAt = nil
+        guard running, restart == nil else { return }
+        let delay = restartDelay
+        scheduledDelay = delay
+        restartDelay = min(restartDelay * 2, 30)
+        let item = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.restart = nil
+            guard self.running, self.listener == nil else { return }
+            self.restarts += 1
+            do {
+                try self.makeListener()
+            } catch {
+                self.listenerFailed((error as? NWError) ?? .posix(.EINVAL))
+            }
+            self.changed()
+        }
+        restart = item
+        queue.asyncAfter(deadline: .now() + delay, execute: item)
+    }
+
+    /// Makes a failed listener now instead of at its pending restart (Pair in Settings must not wait out a backoff).
+    private func restartNow() {
+        guard running, let r = restart else { return }
+        r.cancel()
+        restart = nil
+        restartDelay = 1
+        restarts += 1
+        do { try makeListener() } catch { listenerFailed((error as? NWError) ?? .posix(.EINVAL)) }
+    }
+
+    #if DEBUG
+    func restartDelayForTesting() -> TimeInterval { queue.sync { scheduledDelay } }
+
+    /// Tests and the helper's development mode: run the failure path as if the listener had failed.
+    public func failListenerForTesting() {
+        queue.sync {
+            listenerFailed(.dns(DNSServiceErrorType(kDNSServiceErr_ServiceNotRunning)))
+            changed()
+        }
+    }
+    #endif
+
     public func stop() {
         queue.sync {
+            running = false
+            restart?.cancel()
+            restart = nil
+            restartDelay = 1
+            restarts = 0
+            readyAt = nil
             listener?.cancel()
             listener = nil
             for s in sessions.values { s.channel.connection.cancel() }
@@ -290,6 +378,14 @@ public final class MacLinkServer: @unchecked Sendable {
 
     private func handle(_ f: Frame, on s: MacSession) {
         guard sessions[s.id] != nil, let kind = s.kind else { return }
+        s.framesIn += 1
+        // A first `hello` from an unpinned certificate is a phone confirming its own pairing (its answer was lost, or it
+        // gave up waiting): closed quietly, nothing sent, and pairing mode stays open (review P2-4; lead, 2026-11-14).
+        // An unknown certificate gets nothing from it. Every other misstep still ends pairing mode.
+        if kind == .pairing, f.type == .hello, s.framesIn == 1, !s.answered {
+            pairing.sessionEnded(s.id, violation: false)
+            return close(s)
+        }
         guard f.type.allowed(on: kind, from: .phone), !(kind == .pairing && s.answered) else {
             // Any frame not in the list, from the wrong side, or after pair-result: the session ends, and a pairing
             // session's misstep ends pairing mode.
@@ -319,6 +415,7 @@ public final class MacLinkServer: @unchecked Sendable {
     /// Opens pairing mode with a new one-time code; the QR's text is `invite.text`.
     public func beginPairing() -> PairingInvite {
         queue.sync {
+            restartNow()
             if let s = pairing.cancel(), let session = sessions[s] { close(session) }
             let code = PairingInvite.newCode()
             pairing.open(code: code, now: Date(), lifetime: config.pairingLifetime)
@@ -543,7 +640,8 @@ public final class MacLinkServer: @unchecked Sendable {
                     return .init(info: p.info, path: p.path, size: m?.totalSize ?? 0, files: m?.entries.count ?? 0, problems: m?.problems ?? [])
                 },
                 pairing: .init(invite: pairing.isOpen || pairing.waiting != nil ? invite : nil, expires: pairing.isOpen ? pairing.expires : nil, waiting: w, ended: pairing.ended),
-                totalLimit: persisted.totalLimit, listening: listening, port: listener?.port?.rawValue,
+                totalLimit: persisted.totalLimit, listening: listening, restarting: running && restart != nil, restarts: restarts,
+                port: listener?.port?.rawValue,
                 serviceName: registeredName ?? config.serviceName, problem: problem, unsentSince: unsentSince)
         }
     }
@@ -662,6 +760,8 @@ final class MacSession: @unchecked Sendable {
     let id = UUID()
     let channel: FrameChannel
     var kind: LinkSessionKind?
+    /// Frames received so far.
+    var framesIn = 0
     var peer: Data?
     /// The pairing session's one `pair-result` went out; anything after it ends pairing.
     var answered = false

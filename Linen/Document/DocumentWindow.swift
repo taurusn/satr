@@ -116,6 +116,16 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
         web.allowsBackForwardNavigationGestures = false
         web.pageZoom = zoom
         if #available(macOS 13.3, *) { web.isInspectable = true }
+        #if DEBUG
+        // A test copy run behind Hatim's apps draws its pages anyway, so its windows can be captured without coming to
+        // the front (WebKit stops drawing in an occluded window). WebKit's own switch, debug test copies only.
+        // Called through the method itself: key-value coding has no setter for an underscored name (it threw, 2026-11-14).
+        let occlusion = NSSelectorFromString("_setWindowOcclusionDetectionEnabled:")
+        if Library.folderName != "Linen", let m = class_getInstanceMethod(type(of: web), occlusion) {
+            typealias Setter = @convention(c) (AnyObject, Selector, Bool) -> Void
+            unsafeBitCast(method_getImplementation(m), to: Setter.self)(web, occlusion, false)
+        }
+        #endif
         web.autoresizingMask = [.width, .height]
         window.contentView = web
         self.web = web
@@ -381,6 +391,7 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
             "type": "settings", "theme": Settings.theme(for: window?.effectiveAppearance ?? NSApp.effectiveAppearance), "face": Settings.face,
             "uiDir": Settings.interfaceIsArabic ? "rtl" : "ltr", "lang": Settings.interfaceIsArabic ? "ar" : "en",
             "contrast": NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast, "foldArabic": Settings.foldArabic,
+            "zoom": kind == .note ? zoom : 1,
         ])
     }
 
@@ -888,11 +899,33 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
     @objc func zoomActual(_ sender: Any?) { boardCommand("zoom100") }
     @objc func toggleList(_ sender: Any?) { boardCommand("toggleList") }
     private func boardCommand(_ name: String) { Task { _ = await command(name) } }
+    /// Text size on a note (READ-2). The column keeps its width on screen (READ-1), so the page rewraps: the place is
+    /// taken before the zoom changes and handed back with it, and the line being read stays at the reading line.
     private func setZoom(_ z: Double) {
-        zoom = min(2.0, max(0.7, (z * 10).rounded() / 10))
-        web?.pageZoom = zoom
-        Task { if let p = await command("place") as? [String: Any] { storePlace(p) } }
+        let next = min(2.0, max(0.7, (z * 10).rounded() / 10))
+        guard next != zoom else { return }
+        // Set at once, so ⌘+ pressed three times quickly makes three steps. One zoom runs at a time and applies the
+        // latest size when it is done, so a quick run of steps never takes a place from a half-applied size (P3-1).
+        zoom = next
+        guard !zoomRunning else { return }
+        zoomRunning = true
+        Task { @MainActor in
+            defer { zoomRunning = false }
+            var applied = Double(web?.pageZoom ?? CGFloat(zoom))
+            while applied != zoom {
+                let target = zoom
+                let before = await command("place")
+                web?.pageZoom = target
+                var msg: [String: Any] = ["type": "zoom", "zoom": target]
+                if let before, !(before is NSNull) { msg["place"] = before }
+                _ = await send(msg)?.value
+                applied = target
+            }
+            if let p = await command("place") as? [String: Any] { storePlace(p) }
+        }
     }
+
+    private var zoomRunning = false
 
     @objc func reloadDocument(_ sender: Any?) { if kind == .page { pageController?.reload() } else { startWatching() } }
     @objc func revealInFinder(_ sender: Any?) { NSWorkspace.shared.activateFileViewerSelecting([url]) }

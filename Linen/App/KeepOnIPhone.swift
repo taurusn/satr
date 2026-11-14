@@ -20,6 +20,9 @@ final class KeepOnIPhone: NSObject, NSMenuItemValidation {
     }
 
     private var front: URL? { (NSApp.delegate as? AppDelegate)?.activeDocument?.url }
+    /// The window of that same document: the sheet attaches to it even when Linen is not the active app (a menu
+    /// command sent by Ferry or a script), where `NSApp.keyWindow` is nil and the sheet used to float on its own.
+    private var frontWindow: NSWindow? { (NSApp.delegate as? AppDelegate)?.activeDocument?.window }
 
     func kept(_ url: URL) -> Kept {
         let p = url.resolvingSymlinksInPath().path
@@ -44,12 +47,12 @@ final class KeepOnIPhone: NSObject, NSMenuItemValidation {
 
     @objc func keepOnIPhone(_ sender: Any?) {
         guard let f = front else { return }
-        keepFile(f, from: NSApp.keyWindow)
+        keepFile(f, from: frontWindow)
     }
 
     @objc func keepFolderOnIPhone(_ sender: Any?) {
         guard let f = front else { return }
-        keepFolder(f.deletingLastPathComponent(), from: NSApp.keyWindow)
+        keepFolder(f.deletingLastPathComponent(), from: frontWindow)
     }
 
     @objc func removeFromIPhone(_ sender: Any?) {
@@ -92,16 +95,28 @@ final class KeepOnIPhone: NSObject, NSMenuItemValidation {
         }, on: window)
     }
 
+    /// The sheet takes the size its content asks for. It used to open at 0 × 0 (seen 2026-11-11 and 11-12, reproduced
+    /// 2026-11-14): the hosting view was told to report only a preferred content size, which a plain window never
+    /// reads, so it had no intrinsic size and `fittingSize` was zero. Now it reports its intrinsic size and the sheet's
+    /// frame is that size, with a floor in case a future change makes it zero again.
     private func present<V: View>(_ view: V, on window: NSWindow?) {
         let sheet = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 200), styleMask: [.titled], backing: .buffered, defer: false)
+        // AppKit's parts (checkboxes, scrollers) follow Linen's look, not only the system's.
+        sheet.appearance = switch Settings.appearance {
+        case "paper": NSAppearance(named: .aqua)
+        case "night": NSAppearance(named: .darkAqua)
+        default: nil
+        }
         let host = NSHostingView(rootView: LinenScreen { view.environment(\.dismissSheet, { [weak sheet] in
             guard let sheet else { return }
             sheet.sheetParent?.endSheet(sheet)
             sheet.orderOut(nil)
         }) })
-        host.sizingOptions = [.preferredContentSize]
+        host.sizingOptions = [.intrinsicContentSize]
         sheet.contentView = host
-        sheet.setContentSize(host.fittingSize)
+        host.layoutSubtreeIfNeeded()
+        let size = host.fittingSize
+        sheet.setContentSize(NSSize(width: max(size.width, 460), height: max(size.height, 120)))
         if let window { window.beginSheet(sheet) } else { sheet.center(); sheet.makeKeyAndOrderFront(nil) }
     }
 
@@ -198,38 +213,45 @@ struct KeepFileSheet: View {
                 Eyebrow(text: "Also keep these \(references.count) files").padding(.top, 16).padding(.bottom, 4)
                 Text("It points at them. Each one you tick is kept as its own file.")
                     .font(Tok.sans(12.5)).foregroundStyle(palette.quiet).padding(.bottom, 4)
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 0) {
-                        ForEach(references, id: \.0) { r in
-                            Toggle(isOn: Binding(get: { chosen.contains(r.0) }, set: { on in if on { chosen.insert(r.0) } else { chosen.remove(r.0) } })) {
-                                HStack {
-                                    Text(r.0.lastPathComponent).font(Tok.sans(13.5)).foregroundStyle(palette.text).lineLimit(1).truncationMode(.middle)
-                                    Spacer()
-                                    Text(IPhoneSettingsView.bytes(r.1)).font(Tok.sans(12.5)).foregroundStyle(palette.quiet)
-                                }
-                            }
-                            .toggleStyle(.checkbox)
-                            .padding(.vertical, 5)
-                            .overlay(alignment: .bottom) { Rectangle().fill(palette.line).frame(height: 1) }
-                        }
-                    }
+                // A short list shows whole; a long one scrolls in a fixed height (a scroll view alone has no height of
+                // its own to give the sheet).
+                if references.count <= 6 {
+                    referenceList
+                } else {
+                    ScrollView { referenceList }.frame(height: 180)
                 }
-                .frame(maxHeight: 180)
             }
             HStack(spacing: 10) {
                 Spacer()
-                Button("Cancel") { dismiss() }.buttonStyle(LoomButtonStyle(kind: .line)).keyboardShortcut(.cancelAction)
-                Button(chosen.isEmpty ? "Keep on iPhone" : "Keep \(chosen.count + 1) Files on iPhone") {
+                TitledButton(String(localized: "Cancel"), kind: .line, key: .cancelAction, identifier: "keep.cancel") { dismiss() }
+                TitledButton(chosen.isEmpty ? String(localized: "Keep on iPhone") : String(localized: "Keep \(chosen.count + 1) Files on iPhone"),
+                             key: .defaultAction, identifier: "keep.confirm") {
                     keep(references.map(\.0).filter(chosen.contains))
                     dismiss()
                 }
-                .buttonStyle(LoomButtonStyle()).keyboardShortcut(.defaultAction)
             }
+            .fixedSize(horizontal: false, vertical: true)
             .padding(.top, 18)
         }
         .padding(24)
         .frame(width: 460)
         .background(palette.ground)
+    }
+
+    private var referenceList: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(references, id: \.0) { r in
+                HStack {
+                    TitledCheckbox(title: r.0.lastPathComponent,
+                                   isOn: Binding(get: { chosen.contains(r.0) }, set: { on in if on { chosen.insert(r.0) } else { chosen.remove(r.0) } }),
+                                   identifier: "keep.reference")
+                    Spacer(minLength: 12)
+                    Text(IPhoneSettingsView.bytes(r.1)).font(Tok.sans(12.5)).foregroundStyle(palette.quiet)
+                }
+                .padding(.vertical, 5)
+                .overlay(alignment: .bottom) { Rectangle().fill(palette.line).frame(height: 1) }
+            }
+        }
     }
 }
 
@@ -257,9 +279,10 @@ struct KeepFolderSheet: View {
             }
             HStack(spacing: 10) {
                 Spacer()
-                Button("Cancel") { dismiss() }.buttonStyle(LoomButtonStyle(kind: .line)).keyboardShortcut(.cancelAction)
-                Button("Keep Folder on iPhone") { keep(); dismiss() }.buttonStyle(LoomButtonStyle()).keyboardShortcut(.defaultAction)
+                TitledButton(String(localized: "Cancel"), kind: .line, key: .cancelAction, identifier: "keep.cancel") { dismiss() }
+                TitledButton(String(localized: "Keep Folder on iPhone"), key: .defaultAction, identifier: "keep.confirm") { keep(); dismiss() }
             }
+            .fixedSize(horizontal: false, vertical: true)
             .padding(.top, 18)
         }
         .padding(24)

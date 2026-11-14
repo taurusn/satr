@@ -1,65 +1,6 @@
 import LinenKit
 import SwiftUI
 
-/// Linen's mark on Loom's grid, as on the Mac (Linen/Design/Components.swift).
-struct LinenMark: Shape {
-    static let lines: [(CGPoint, CGPoint)] = {
-        let ltr: [(CGFloat, CGFloat, CGFloat, CGFloat)] = [
-            (15, 24, 33, 24), (48, 15, 48, 33), (24, 39, 24, 57), (39, 48, 57, 48),
-            (81, 24, 153, 24), (81, 48, 141, 48), (15, 72, 117, 72),
-        ]
-        let axis: CGFloat = 84
-        return ltr.map { (CGPoint(x: 2 * axis - $0.2, y: $0.3), CGPoint(x: 2 * axis - $0.0, y: $0.1)) }
-    }()
-    static let box = CGRect(x: 12, y: 12, width: 144, height: 63)
-    var only: Int?
-
-    func path(in rect: CGRect) -> Path {
-        let b = Self.box
-        let s = min(rect.width / b.width, rect.height / b.height)
-        let ox = rect.midX - b.midX * s, oy = rect.midY - b.midY * s
-        var p = Path()
-        for (i, (a, c)) in Self.lines.enumerated() where only == nil || only == i {
-            p.move(to: CGPoint(x: ox + a.x * s, y: oy + a.y * s))
-            p.addLine(to: CGPoint(x: ox + c.x * s, y: oy + c.y * s))
-        }
-        return p
-    }
-}
-
-/// The mark drawing itself: Linen's only working indicator. Whole under Reduce Motion.
-struct WeaveIndicator: View {
-    var lineWidth: CGFloat = 2.2
-    @Environment(\.palette) private var palette
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var start = Date()
-
-    var body: some View {
-        TimelineView(.animation(paused: reduceMotion)) { ctx in
-            let t = ctx.date.timeIntervalSince(start)
-            ZStack {
-                ForEach(0..<LinenMark.lines.count, id: \.self) { i in
-                    let (from, to) = reduceMotion ? (CGFloat(0), CGFloat(1)) : Self.trim(t - Double(i) * 0.1)
-                    LinenMark(only: i).trim(from: from, to: to)
-                        .stroke(palette.head, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-                }
-            }
-            .aspectRatio(LinenMark.box.width / LinenMark.box.height, contentMode: .fit)
-        }
-        .accessibilityHidden(true)
-    }
-
-    static func trim(_ t: Double) -> (CGFloat, CGFloat) {
-        guard t > 0 else { return (0, 0) }
-        let p = t.truncatingRemainder(dividingBy: 2.2) / 2.2
-        let ease = { (x: Double) -> Double in x < 0.5 ? 2 * x * x : 1 - pow(-2 * x + 2, 2) / 2 }
-        if p < 0.38 { return (0, CGFloat(ease(p / 0.38))) }
-        if p < 0.58 { return (0, 1) }
-        if p < 0.96 { return (CGFloat(ease((p - 0.58) / 0.38)), 1) }
-        return (1, 1)
-    }
-}
-
 /// The sketch's line glyphs (docs/design/build_screens2.py), drawn on a 16-point grid with a 1.4 stroke.
 struct Glyph: View {
     enum Name {
@@ -187,48 +128,5 @@ struct Eyebrow: View {
             text.textCase(.uppercase).font(Tok.sans(11.5, medium: true, relativeTo: .caption))
                 .tracking(direction == .rightToLeft ? 0 : 1.6).foregroundStyle(palette.quiet)
         }
-    }
-}
-
-/// A Loom link: ink, medium, a quiet rule under it.
-struct LinkLabel: View {
-    let text: Text
-    @Environment(\.palette) private var palette
-    var body: some View {
-        text.font(Tok.sans(14, medium: true, relativeTo: .subheadline)).foregroundStyle(palette.head)
-            .padding(.bottom, 1)
-            .overlay(alignment: .bottom) { Rectangle().fill(palette.night ? Tok.paper.opacity(0.4) : Tok.tint3).frame(height: 1) }
-    }
-}
-
-/// Floating chrome over a board: glass, as Loom's floating panels (PRD section 8).
-struct GlassPanel: ViewModifier {
-    @Environment(\.palette) private var palette
-    func body(content: Content) -> some View {
-        content
-            .background(palette.night ? Tok.ink2.opacity(0.9) : Tok.paper.opacity(0.9))
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: Tok.corner))
-            .overlay(RoundedRectangle(cornerRadius: Tok.corner).stroke(palette.line, lineWidth: 1))
-            .shadow(color: Tok.ink.opacity(0.12), radius: 13, y: 10)
-    }
-}
-
-extension View {
-    func glass() -> some View { modifier(GlassPanel()) }
-}
-
-/// A 44-point tap target around a glyph.
-struct GlyphButton: View {
-    let glyph: Glyph.Name
-    let label: LocalizedStringKey
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Glyph(glyph).frame(width: 44, height: 44).contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text(label))
     }
 }

@@ -8,6 +8,9 @@ import SwiftUI
 struct PairingScreen: View {
     enum Stage: Equatable {
         case asking, camera, cameraOff, dialing, match(String, String), paired(String), failed(PairingFailure)
+        /// Asks before dialing: a code that came by link (never dial on a link alone), or one that would replace the
+        /// paired Mac (review P2-6, 2026-11-14).
+        case confirm(code: String, mac: String, replaces: String?)
     }
 
     @Environment(AppModel.self) private var model
@@ -16,9 +19,10 @@ struct PairingScreen: View {
     @State private var stage: Stage = .asking
     @State private var pairing: Task<Void, Never>?
 
+    // iOS's own controls (Hatim, 2026-11-14): the navigation bar with its title and Cancel, the system's buttons and
+    // activity indicator. Linen's own: the viewfinder's corners over the camera (a drawing, not a control).
     var body: some View {
-        VStack(spacing: 0) {
-            DocumentBar(title: Text("Pair with a Mac"), back: { pairing?.cancel(); dismiss() }) { EmptyView() }
+        NavigationStack {
             ZStack {
                 switch stage {
                 case .asking, .camera:
@@ -29,6 +33,8 @@ struct PairingScreen: View {
                     waiting(Text("Finding your Mac"))
                 case let .match(digits, mac):
                     matchView(digits: digits, mac: mac)
+                case let .confirm(code, mac, replaces):
+                    confirmView(code: code, mac: mac, replaces: replaces)
                 case let .paired(mac):
                     done(mac)
                 case let .failed(reason):
@@ -36,10 +42,39 @@ struct PairingScreen: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(palette.ground.ignoresSafeArea())
+            .navigationTitle(Text("Pair with a Mac"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { pairing?.cancel(); dismiss() }.accessibilityIdentifier("back")
+                }
+            }
         }
-        .background(palette.ground.ignoresSafeArea())
         .task { await start() }
+        .task(id: stage) { await watchdog(stage) }
     }
+
+    /// No step spins for ever (threads L1, 2026-11-14: "after the QR scan the iPhone shows loading for hours"). The
+    /// link ends each step itself (15 s to find the Mac, 75 s for its answer); this is the screen's own limit on top,
+    /// so whatever happens below, a waiting screen becomes a message with Try again.
+    private func watchdog(_ s: Stage) async {
+        let limit: Duration
+        let reason: PairingFailure
+        switch s {
+        case .dialing: limit = .seconds(Self.findLimit); reason = .unreachable
+        case .match: limit = .seconds(Self.answerLimit); reason = .timeout
+        default: return
+        }
+        try? await Task.sleep(for: limit)
+        guard !Task.isCancelled, stage == s else { return }
+        pairing?.cancel()
+        pairing = nil
+        stage = .failed(reason)
+    }
+
+    static let findLimit: Double = 30
+    static let answerLimit: Double = 100
 
     private func start() async {
         #if DEBUG
@@ -47,14 +82,16 @@ struct PairingScreen: View {
             switch s {
             case "match": stage = .match("418 207", "MacBook Air"); return
             case "off": stage = .cameraOff; return
+            // A link that never answers: the screen's own limit must end the wait (watchdog).
+            case "stall": stage = .dialing; return
+            case "confirm": stage = .confirm(code: "", mac: "MacBook Air", replaces: "Mac mini"); return
             default: break
             }
         }
         #endif
         if let code = model.pendingPairCode {
             model.pendingPairCode = nil
-            stage = .camera
-            scanned(code)
+            await prepare(code, fromLink: true)
             return
         }
         switch AVCaptureDevice.authorizationStatus(for: .video) {
@@ -66,6 +103,22 @@ struct PairingScreen: View {
 
     private func scanned(_ code: String) {
         guard stage == .camera else { return }
+        stage = .dialing
+        Task { await prepare(code, fromLink: false) }
+    }
+
+    /// A code from the camera dials at once, unless it would replace the paired Mac; a code from a link always asks.
+    private func prepare(_ code: String, fromLink: Bool) async {
+        guard let invite = PairingInvite(text: code) else { stage = .failed(.notALinenCode); return }
+        let replaces = await model.link.replacesPairedMac(scannedCode: code)
+        if fromLink || replaces != nil {
+            stage = .confirm(code: code, mac: invite.macName, replaces: replaces)
+        } else {
+            dial(code)
+        }
+    }
+
+    private func dial(_ code: String) {
         stage = .dialing
         let link = model.link
         pairing = Task {
@@ -106,11 +159,10 @@ struct PairingScreen: View {
                 Text("Linen uses the camera only to read the pairing code on your Mac.").font(Tok.sans(15)).foregroundStyle(Tok.paper)
                     .fixedSize(horizontal: false, vertical: true)
                 Button { if let u = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(u) } } label: {
-                    Text("Settings › Linen › Camera").font(Tok.sans(13.5, medium: true)).foregroundStyle(Tok.paper)
-                        .padding(.bottom, 1).overlay(alignment: .bottom) { Rectangle().fill(Tok.paper.opacity(0.5)).frame(height: 1) }
-                        .frame(minHeight: 44, alignment: .leading)
+                    Text("Settings › Linen › Camera").font(Tok.sans(14, medium: true))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bordered).tint(Tok.paper).controlSize(.large)
+                .padding(.top, 6)
             }
             .padding(.horizontal, 34)
             .frame(maxWidth: .infinity, maxHeight: 500, alignment: .leading)
@@ -128,7 +180,7 @@ struct PairingScreen: View {
             Text("Check that your Mac shows the same six digits, then click Allow there.")
                 .font(Tok.sans(15.5)).foregroundStyle(palette.text).multilineTextAlignment(.center).frame(maxWidth: 280)
             HStack(spacing: 10) {
-                WeaveIndicator(lineWidth: 1.6).frame(width: 30, height: 14)
+                ProgressView().tint(palette.head)
                 Text("Waiting for Allow").font(Tok.sans(14)).foregroundStyle(palette.head)
             }
             .padding(.top, 26)
@@ -138,9 +190,27 @@ struct PairingScreen: View {
         .background(WeaveBackground())
     }
 
+    private func confirmView(code: String, mac: String, replaces: String?) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Pair with \(mac)?").font(Tok.serif(26, relativeTo: .title2)).foregroundStyle(palette.head)
+            Text("Linen will connect to \(mac) and show six digits to check on that Mac.")
+                .font(Tok.sans(15)).foregroundStyle(palette.text).fixedSize(horizontal: false, vertical: true)
+            if let replaces {
+                Text("This replaces \(replaces). Everything kept on this iPhone from it is removed.")
+                    .font(Tok.sans(15, medium: true)).foregroundStyle(palette.text).fixedSize(horizontal: false, vertical: true)
+            }
+            Button { dial(code) } label: { Text("Pair").font(Tok.sans(15, medium: true)) }
+                .buttonStyle(.borderedProminent).controlSize(.large).tint(palette.accent).foregroundStyle(palette.onAccent)
+                .padding(.top, 8)
+                .accessibilityIdentifier("confirmPair")
+        }
+        .padding(.horizontal, 28)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     private func waiting(_ text: Text) -> some View {
         VStack(spacing: 14) {
-            WeaveIndicator(lineWidth: 2).frame(width: 60, height: 28)
+            ProgressView().controlSize(.large).tint(palette.head)
             text.font(Tok.sans(15)).foregroundStyle(palette.head)
         }
     }
@@ -150,11 +220,9 @@ struct PairingScreen: View {
             Text("Paired with \(mac)").font(Tok.serif(28, relativeTo: .title)).foregroundStyle(palette.head)
             Text("Folders you keep on iPhone from your Mac arrive in the Library.").font(Tok.sans(15)).foregroundStyle(palette.text)
                 .multilineTextAlignment(.center).frame(maxWidth: 290)
-            Button { dismiss() } label: {
-                Text("Done").font(Tok.sans(15, medium: true)).foregroundStyle(palette.onAccent).padding(.horizontal, 22).frame(minHeight: 44)
-                    .background(RoundedRectangle(cornerRadius: Tok.corner).fill(palette.accent))
-            }
-            .buttonStyle(.plain).padding(.top, 8)
+            Button { dismiss() } label: { Text("Done").font(Tok.sans(15, medium: true)) }
+                .buttonStyle(.borderedProminent).controlSize(.large).tint(palette.accent).foregroundStyle(palette.onAccent)
+                .padding(.top, 8)
         }
     }
 
@@ -162,11 +230,9 @@ struct PairingScreen: View {
         VStack(alignment: .leading, spacing: 10) {
             Text(Self.title(reason)).font(Tok.serif(26, relativeTo: .title2)).foregroundStyle(palette.head)
             Text(Self.detail(reason)).font(Tok.sans(15)).foregroundStyle(palette.text).fixedSize(horizontal: false, vertical: true)
-            Button { stage = .camera } label: {
-                Text("Try again").font(Tok.sans(15, medium: true)).foregroundStyle(palette.onAccent).padding(.horizontal, 22).frame(minHeight: 44)
-                    .background(RoundedRectangle(cornerRadius: Tok.corner).fill(palette.accent))
-            }
-            .buttonStyle(.plain).padding(.top, 8)
+            Button { pairing?.cancel(); pairing = nil; stage = .camera } label: { Text("Try again").font(Tok.sans(15, medium: true)) }
+                .buttonStyle(.borderedProminent).controlSize(.large).tint(palette.accent).foregroundStyle(palette.onAccent)
+                .padding(.top, 8)
         }
         .padding(.horizontal, 28)
         .frame(maxWidth: .infinity, alignment: .leading)

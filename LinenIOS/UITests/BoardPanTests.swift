@@ -34,7 +34,7 @@ final class BoardPanTests: XCTestCase {
         app.launchArguments = ["-LinenOpen", "fixtures-boards/big-500.canvas", "-LinenProbe", "-appearance", "paper"]
         app.launch()
 
-        let canvas = app.buttons["mode:canvas"]
+        let canvas = app.segmentedControls["mode"].buttons["Canvas"]
         XCTAssertTrue(canvas.waitForExistence(timeout: 20))
         canvas.tap()
         let before = try settled(app) { $0.mode == "canvas" && $0.card != nil }

@@ -11,10 +11,13 @@ final class HelperService: NSObject, NSXPCListenerDelegate, LinenHelperProtocol,
     private var noticeSentFor: Date?
     private var timer: Timer?
 
-    init(stateDirectory: URL) throws {
-        let identity = try KeychainIdentityStore(service: "com.hatim.linen.link.mac").loadOrCreate(commonName: "Linen Mac")
+    /// `identities`, `serviceName` and `xpc` differ only in the development mode (`DevControl`, debug builds), which
+    /// runs beside the installed helper with its own key, state and Bonjour name and no XPC service.
+    init(stateDirectory: URL, identities: any LinkIdentityStore = KeychainIdentityStore(service: "com.hatim.linen.link.mac"),
+         serviceName: String? = nil, xpc: Bool = true) throws {
+        let identity = try identities.loadOrCreate(commonName: "Linen Mac")
         let name = Host.current().localizedName ?? "Mac"
-        server = MacLinkServer(identity: identity, config: .init(macName: name, serviceName: name, stateDirectory: stateDirectory))
+        server = MacLinkServer(identity: identity, config: .init(macName: name, serviceName: serviceName ?? name, stateDirectory: stateDirectory))
         super.init()
         let server = server
         watcher = PinWatcher { ids in server.rescan(ids) }
@@ -25,8 +28,10 @@ final class HelperService: NSObject, NSXPCListenerDelegate, LinenHelperProtocol,
         try server.start()
         refreshWatch()
         DispatchQueue.global().async { server.rescan() }
-        listener.delegate = self
-        listener.resume()
+        if xpc {
+            listener.delegate = self
+            listener.resume()
+        }
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: nil) { _ in
             server.prepareForSleep()
         }

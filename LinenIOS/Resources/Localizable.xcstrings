@@ -401,6 +401,16 @@
         }
       }
     },
+    "Linen will connect to %@ and show six digits to check on that Mac.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "سيتصل سطر بـ %@ ويعرض ستة أرقام لتتحقق منها على ذلك الماك."
+          }
+        }
+      }
+    },
     "List": {
       "localizations": {
         "ar": {
@@ -641,6 +651,16 @@
         }
       }
     },
+    "On": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مفعّل"
+          }
+        }
+      }
+    },
     "On this iPhone": {
       "localizations": {
         "ar": {
@@ -741,12 +761,32 @@
         }
       }
     },
+    "Pair": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إقران"
+          }
+        }
+      }
+    },
     "Pair again": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
             "value": "أقرن من جديد"
+          }
+        }
+      }
+    },
+    "Pair with %@?": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الإقران مع %@؟"
           }
         }
       }
@@ -1081,6 +1121,16 @@
         }
       }
     },
+    "This replaces %@. Everything kept on this iPhone from it is removed.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "هذا يحل محل %@. يُحذف كل ما حُفظ منه على هذا الآيفون."
+          }
+        }
+      }
+    },
     "Try again": {
       "localizations": {
         "ar": {
@@ -1107,6 +1157,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "محدّث مع %1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "View": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "العرض"
           }
         }
       }

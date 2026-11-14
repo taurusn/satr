@@ -2,12 +2,62 @@
   "sourceLanguage" : "en",
   "strings" : {
     "" : {},
+    " in %lld subfolders" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " في %lld مجلدات فرعية"
+          }
+        }
+      }
+    },
     "%@ is not Linen's command, so Linen left it alone. Move it away and try again." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "‏%@ ليس أمر سطر، فتركه سطر كما هو. انقله إلى مكان آخر ثم حاول مجددًا."
+          }
+        }
+      }
+    },
+    "%@ · connected now" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · متصل الآن"
+          }
+        }
+      }
+    },
+    "%@ · last seen %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · آخر ظهور %2$@"
+          }
+        }
+      }
+    },
+    "%@ · not seen since pairing" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · لم يظهر منذ الإقران"
+          }
+        }
+      }
+    },
+    "%lld files" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld ملفات"
           }
         }
       }
@@ -78,6 +128,16 @@
         }
       }
     },
+    "A small helper inside Linen keeps the folders you pin ready for your iPhone, even when Linen is closed. It starts at login and has no Dock icon. macOS will ask whether Linen may find devices on your local network: allow it, since that is how your iPhone reaches this Mac." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يُبقي مساعد صغير داخل سطر المجلدات التي تثبّتها جاهزة لآيفونك، حتى حين يكون سطر مغلقًا. يبدأ عند تسجيل الدخول ولا أيقونة له في Dock. سيسأل macOS هل يُسمح لسطر بالعثور على الأجهزة في شبكتك المحلية: اسمح بذلك، فبهذا يصل آيفونك إلى هذا الماك."
+          }
+        }
+      }
+    },
     "About Linen" : {
       "localizations" : {
         "ar" : {
@@ -144,6 +204,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "يستطيع الوكلاء الآن تشغيل linen check وlayout وshot وopen وmcp."
+          }
+        }
+      }
+    },
+    "Allow" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "السماح"
+          }
+        }
+      }
+    },
+    "Also keep these %lld files" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "احفظ أيضًا هذه الملفات (%lld)"
           }
         }
       }
@@ -268,6 +348,16 @@
         }
       }
     },
+    "Check that the iPhone shows the same six digits, then Allow." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تأكد أن الآيفون يعرض الأرقام الستة نفسها، ثم اختر «السماح»."
+          }
+        }
+      }
+    },
     "Close" : {
       "localizations" : {
         "ar" : {
@@ -284,6 +374,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "إغلاق علامة التبويب"
+          }
+        }
+      }
+    },
+    "Code valid for %lld:%@ · one pairing at a time" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الرمز صالح لمدة %lld:%@ · إقران واحد في كل مرة"
           }
         }
       }
@@ -354,6 +454,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "الدخول في وضع ملء الشاشة"
+          }
+        }
+      }
+    },
+    "Everything in it: %@%@, %@. Files added to it later go to your iPhone too." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كل ما فيه: %1$@%2$@، %3$@. والملفات التي تُضاف إليه لاحقًا تذهب إلى آيفونك أيضًا."
           }
         }
       }
@@ -438,6 +548,16 @@
         }
       }
     },
+    "Forget" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "انسَ"
+          }
+        }
+      }
+    },
     "Forward" : {
       "localizations" : {
         "ar" : {
@@ -448,12 +568,32 @@
         }
       }
     },
+    "Getting ready for your iPhone" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يستعد سطر لآيفونك"
+          }
+        }
+      }
+    },
     "Go" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "انتقال"
+          }
+        }
+      }
+    },
+    "Helper" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المساعد"
           }
         }
       }
@@ -488,12 +628,142 @@
         }
       }
     },
+    "In Linen on your iPhone, tap Pair with a Mac and point the camera at this code. Your iPhone will ask to find devices on your local network: allow it." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "في سطر على آيفونك، اضغط «إقران بجهاز ماك» ووجّه الكاميرا إلى هذا الرمز. سيطلب آيفونك إذنًا للعثور على الأجهزة في شبكتك المحلية: اسمح بذلك."
+          }
+        }
+      }
+    },
     "Install Command for Agents…" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "ثبّت الأمر للوكلاء…"
+          }
+        }
+      }
+    },
+    "It points at them. Each one you tick is kept as its own file." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يشير إليها. كل ملف تحدده يُحفظ ملفًا مستقلًا."
+          }
+        }
+      }
+    },
+    "Keep %lld Files on iPhone" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "احفظ %lld ملفات على الآيفون"
+          }
+        }
+      }
+    },
+    "Keep Folder on iPhone" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "احفظ المجلد على الآيفون"
+          }
+        }
+      }
+    },
+    "Keep Folder on iPhone…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "احفظ المجلد على الآيفون…"
+          }
+        }
+      }
+    },
+    "Keep folder on iPhone" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "احفظ المجلد على الآيفون"
+          }
+        }
+      }
+    },
+    "Keep folders on your iPhone" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "احفظ المجلدات على آيفونك"
+          }
+        }
+      }
+    },
+    "Keep its folder instead…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "احفظ مجلده بدلًا من ذلك…"
+          }
+        }
+      }
+    },
+    "Keep on iPhone" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "احفظ على الآيفون"
+          }
+        }
+      }
+    },
+    "Keep on iPhone…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "احفظ على الآيفون…"
+          }
+        }
+      }
+    },
+    "Keep…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "احفظ…"
+          }
+        }
+      }
+    },
+    "Kept on iPhone · %@ of %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "محفوظ على الآيفون · %1$@ من %2$@"
+          }
+        }
+      }
+    },
+    "Kept · %@ of %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المحفوظ · %1$@ من %2$@"
           }
         }
       }
@@ -514,6 +784,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "نص أكبر"
+          }
+        }
+      }
+    },
+    "Left out: %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مستبعد: %@"
           }
         }
       }
@@ -608,6 +888,26 @@
         }
       }
     },
+    "Linen is not set up for your iPhone yet." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يُجهَّز سطر لآيفونك بعد."
+          }
+        }
+      }
+    },
+    "Linen is reconnecting to your network. The code shows again in a moment." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يعيد سطر الاتصال بشبكتك. سيظهر الرمز مجددًا بعد لحظات."
+          }
+        }
+      }
+    },
     "Linen needs permission to read this folder" : {
       "localizations" : {
         "ar" : {
@@ -624,6 +924,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "يفتحه سطر من جديد عند عودة القرص."
+          }
+        }
+      }
+    },
+    "Loom brain" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دماغ Loom"
           }
         }
       }
@@ -738,6 +1048,26 @@
         }
       }
     },
+    "No iPhone paired" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا آيفون مقترن"
+          }
+        }
+      }
+    },
+    "No iPhone paired yet." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يُقرن أي آيفون بعد."
+          }
+        }
+      }
+    },
     "No note called %@" : {
       "localizations" : {
         "ar" : {
@@ -778,6 +1108,46 @@
         }
       }
     },
+    "Not on iPhone" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ليس على الآيفون"
+          }
+        }
+      }
+    },
+    "Not on your iPhone" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ليس على آيفونك"
+          }
+        }
+      }
+    },
+    "Nothing kept yet." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا شيء محفوظ بعد."
+          }
+        }
+      }
+    },
+    "Nothing yet. In any note, board or page, click the iPhone button in the toolbar to keep it on your iPhone." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا شيء بعد. في أي ملاحظة أو لوحة أو صفحة، انقر زر الآيفون في شريط الأدوات لحفظها على آيفونك."
+          }
+        }
+      }
+    },
     "Obsidian for vault notes" : {
       "localizations" : {
         "ar" : {
@@ -788,12 +1158,72 @@
         }
       }
     },
+    "On iPhone" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "على الآيفون"
+          }
+        }
+      }
+    },
+    "On iPhone with its folder" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "على الآيفون مع مجلده"
+          }
+        }
+      }
+    },
+    "On iPhone with its folder “%@”" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "على الآيفون مع مجلده «%@»"
+          }
+        }
+      }
+    },
+    "On your iPhone with its folder “%@”" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "على آيفونك مع مجلده «%@»"
+          }
+        }
+      }
+    },
+    "On your iPhone, kept up to date" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "على آيفونك، ويبقى محدّثًا"
+          }
+        }
+      }
+    },
     "Open" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "فتح"
+          }
+        }
+      }
+    },
+    "Open Login Items" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح عناصر تسجيل الدخول"
           }
         }
       }
@@ -928,6 +1358,66 @@
         }
       }
     },
+    "Pair an iPhone…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إقران آيفون…"
+          }
+        }
+      }
+    },
+    "Pair and Pinned Folders…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإقران والمجلدات المثبّتة…"
+          }
+        }
+      }
+    },
+    "Paired" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المقترنة"
+          }
+        }
+      }
+    },
+    "Pairing code" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "رمز الإقران"
+          }
+        }
+      }
+    },
+    "Pairing with %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإقران مع %@"
+          }
+        }
+      }
+    },
+    "Pairing with a phone" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإقران مع هاتف"
+          }
+        }
+      }
+    },
     "Paper" : {
       "localizations" : {
         "ar" : {
@@ -988,6 +1478,26 @@
         }
       }
     },
+    "Reconnecting to the network…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يعيد الاتصال بالشبكة…"
+          }
+        }
+      }
+    },
+    "Refuse" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الرفض"
+          }
+        }
+      }
+    },
     "Reload" : {
       "localizations" : {
         "ar" : {
@@ -1018,6 +1528,16 @@
         }
       }
     },
+    "Remove from iPhone" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أزل من الآيفون"
+          }
+        }
+      }
+    },
     "Reveal Folder" : {
       "localizations" : {
         "ar" : {
@@ -1034,6 +1554,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "إظهار في Finder"
+          }
+        }
+      }
+    },
+    "Running · starts at login · announced as “%@”" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يعمل · يبدأ عند تسجيل الدخول · معلَن باسم «%@»"
           }
         }
       }
@@ -1084,6 +1614,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ثمانية نص"
+          }
+        }
+      }
+    },
+    "Set Up in Settings…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جهّزه في الإعدادات…"
           }
         }
       }
@@ -1158,6 +1698,16 @@
         }
       }
     },
+    "Size limit" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حد الحجم"
+          }
+        }
+      }
+    },
     "Smaller" : {
       "localizations" : {
         "ar" : {
@@ -1194,6 +1744,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "المصادر"
+          }
+        }
+      }
+    },
+    "Start the Helper at Login" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شغّل المساعد عند تسجيل الدخول"
+          }
+        }
+      }
+    },
+    "Starting…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يبدأ…"
           }
         }
       }
@@ -1328,12 +1898,42 @@
         }
       }
     },
+    "This file only, %@. Linen keeps it up to date on your iPhone whenever Linen is open there near this Mac." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذا الملف وحده، %@. يُبقيه سطر محدّثًا على آيفونك كلما كان سطر مفتوحًا هناك قرب هذا الماك."
+          }
+        }
+      }
+    },
     "Thmanyah Sans" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "ثمانية بلا تذييل"
+          }
+        }
+      }
+    },
+    "Turn on Linen in System Settings › General › Login Items to finish." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فعّل سطر في إعدادات النظام › عام › عناصر تسجيل الدخول لإكمال ذلك."
+          }
+        }
+      }
+    },
+    "Unpin" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إلغاء التثبيت"
           }
         }
       }
@@ -1398,6 +1998,16 @@
         }
       }
     },
+    "Your iPhone cannot reach this Mac. Check that Linen may use the local network (System Settings › Privacy & Security › Local Network) and that the firewall lets LinenHelper accept connections." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يستطيع آيفونك الوصول إلى هذا الماك. تأكد أن سطر مسموح له باستخدام الشبكة المحلية (إعدادات النظام › الخصوصية والأمن › الشبكة المحلية) وأن جدار الحماية يسمح لـ LinenHelper بقبول الاتصالات."
+          }
+        }
+      }
+    },
     "Zoom" : {
       "localizations" : {
         "ar" : {
@@ -1448,12 +2058,92 @@
         }
       }
     },
+    "connected now" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متصل الآن"
+          }
+        }
+      }
+    },
+    "file · %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ملف · %@"
+          }
+        }
+      }
+    },
+    "folder · %lld files · %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مجلد · %1$lld ملفات · %2$@"
+          }
+        }
+      }
+    },
+    "iPhone" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الآيفون"
+          }
+        }
+      }
+    },
+    "iPhone Settings…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إعدادات الآيفون…"
+          }
+        }
+      }
+    },
+    "last seen %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آخر ظهور %@"
+          }
+        }
+      }
+    },
+    "not seen since pairing" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يظهر منذ الإقران"
+          }
+        }
+      }
+    },
     "the note did not render" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "لم تُعرض الملاحظة"
+          }
+        }
+      }
+    },
+    "~/Loom/brain, suggested first" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "‏~/Loom/brain، مقترح أولًا"
           }
         }
       }

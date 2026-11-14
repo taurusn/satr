@@ -7,6 +7,12 @@ let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .u
     .appendingPathComponent("Linen/Helper", isDirectory: true)
 try? FileManager.default.createDirectory(at: support, withIntermediateDirectories: true)
 
+#if DEBUG
+// Development only: `LINEN_HELPER_DEV=<folder> LinenHelper` runs a second helper beside the installed one, driven over
+// stdin (see DevControl.swift). Never in a release build.
+if let dev = ProcessInfo.processInfo.environment["LINEN_HELPER_DEV"] { DevControl.run(directory: URL(fileURLWithPath: dev)) }
+#endif
+
 let app = NSApplication.shared
 app.setActivationPolicy(.prohibited)
 let service: HelperService

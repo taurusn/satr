@@ -37,6 +37,21 @@ enum Tok {
     }
 }
 
+extension Tok {
+    /// iOS's own navigation bar, in Loom's type and colours (Paper or Night follow the colour scheme the app sets):
+    /// the bar, its back button and its title stay the system's controls (IOS-5; Hatim's rule of 2026-11-14, native
+    /// controls by default).
+    static func styleNativeBars() {
+        let head = UIColor { $0.userInterfaceStyle == .dark ? .linenPaper : .linenInk }
+        let title = UIFontMetrics(forTextStyle: .headline).scaledFont(for: UIFont(name: "thmanyahsans-Medium", size: 17) ?? .systemFont(ofSize: 17, weight: .semibold))
+        let large = UIFontMetrics(forTextStyle: .largeTitle).scaledFont(for: UIFont(name: "thmanyahserifdisplay-Light", size: 34) ?? .systemFont(ofSize: 34))
+        // Only the title's type and colour: the bar keeps iOS's own background (glass on iOS 26), which an opaque
+        // appearance object replaced and, on iOS 26, hid the large title with (seen 2026-11-14 on the simulator).
+        UINavigationBar.appearance().titleTextAttributes = [.font: title, .foregroundColor: head]
+        UINavigationBar.appearance().largeTitleTextAttributes = [.font: large, .foregroundColor: head]
+    }
+}
+
 extension Color {
     init(hex: UInt32, opacity: Double = 1) {
         self.init(.sRGB, red: Double((hex >> 16) & 0xFF) / 255, green: Double((hex >> 8) & 0xFF) / 255,
@@ -47,6 +62,8 @@ extension Color {
 extension UIColor {
     static let linenPaper = UIColor(red: 0xF6 / 255, green: 0xF3 / 255, blue: 0xEB / 255, alpha: 1)
     static let linenInk2 = UIColor(red: 0x1F / 255, green: 0x33 / 255, blue: 0x28 / 255, alpha: 1)
+    static let linenInk = UIColor(red: 0x28 / 255, green: 0x47 / 255, blue: 0x34 / 255, alpha: 1)
+    static let linenRule = UIColor(red: 0xDA / 255, green: 0xD5 / 255, blue: 0xC8 / 255, alpha: 1)
 }
 
 /// Paper or Night: the suite's Night, as on the Mac (PRD 8.1).

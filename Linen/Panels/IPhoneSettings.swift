@@ -24,6 +24,15 @@ final class HelperClient: ObservableObject {
 
     private init() {
         status = SMAppService.loginItem(identifier: LinenHelperXPC.serviceName).status
+        #if DEBUG
+        // A test copy can show a given helper state with no helper behind it: `-LinenHelperPreview <state.json>`.
+        if let path = UserDefaults.standard.string(forKey: "LinenHelperPreview"), let data = try? Data(contentsOf: URL(fileURLWithPath: path)) {
+            state = try? JSONDecoder().decode(HelperState.self, from: data)
+            status = .enabled
+            previewing = true
+            return
+        }
+        #endif
         defaultsObserver = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { _ in
             MainActor.assumeIsolated { HelperClient.shared.pushTrust() }
         }
@@ -67,6 +76,9 @@ final class HelperClient: ObservableObject {
 
     private func proxy() -> (any LinenHelperProtocol)? {
         guard enabled else { return nil }
+        #if DEBUG
+        if previewing { return nil }
+        #endif
         if connection == nil {
             let c = NSXPCConnection(machServiceName: LinenHelperXPC.serviceName)
             c.remoteObjectInterface = LinenHelperXPC.interface()
@@ -209,7 +221,16 @@ struct IPhoneSettingsView: View {
     @ViewBuilder private var pairing: some View {
         let p = helper.state?.pairing
         HStack(alignment: .center, spacing: 22) {
-            if let qr = p?.qr, p?.digits == nil {
+            if p?.qr != nil, p?.digits == nil, helper.state?.listening != true {
+                // No code while the helper cannot be reached: a phone that scans it could only fail (threads L1,
+                // 2026-11-14). The helper makes its listener again by itself; the code comes back when it listens.
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Getting ready for your iPhone").font(Tok.serif(24)).foregroundStyle(palette.head)
+                    Text("Linen is reconnecting to your network. The code shows again in a moment.")
+                        .font(Tok.sans(14)).foregroundStyle(palette.text).fixedSize(horizontal: false, vertical: true)
+                    Button("Cancel") { helper.cancelPairing() }.buttonStyle(LoomButtonStyle(kind: .line))
+                }
+            } else if let qr = p?.qr, p?.digits == nil {
                 QRImage(text: qr).frame(width: 150, height: 150)
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Pairing with a phone").font(Tok.serif(24)).foregroundStyle(palette.head)
@@ -310,7 +331,8 @@ struct IPhoneSettingsView: View {
     }
 
     private var limit: some View {
-        let options: [(Int64, String)] = [(1 << 30, "1 GB"), (2 << 30, "2 GB"), (5 << 30, "5 GB"), (10 << 30, "10 GB")]
+        // Formatted, not written out: an Arabic screen shows its own digits (PRD-2 section 8).
+        let options: [(Int64, String)] = [Int64(1) << 30, 2 << 30, 5 << 30, 10 << 30].map { ($0, Self.bytes($0)) }
         let current = helper.state?.limit ?? LinkBounds.defaultTotalLimit
         return HStack {
             Text("Size limit").font(Tok.sans(14.5)).foregroundStyle(palette.text)
@@ -343,6 +365,9 @@ struct IPhoneSettingsView: View {
 
     private var helperText: String {
         guard let s = helper.state else { return String(localized: "Starting…") }
+        if !s.listening, s.restarting == true {
+            return String(localized: "Reconnecting to the network…")
+        }
         if !s.listening {
             return String(localized: "Your iPhone cannot reach this Mac. Check that Linen may use the local network (System Settings › Privacy & Security › Local Network) and that the firewall lets LinenHelper accept connections.")
         }

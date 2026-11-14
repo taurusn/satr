@@ -13,12 +13,21 @@ final class Library {
     private var indexes: [URL: VaultIndex] = [:]
 
     private init() {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Linen", isDirectory: true)
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent(Self.folderName, isDirectory: true)
         try? FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
         support = base
         places = PlaceStore(directory: base)
         baselines = BaselineStore(directory: base)
         sessions = SessionStore(directory: base)
+    }
+
+    /// "Linen". A debug build copied under another bundle identifier (a test copy run beside Hatim's Linen) keeps its
+    /// session, places and reader state in its own folder, so it never restores or overwrites his.
+    static var folderName: String {
+        #if DEBUG
+        if let id = Bundle.main.bundleIdentifier, id != "com.hatim.linen" { return "Linen Lab" }
+        #endif
+        return "Linen"
     }
 
     /// The index of a vault, built in the background on first use and kept current from file events.

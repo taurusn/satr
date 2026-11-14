@@ -134,12 +134,13 @@ final class LinkDialer: @unchecked Sendable {
 
     func start() {
         // The source calls back on `queue`, the dialer's own.
+        // A refusal of local network access is noted, not final: while iOS still shows its question (the first dial,
+        // at pairing), Bonjour reports the same refusal, and it finds the Mac once the person allows. So the dialer
+        // keeps looking until its deadline and only then says local network access is off.
         search = source.find(service: service, peerToPeer: peerToPeer, queue: queue, update: { [weak self] eps in
             self?.dial(eps)
         }, denied: { [weak self] in
-            guard let self else { return }
-            self.denied = true
-            self.fail()
+            self?.denied = true
         })
         queue.asyncAfter(deadline: .now() + timeout) { [weak self] in self?.fail() }
     }
@@ -154,6 +155,8 @@ final class LinkDialer: @unchecked Sendable {
 
     private func dial(_ eps: [NWEndpoint]) {
         guard !finished else { return }
+        // Results mean local network access is allowed now (the question was answered): a later failure is the Mac's.
+        if !eps.isEmpty { denied = false }
         for ep in eps where !tried.contains("\(ep)") {
             tried.insert("\(ep)")
             attempt(ep, params)
@@ -175,10 +178,11 @@ final class LinkDialer: @unchecked Sendable {
             case .ready: self.win(c)
             case let .waiting(e):
                 if c.currentPath?.unsatisfiedReason == .localNetworkDenied {
+                    // As above: the connection goes on by itself once access is allowed.
                     self.denied = true
-                    self.fail()
-                } else if self.isTLSRefusal(e) {
-                    self.lost(c)
+                } else {
+                    self.denied = false
+                    if self.isTLSRefusal(e) { self.lost(c) }
                 }
             case .failed:
                 self.lost(c)

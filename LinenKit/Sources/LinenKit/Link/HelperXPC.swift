@@ -67,6 +67,9 @@ public struct HelperState: Codable, Sendable, Hashable {
     public var pairing: Pairing
     public var limit: Int64
     public var listening: Bool
+    /// The helper's listener failed and is being made again. Optional: a helper from before this field (still running
+    /// after an update, until it restarts) sends none, and its state must still decode.
+    public var restarting: Bool?
     public var serviceName: String?
     public var problem: String?
     public var unsentSince: Date?
@@ -87,6 +90,7 @@ public struct HelperState: Codable, Sendable, Hashable {
         pairing = Pairing(qr: s.pairing.invite?.text, expires: s.pairing.expires, phoneName: s.pairing.waiting?.name, digits: s.pairing.waiting?.digits, ended: ended)
         limit = s.totalLimit
         listening = s.listening
+        restarting = s.restarting
         serviceName = s.serviceName
         problem = s.problem
         unsentSince = s.unsentSince

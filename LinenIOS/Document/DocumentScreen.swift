@@ -1,5 +1,4 @@
 import LinenKit
-import LinkPresentation
 import SwiftUI
 import WebKit
 
@@ -10,33 +9,17 @@ struct DocumentScreen: View {
     @Environment(AppModel.self) private var app
     @Environment(\.palette) private var palette
     @Environment(\.layoutDirection) private var direction
-    @Environment(\.dismiss) private var dismiss
     @State private var doc: DocumentModel?
 
+    // iOS's own controls (Hatim, 2026-11-14): the navigation bar with its back button and title, toolbar buttons, a
+    // segmented picker for Canvas and List, the system search field for find with its matches in the bottom toolbar,
+    // the share sheet through ShareLink. Linen's own, with the reason in PRD-2's build log: where the change chip sits
+    // over the text (BRD-13; the button is the system's glass button), the toast and the page line (status, not
+    // controls).
     var body: some View {
         VStack(spacing: 0) {
-            if let doc {
-                if doc.findShown {
-                    FindBar(doc: doc)
-                } else if doc.document?.kind == .board {
-                    BoardBand(doc: doc, back: back)
-                } else {
-                    DocumentBar(title: Text(verbatim: doc.title), back: back) {
-                        if doc.document?.kind == .note {
-                            GlyphButton(glyph: .outline, label: "Outline") { Task { await doc.loadOutline(); doc.outlineShown = true } }
-                                .accessibilityIdentifier("outline")
-                        }
-                        GlyphButton(glyph: .find, label: "Find") { doc.findShown = true }
-                            .accessibilityIdentifier("find")
-                        GlyphButton(glyph: .share, label: "Share") { doc.shareShown = true }
-                            .accessibilityIdentifier("share")
-                    }
-                }
-                if let line = doc.pageLine {
-                    PageStateLine(text: line)
-                }
-            } else {
-                DocumentBar(title: Text(verbatim: ""), back: back) { EmptyView() }
+            if let line = doc?.pageLine {
+                PageStateLine(text: line)
             }
             ZStack(alignment: .bottom) {
                 palette.ground
@@ -73,8 +56,10 @@ struct DocumentScreen: View {
             }
         }
         #endif
-        .toolbar(.hidden, for: .navigationBar)
-        .navigationBarBackButtonHidden()
+        .navigationTitle(Text(verbatim: doc?.title ?? ""))
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar { toolbar }
+        .modifier(FindField(doc: doc))
         .task {
             guard doc == nil else { return }
             let d = DocumentModel(source: source, app: app)
@@ -86,9 +71,6 @@ struct DocumentScreen: View {
         .sheet(isPresented: Binding(get: { doc?.outlineShown ?? false }, set: { doc?.outlineShown = $0 })) {
             if let doc { OutlineSheet(doc: doc).environment(\.palette, palette).presentationDetents([.medium, .large]).presentationDragIndicator(.visible) }
         }
-        .sheet(isPresented: Binding(get: { doc?.shareShown ?? false }, set: { doc?.shareShown = $0 })) {
-            if let url = doc?.shareURL, let d = doc?.document { ShareSheet(url: url, kind: d.kind).ignoresSafeArea().presentationDetents([.medium, .large]) }
-        }
         .confirmationDialog(Text("Open this address?"), isPresented: Binding(get: { doc?.external != nil }, set: { if !$0 { doc?.external = nil } }),
                             titleVisibility: .visible, presenting: doc?.external) { u in
             Button("Open") { UIApplication.shared.open(u) }
@@ -98,9 +80,67 @@ struct DocumentScreen: View {
         }
     }
 
-    private func back() {
-        doc?.close()
-        if !app.path.isEmpty { app.path.removeLast() } else { dismiss() }
+    @ToolbarContentBuilder private var toolbar: some ToolbarContent {
+        if let doc, !doc.findShown {
+            if doc.document?.kind == .board {
+                ToolbarItem(placement: .principal) {
+                    Picker(selection: Binding(get: { doc.mode }, set: { m in Task { await doc.setMode(m) } })) {
+                        Text("Canvas").tag("canvas")
+                        Text("List").tag("list")
+                    } label: { Text("View") }
+                    .pickerStyle(.segmented)
+                    .fixedSize()
+                    .accessibilityIdentifier("mode")
+                }
+            }
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                if doc.document?.kind != .page {
+                    Button { Task { await doc.loadOutline(); doc.outlineShown = true } } label: { Label("Outline", systemImage: "list.bullet") }
+                        .accessibilityIdentifier("outline")
+                }
+                Button { doc.findShown = true } label: { Label("Find", systemImage: "magnifyingglass") }
+                    .accessibilityIdentifier("find")
+                if let url = doc.shareURL {
+                    ShareLink(item: url, preview: SharePreview(Text(verbatim: url.lastPathComponent))) { Label("Share", systemImage: "square.and.arrow.up") }
+                        .accessibilityIdentifier("share")
+                }
+            }
+        }
+    }
+}
+
+/// Find in a document (IOS-2, IOS-3) through iOS's own search field in the navigation bar, with the count and the
+/// previous and next buttons in the bottom toolbar, as Safari's find does. Linen's renderer does the finding (it
+/// reaches blocks not drawn yet and folds Arabic), so the system's find panel for web views is not used.
+private struct FindField: ViewModifier {
+    let doc: DocumentModel?
+
+    func body(content: Content) -> some View {
+        if let doc, doc.findShown {
+            content
+                // Closing the field also empties it: that empty query must not start a new find after the end.
+                .searchable(text: Binding(get: { doc.findQuery }, set: { q in if doc.findShown { Task { await doc.find(q) } } }),
+                            isPresented: Binding(get: { doc.findShown }, set: { if !$0 { doc.findShown = false; Task { await doc.endFind() } } }),
+                            placement: .navigationBarDrawer(displayMode: .always), prompt: Text("Find"))
+                .onSubmit(of: .search) { Task { await doc.findStep(1) } }
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .toolbar {
+                    ToolbarItemGroup(placement: .bottomBar) {
+                        if !doc.findQuery.isEmpty {
+                            Text(doc.findCount == 0 ? "Not found" : "\(doc.findCurrent) of \(doc.findCount)")
+                                .font(Tok.sans(13, relativeTo: .footnote))
+                        }
+                        Spacer()
+                        Button { Task { await doc.findStep(-1) } } label: { Label("Previous match", systemImage: "chevron.up") }
+                            .disabled(doc.findCount == 0)
+                        Button { Task { await doc.findStep(1) } } label: { Label("Next match", systemImage: "chevron.down") }
+                            .disabled(doc.findCount == 0)
+                    }
+                }
+        } else {
+            content
+        }
     }
 }
 
@@ -123,133 +163,24 @@ struct HostedView: UIViewRepresentable {
     func updateUIView(_ box: UIView, context: Context) {}
 }
 
-/// The plain bar of a note, a page or pairing (sketch `.pnav`): back, the title, the actions; a rule under it.
-struct DocumentBar<Actions: View>: View {
-    let title: Text
-    let back: () -> Void
-    @ViewBuilder var actions: () -> Actions
-    @Environment(\.palette) private var palette
-
-    var body: some View {
-        HStack(spacing: 0) {
-            GlyphButton(glyph: .chevron, label: "Back", action: back).accessibilityIdentifier("back")
-            title.font(.system(size: 15, weight: .semibold)).foregroundStyle(palette.head)
-                .lineLimit(1).truncationMode(.tail)
-                .frame(maxWidth: .infinity)
-                .accessibilityAddTraits(.isHeader)
-            HStack(spacing: 0) { actions() }.frame(minWidth: 44, alignment: .trailing)
-        }
-        .padding(.horizontal, 4)
-        .frame(minHeight: 48)
-        .background(palette.ground)
-        .overlay(alignment: .bottom) { Rectangle().fill(palette.line).frame(height: 1) }
-    }
-}
-
-/// A board's band (sketch screen 13): glass, with back, the Canvas / List switch, the outline and find; every target
-/// 44 points.
-struct BoardBand: View {
-    let doc: DocumentModel
-    let back: () -> Void
-    @Environment(\.palette) private var palette
-
-    var body: some View {
-        HStack(spacing: 0) {
-            GlyphButton(glyph: .chevron, label: "Back", action: back).accessibilityIdentifier("back")
-            Spacer(minLength: 4)
-            HStack(spacing: 0) {
-                segment("Canvas", value: "canvas")
-                segment("List", value: "list")
-            }
-            .overlay(RoundedRectangle(cornerRadius: Tok.corner).stroke(palette.line, lineWidth: 1))
-            .clipShape(RoundedRectangle(cornerRadius: Tok.corner))
-            Spacer(minLength: 4)
-            GlyphButton(glyph: .outline, label: "Outline") { Task { await doc.loadOutline(); doc.outlineShown = true } }
-                .accessibilityIdentifier("outline")
-            GlyphButton(glyph: .find, label: "Find") { doc.findShown = true }
-                .accessibilityIdentifier("find")
-            GlyphButton(glyph: .share, label: "Share") { doc.shareShown = true }
-                .accessibilityIdentifier("share")
-        }
-        .padding(.horizontal, 2).padding(.vertical, 2)
-        .glass()
-        .padding(.horizontal, 10).padding(.top, 6).padding(.bottom, 6)
-        .background(palette.ground)
-    }
-
-    private func segment(_ label: LocalizedStringKey, value: String) -> some View {
-        let on = doc.mode == value
-        return Button { Task { await doc.setMode(value) } } label: {
-            Text(label).font(Tok.sans(13.5, medium: true, relativeTo: .subheadline))
-                .foregroundStyle(on ? palette.onAccent : palette.text)
-                .padding(.horizontal, 15).frame(minHeight: 44)
-                .background(on ? palette.accent : .clear)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(on ? .isSelected : [])
-        .accessibilityIdentifier("mode:\(value)")
-    }
-}
-
 /// "3 changed since you read it · Next" for a note (BRD-13's chip, on a note).
 struct ChangeChip: View {
     let count: Int
     let next: () -> Void
     @Environment(\.palette) private var palette
     var body: some View {
-        Button(action: next) {
-            HStack(spacing: 6) {
-                Text("\(count) changed since you read it").foregroundStyle(palette.text)
-                Text(verbatim: "·").foregroundStyle(palette.quiet)
-                Text("Next").fontWeight(.semibold).foregroundStyle(palette.head)
-            }
-            .font(Tok.sans(13.5, medium: true, relativeTo: .subheadline))
-            .padding(.horizontal, 14).frame(minHeight: 44)
-            .glass()
+        let label = HStack(spacing: 6) {
+            Text("\(count) changed since you read it").foregroundStyle(palette.text)
+            Text(verbatim: "·").foregroundStyle(palette.quiet)
+            Text("Next").fontWeight(.semibold).foregroundStyle(palette.head)
         }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("nextChange")
-    }
-}
-
-/// The phone's find bar, over the document: the field, the count, previous and next, Done.
-struct FindBar: View {
-    let doc: DocumentModel
-    @FocusState private var focused: Bool
-    @State private var query = ""
-    @Environment(\.palette) private var palette
-
-    var body: some View {
-        HStack(spacing: 4) {
-            TextField(text: $query) { Text("Find").foregroundStyle(palette.quiet.opacity(0.7)) }
-                .font(Tok.sans(16)).foregroundStyle(palette.text)
-                .focused($focused)
-                .submitLabel(.search)
-                .textInputAutocapitalization(.never).autocorrectionDisabled()
-                .padding(.horizontal, 10).frame(minHeight: 40)
-                .background(RoundedRectangle(cornerRadius: Tok.corner).fill(palette.raised))
-                .overlay(RoundedRectangle(cornerRadius: Tok.corner).stroke(palette.line, lineWidth: 1))
-                .onSubmit { Task { await doc.findStep(1) } }
-                .onChange(of: query) { _, q in Task { await doc.find(q) } }
-                .accessibilityIdentifier("findField")
-            if !query.isEmpty {
-                Text(doc.findCount == 0 ? "Not found" : "\(doc.findCurrent) of \(doc.findCount)")
-                    .font(Tok.sans(13, relativeTo: .footnote)).foregroundStyle(palette.quiet).lineLimit(1).fixedSize()
-            }
-            Button { Task { await doc.findStep(-1) } } label: { Glyph(.chevron, size: 18).rotationEffect(.degrees(90)).frame(width: 40, height: 44) }
-                .buttonStyle(.plain).accessibilityLabel(Text("Previous match"))
-            Button { Task { await doc.findStep(1) } } label: { Glyph(.chevron, size: 18).rotationEffect(.degrees(-90)).frame(width: 40, height: 44) }
-                .buttonStyle(.plain).accessibilityLabel(Text("Next match"))
-            Button { Task { await doc.endFind() } } label: {
-                Text("Done").font(Tok.sans(15, medium: true)).foregroundStyle(palette.head).frame(minWidth: 44, minHeight: 44)
-            }
-            .buttonStyle(.plain)
+        .font(Tok.sans(13.5, medium: true, relativeTo: .subheadline))
+        .frame(minHeight: 30)
+        if #available(iOS 26, *) {
+            Button(action: next) { label }.buttonStyle(.glass).controlSize(.large).accessibilityIdentifier("nextChange")
+        } else {
+            Button(action: next) { label }.buttonStyle(.bordered).controlSize(.large).accessibilityIdentifier("nextChange")
         }
-        .padding(.horizontal, 10).padding(.vertical, 4)
-        .background(palette.ground)
-        .overlay(alignment: .bottom) { Rectangle().fill(palette.line).frame(height: 1) }
-        .onAppear { query = doc.findQuery; focused = true }
     }
 }
 
@@ -268,94 +199,56 @@ struct PageStateLine: View {
 }
 
 /// The outline as a sheet (IOS-2, IOS-3): a note's headings or a board's sections and boxes, the current one in
-/// ink, a dot on what changed; a note's text size above it.
+/// ink, a dot on what changed; a note's text size above it. iOS's own list, stepper and Done button.
 struct OutlineSheet: View {
     let doc: DocumentModel
     @Environment(\.palette) private var palette
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                Eyebrow("Outline").padding(.top, 22)
-                Text(verbatim: doc.title).font(Tok.serif(26, relativeTo: .title2)).foregroundStyle(palette.head)
-                    .padding(.top, 2).padding(.bottom, 10)
+        NavigationStack {
+            List {
                 if doc.document?.kind == .note {
-                    HStack {
-                        Text("Text size").font(Tok.sans(15)).foregroundStyle(palette.text)
-                        Spacer()
-                        Button { doc.setZoom(doc.zoom - 0.1) } label: { Text(verbatim: "A").font(Tok.sans(14)).frame(width: 44, height: 44) }
-                            .accessibilityLabel(Text("Smaller text"))
-                        Text(verbatim: (doc.zoom).formatted(.percent.precision(.fractionLength(0)))).font(Tok.sans(14)).foregroundStyle(palette.quiet)
-                            .frame(minWidth: 52)
-                        Button { doc.setZoom(doc.zoom + 0.1) } label: { Text(verbatim: "A").font(Tok.sans(20)).frame(width: 44, height: 44) }
-                            .accessibilityLabel(Text("Larger text"))
-                    }
-                    .buttonStyle(.plain).foregroundStyle(palette.head)
-                    .overlay(alignment: .bottom) { Rectangle().fill(palette.line).frame(height: 1) }
-                }
-                if doc.outline.isEmpty {
-                    Text("No headings").font(Tok.sans(15)).foregroundStyle(palette.quiet).padding(.top, 14)
-                }
-                ForEach(doc.outline) { item in
-                    Button { Task { await doc.goOutline(item) } } label: {
-                        HStack(spacing: 8) {
-                            Text(verbatim: item.text)
-                                .font(item.level == 0 ? Tok.sans(15.5, medium: true) : Tok.sans(15))
-                                .foregroundStyle(item.current ? palette.head : palette.text)
-                                .lineLimit(2)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            if item.changed {
-                                Circle().fill(palette.head).frame(width: 6, height: 6).accessibilityLabel(Text("Changed"))
+                    Section {
+                        Stepper(value: Binding(get: { doc.zoom }, set: { doc.setZoom($0) }), in: 0.7...2.0, step: 0.1) {
+                            HStack {
+                                Text("Text size").font(Tok.sans(15)).foregroundStyle(palette.text)
+                                Spacer()
+                                Text(verbatim: doc.zoom.formatted(.percent.precision(.fractionLength(0)))).font(Tok.sans(14)).foregroundStyle(palette.quiet)
                             }
                         }
-                        .padding(.leading, CGFloat(item.level) * 16)
-                        .frame(minHeight: 44)
-                        .contentShape(Rectangle())
+                        .listRowBackground(palette.raised)
                     }
-                    .buttonStyle(.plain)
-                    .overlay(alignment: .bottom) { Rectangle().fill(palette.line).frame(height: 1) }
+                }
+                Section {
+                    if doc.outline.isEmpty {
+                        Text("No headings").font(Tok.sans(15)).foregroundStyle(palette.quiet).listRowBackground(palette.raised)
+                    }
+                    ForEach(doc.outline) { item in
+                        Button { Task { await doc.goOutline(item) } } label: {
+                            HStack(spacing: 8) {
+                                Text(verbatim: item.text)
+                                    .font(item.level == 0 ? Tok.sans(15.5, medium: true) : Tok.sans(15))
+                                    .foregroundStyle(item.current ? palette.head : palette.text)
+                                    .lineLimit(2)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                if item.changed {
+                                    Circle().fill(palette.head).frame(width: 6, height: 6).accessibilityLabel(Text("Changed"))
+                                }
+                            }
+                            .padding(.leading, CGFloat(item.level) * 16)
+                        }
+                        .listRowBackground(palette.raised)
+                    }
                 }
             }
-            .padding(.horizontal, 20).padding(.bottom, 30)
-        }
-        .background(palette.ground.ignoresSafeArea())
-    }
-}
-
-/// Shares the original file (IOS-7) through iOS's share sheet: AirDrop, Mail, Save to Files and the rest.
-struct ShareSheet: UIViewControllerRepresentable {
-    let url: URL
-    let kind: DocumentKind
-
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: [FileItem(url: url, kind: kind)], applicationActivities: nil)
-    }
-
-    func updateUIViewController(_ c: UIActivityViewController, context: Context) {}
-
-    /// The file, with a header naming it as the original (PDF and PNG exports from the phone are 2.x).
-    final class FileItem: NSObject, UIActivityItemSource {
-        let url: URL
-        let kind: DocumentKind
-        init(url: URL, kind: DocumentKind) {
-            self.url = url
-            self.kind = kind
-        }
-
-        func activityViewControllerPlaceholderItem(_ c: UIActivityViewController) -> Any { url }
-        func activityViewController(_ c: UIActivityViewController, itemForActivityType t: UIActivity.ActivityType?) -> Any? { url }
-        func activityViewControllerLinkMetadata(_ c: UIActivityViewController) -> LPLinkMetadata? {
-            let m = LPLinkMetadata()
-            let size = ((try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize).map { Int64($0).formatted(.byteCount(style: .file)) } ?? ""
-            let what: String
-            switch kind {
-            case .note: what = String(localized: "Note")
-            case .board: what = String(localized: "JSON Canvas")
-            case .page: what = String(localized: "Page")
+            .scrollContentBackground(.hidden)
+            .background(palette.ground.ignoresSafeArea())
+            .navigationTitle(Text(verbatim: doc.title))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
             }
-            m.title = url.lastPathComponent
-            m.originalURL = URL(fileURLWithPath: "\(what) · \(size) · " + String(localized: "the original file"))
-            return m
         }
     }
 }

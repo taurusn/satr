@@ -21,3 +21,8 @@ docs/spikes/*/results-raw.txt
 *.log
 __pycache__/
 *.pyc
+
+# Lane logs, checkpoints and spike results hold machine paths, IDs and screenshots: local only (review P2-5, 2026-11-14)
+docs/lanes/
+docs/CHECKPOINT-*.md
+docs/spikes/*/results/

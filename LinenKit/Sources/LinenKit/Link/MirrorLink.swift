@@ -46,6 +46,12 @@ public final class MirrorLink: PhoneLink, @unchecked Sendable {
     private var roundWaiters: [(id: UUID, c: CheckedContinuation<Bool, Never>)] = []
     private var pairingDialer: LinkDialer?
     private var pairingChannel: FrameChannel?
+    /// The pairing in progress: a stream that ends (the screen went away) cancels only its own pairing.
+    private var pairingID: UUID?
+    /// How long the phone waits for the Mac's answer after showing the six digits. The Mac answers within its own 60 s
+    /// (`PairingMode.answerTime`); a route that keeps the connection open but carries nothing back would otherwise
+    /// leave "Waiting for Allow" on screen for ever. Tests shorten it.
+    var pairingAnswerDeadline: TimeInterval = PairingMode.answerTime + 15
     private var observers: [any NSObjectProtocol] = []
 
     public init(mirror: PhoneMirror, identities: any LinkIdentityStore, recordURL: URL, routes: any LinkRouteSource = BonjourRoutes(), peerToPeer: Bool = true) {
@@ -344,11 +350,27 @@ public final class MirrorLink: PhoneLink, @unchecked Sendable {
 
     public func pair(scannedCode: String, phoneName: String) -> AsyncStream<PairingStep> {
         AsyncStream { c in
-            queue.async { [self] in startPairing(scannedCode, phoneName, c) }
+            let id = UUID()
+            // The screen stopped listening (Back, or it gave up): stop dialing and close the pairing session, so
+            // nothing of this attempt stays on the network.
+            c.onTermination = { [weak self] _ in
+                guard let self else { return }
+                self.queue.async { self.cancelPairing(id) }
+            }
+            queue.async { [self] in startPairing(id, scannedCode, phoneName, c) }
         }
     }
 
-    private func startPairing(_ text: String, _ phoneName: String, _ c: AsyncStream<PairingStep>.Continuation) {
+    private func cancelPairing(_ id: UUID) {
+        guard pairingID == id else { return }
+        pairingID = nil
+        pairingDialer?.cancel()
+        pairingDialer = nil
+        pairingChannel?.connection.cancel()
+        pairingChannel = nil
+    }
+
+    private func startPairing(_ id: UUID, _ text: String, _ phoneName: String, _ c: AsyncStream<PairingStep>.Continuation) {
         guard let invite = PairingInvite(text: text) else {
             c.yield(.failed(.notALinenCode))
             return c.finish()
@@ -359,6 +381,7 @@ public final class MirrorLink: PhoneLink, @unchecked Sendable {
         }
         pairingDialer?.cancel()
         pairingChannel?.connection.cancel()
+        pairingID = id
         c.yield(.dialing)
         let name = phoneName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "iPhone" : phoneName
         let d = LinkDialer(queue: queue, identity: identity, pin: invite.macCertHash, routes: routes, service: invite.service, peerToPeer: peerToPeer, timeout: 15) { [weak self] result in
@@ -376,14 +399,15 @@ public final class MirrorLink: PhoneLink, @unchecked Sendable {
                 c.yield(.failed(.unreachable))
                 c.finish()
             case let .success(conn):
-                self.pairingSession(conn, invite: invite, identity: identity, name: name, c)
+                guard self.pairingID == id else { conn.cancel(); return c.finish() }
+                self.pairingSession(id, conn, invite: invite, identity: identity, name: name, c)
             }
         }
         pairingDialer = d
         d.start()
     }
 
-    private func pairingSession(_ conn: NWConnection, invite: PairingInvite, identity: LinkIdentity, name: String, _ c: AsyncStream<PairingStep>.Continuation) {
+    private func pairingSession(_ id: UUID, _ conn: NWConnection, invite: PairingInvite, identity: LinkIdentity, name: String, _ c: AsyncStream<PairingStep>.Continuation) {
         guard let exported = LinkTLS.exported(conn) else {
             conn.cancel()
             c.yield(.failed(.unreachable))
@@ -394,6 +418,7 @@ public final class MirrorLink: PhoneLink, @unchecked Sendable {
         pairingChannel = ch
         let finished = Flag()
         let shown = Flag()
+        let answerOverdue = Flag()
         // In TLS 1.3 the phone's side is ready before the Mac has checked the phone's certificate, so a Mac that is not
         // pairing refuses the session just after. A refusal in the handshake means its code is no longer up.
         let end: @Sendable (NWError?) -> Void = { [weak self] e in
@@ -405,7 +430,11 @@ public final class MirrorLink: PhoneLink, @unchecked Sendable {
             // The session ended without the Mac's answer, which a dropped link can swallow (seen over peer-to-peer
             // Wi-Fi, 2026-10-31). Ask the Mac itself: if it takes a pinned session from this phone, Allow went through.
             guard let self else { return c.finish() }
-            self.queue.async { self.confirmPairing(invite: invite, identity: identity, name: name, c) }
+            self.queue.async {
+                // The screen went away meanwhile, or another pairing began: nothing to confirm for.
+                guard self.pairingID == id else { return c.finish() }
+                self.confirmPairing(invite: invite, identity: identity, name: name, refusedAs: answerOverdue.isSet ? .timeout : .refused, c)
+            }
         }
         conn.stateUpdateHandler = { [weak self] st in
             // As for sync sessions: give the receive loop a moment to deliver `pair-result` first.
@@ -425,9 +454,16 @@ public final class MirrorLink: PhoneLink, @unchecked Sendable {
         }
         ch.send(.json(.pairCode, PairCode(code: invite.code.base64URL, name: name)))
         // The digits show once the Mac has had time to refuse the handshake or answer a wrong code.
-        queue.asyncAfter(deadline: .now() + 0.3) {
+        queue.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             guard !finished.isSet, shown.setOnce() else { return }
             c.yield(.match(digits: digits, mac: invite.macName))
+            // No answer in time: end this session and ask the Mac directly, as when an answer is lost on the way.
+            guard let self else { return }
+            self.queue.asyncAfter(deadline: .now() + self.pairingAnswerDeadline) {
+                guard !finished.isSet else { return }
+                _ = answerOverdue.setOnce()
+                conn.cancel()
+            }
         }
         ch.startReceiving({ [weak self] f in
             guard let self else { return }
@@ -450,6 +486,7 @@ public final class MirrorLink: PhoneLink, @unchecked Sendable {
 
     /// Stores the Mac and starts syncing on a new session in which both certificates are pinned.
     private func completePairing(invite: PairingInvite, macName: String, name: String, _ c: AsyncStream<PairingStep>.Continuation) {
+        pairingID = nil
         if record?.certHash != invite.macCertHash { mirror.wipe() }
         let rec = MacRecord(certHash: invite.macCertHash, service: invite.service, name: macName, phoneName: name, pairedAt: Date(), lastSeen: Date())
         record = rec
@@ -467,7 +504,7 @@ public final class MirrorLink: PhoneLink, @unchecked Sendable {
 
     /// A pairing session ended without `pair-result`: dial the Mac as a paired phone. A pinned session it answers
     /// means it pinned this phone (Allow went through); a refusal in the handshake means it did not.
-    private func confirmPairing(invite: PairingInvite, identity: LinkIdentity, name: String, _ c: AsyncStream<PairingStep>.Continuation) {
+    private func confirmPairing(invite: PairingInvite, identity: LinkIdentity, name: String, refusedAs: PairingFailure, _ c: AsyncStream<PairingStep>.Continuation) {
         let d = LinkDialer(queue: queue, identity: identity, pin: invite.macCertHash, routes: routes, service: invite.service, peerToPeer: peerToPeer, timeout: 10) { [weak self] result in
             guard let self else { return c.finish() }
             self.pairingDialer = nil
@@ -475,7 +512,7 @@ public final class MirrorLink: PhoneLink, @unchecked Sendable {
             switch result {
             case let .success(x): conn = x
             case .failure(.refused):
-                c.yield(.failed(.refused))
+                c.yield(.failed(refusedAs))
                 return c.finish()
             case .failure:
                 c.yield(.failed(.unreachable))
@@ -486,16 +523,22 @@ public final class MirrorLink: PhoneLink, @unchecked Sendable {
             self.pairingChannel = ch
             // A pin-set generation the Mac never has, so it answers with its pin set at once.
             ch.send(.json(.hello, Hello(pinSet: .max, pins: [])))
-            ch.startReceiving({ [weak self] _ in
+            ch.startReceiving({ [weak self] f in
                 guard answered.setOnce(), let self else { return }
                 self.queue.async {
                     conn.cancel()
                     self.pairingChannel = nil
+                    // Only a pinned session's answer means Allow went through. A Mac still in pairing mode takes this
+                    // session for another pairing and answers `pair-result` (busy): this phone is not pinned.
+                    guard Self.isPinnedProof(f.type) else {
+                        c.yield(.failed(refusedAs))
+                        return c.finish()
+                    }
                     self.completePairing(invite: invite, macName: invite.macName, name: name, c)
                 }
             }, onEnd: { _ in
                 guard answered.setOnce() else { return }
-                c.yield(.failed(.refused))
+                c.yield(.failed(refusedAs))
                 c.finish()
             })
             self.queue.asyncAfter(deadline: .now() + 5) {
@@ -507,6 +550,17 @@ public final class MirrorLink: PhoneLink, @unchecked Sendable {
         }
         pairingDialer = d
         d.start()
+    }
+
+    /// Whether a frame proves the Mac pinned this phone: any frame only a pinned session carries from the Mac (`pins`,
+    /// `manifest`, `changed`, `chunk`), never a pairing session's `pair-result`.
+    static func isPinnedProof(_ t: FrameType) -> Bool { t.allowed(on: .pinned, from: .mac) && !t.allowed(on: .pairing, from: .mac) }
+
+    /// The paired Mac's name when pairing with this code would replace it (another Mac's certificate), so the screen
+    /// asks first: replacing removes everything kept from the old Mac. Nil when nothing is paired or it is the same Mac.
+    public func replacesPairedMac(scannedCode: String) async -> String? {
+        guard let invite = PairingInvite(text: scannedCode) else { return nil }
+        return queue.sync { record.flatMap { $0.certHash == invite.macCertHash ? nil : $0.name } }
     }
 
     /// Forgets the Mac and removes every pin with its files.

@@ -1435,6 +1435,7 @@
       case "update": await update(msg); return true;
       case "quiet": await quiet(); return true;
       case "settings": applySettings(msg); return true;
+      case "zoom": setZoom(msg); return true;
       case "linkStatus": applyLinkStatus(msg.map || {}); return true;
       case "imageInfo": applyImageInfo(msg.map || {}); return true;
       case "allowRemote": state.allowRemote = true; return true;
@@ -1494,11 +1495,20 @@
       if ("quickLook" in s) html.classList.toggle("ql", !!s.quickLook);
       if (s.lang) { html.lang = s.lang; lang = s.lang === "ar" ? "ar" : "en"; localizeChrome(); }
       if ("printPaper" in s) html.classList.toggle("print-paper", !!s.printPaper);
+      if (Number(s.zoom) > 0) html.style.setProperty("--zoom", String(s.zoom));
     });
     if ("foldArabic" in s && (s.foldArabic !== false) !== findState.foldArabic) setFold(s.foldArabic !== false, false);
     if (s.theme && mermaidSVG.size) {
       docEl.querySelectorAll(".mermaid-src").forEach((n) => { if (n.querySelector("svg")) fill(n); });
     }
+  }
+  // The window's text size changed (READ-1): the column keeps its width on screen, so lines rewrap; the line being
+  // read goes back to the reading line from the place Linen took before the change.
+  function setZoom(msg) {
+    const place = msg.place || capturePlace();
+    if (Number(msg.zoom) > 0) html.style.setProperty("--zoom", String(msg.zoom));
+    state.settings = { ...state.settings, zoom: msg.zoom };
+    if (place) restorePlace(place);
   }
   function localizeChrome() {
     $("outline-filter").placeholder = t("Filter");

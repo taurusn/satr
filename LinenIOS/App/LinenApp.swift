@@ -8,6 +8,7 @@ struct LinenApp: App {
 
     init() {
         Tok.registerFaces()
+        Tok.styleNativeBars()
         _model = State(initialValue: AppModel.standard())
     }
 

@@ -307,6 +307,8 @@ public protocol PhoneLink: AnyObject, Sendable {
     func pairedMac() async -> PairedMac?
     /// Pairs from the text of a scanned QR code and the name Hatim typed for this phone.
     func pair(scannedCode: String, phoneName: String) -> AsyncStream<PairingStep>
+    /// The paired Mac's name when pairing with this code would replace it with another Mac (the screen asks first).
+    func replacesPairedMac(scannedCode: String) async -> String?
     /// Forgets the Mac and removes every pin with its files.
     func forgetMac() async
     /// Pull to sync: dial now if a Mac is in reach.
@@ -330,4 +332,8 @@ public final class UnpairedLink: PhoneLink {
     }
     public func forgetMac() async {}
     public func syncNow() async {}
+}
+
+public extension PhoneLink {
+    func replacesPairedMac(scannedCode: String) async -> String? { nil }
 }

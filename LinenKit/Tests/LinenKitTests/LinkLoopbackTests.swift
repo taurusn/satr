@@ -330,7 +330,7 @@ struct LinkLoopbackTests {
         func cancel() { connection.cancel() }
     }
 
-    @Test("A pairing session that sends hello or want is ended with nothing sent, and pairing mode ends")
+    @Test("A pairing session that sends hello or want is ended with nothing sent; want ends pairing mode, a first hello does not")
     func pairingSessionCannotSync() async throws {
         for type in [FrameType.hello, .want] {
             let rig = try await Rig()
@@ -345,11 +345,18 @@ struct LinkLoopbackTests {
             #expect(await waitUntil { raw.state == "closed" || raw.state == "failed" || raw.state == "cancelled" }, "\(type) closes the session")
             #expect(raw.received.isEmpty, "no frame came back")
             #expect(rig.server.framesSent().isEmpty)
-            #expect(rig.server.snapshot().pairing.ended == .violation)
             raw.cancel()
-            // The QR is gone with it.
             let phone = try rig.phone("late")
-            #expect(Self.failure(await Self.pair(phone, invite.text, name: "L", server: rig.server)) == .expired)
+            if type == .want {
+                // A misstep ends pairing mode, and the QR is gone with it.
+                #expect(rig.server.snapshot().pairing.ended == .violation)
+                #expect(Self.failure(await Self.pair(phone, invite.text, name: "L", server: rig.server)) == .expired)
+            } else {
+                // A first hello is what a phone confirming its own pairing sends (review P2-4, 2026-11-14): closed
+                // quietly, pairing mode stays open and the QR still pairs a phone.
+                #expect(rig.server.snapshot().pairing.ended == nil && rig.server.snapshot().pairing.invite != nil)
+                guard case .paired = await Self.pair(phone, invite.text, name: "L", server: rig.server).last else { Issue.record("hello ended pairing"); return }
+            }
         }
     }
 
@@ -428,6 +435,169 @@ struct LinkLoopbackTests {
         }
         guard case .paired = steps.last else { Issue.record("steps \(steps)"); return }
         #expect(await phone.pairedMac() != nil && rig.server.snapshot().phones.count == 1)
+    }
+
+    // MARK: - Pairing ends, always (threads L1, 2026-11-14)
+
+    @Test("A listener that fails is made again (mDNSResponder restarting), and a phone pairs through the new one")
+    func listenerRestartsAfterFailure() async throws {
+        let rig = try await Rig()
+        let before = rig.port
+        rig.server.failListenerForTesting()
+        #expect(rig.server.snapshot().listening == false)
+        #expect(await waitUntil(5) { rig.server.snapshot().listening && rig.server.port != nil })
+        #expect(rig.server.snapshot().restarts == 1 && rig.server.snapshot().restarting == false)
+        let after = rig.server.port ?? 0
+        print("listener restarted: port \(before) then \(after)")
+        let phone = try rig.phone("again", port: after)
+        let steps = await Self.pair(phone, rig.server.beginPairing().text, name: "Again", server: rig.server)
+        guard case .paired = steps.last else { Issue.record("steps \(steps)"); return }
+    }
+
+    @Test("A listener that cannot start (its port taken) keeps trying, and listens once the port is free")
+    func listenerRetriesUntilPortFree() async throws {
+        // Hold a port with a plain socket, as another process would.
+        let fd = socket(AF_INET6, SOCK_STREAM, 0)
+        #expect(fd >= 0)
+        var off: Int32 = 0
+        setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &off, socklen_t(MemoryLayout<Int32>.size))
+        var addr = sockaddr_in6()
+        addr.sin6_len = UInt8(MemoryLayout<sockaddr_in6>.size)
+        addr.sin6_family = sa_family_t(AF_INET6)
+        addr.sin6_addr = in6addr_any
+        addr.sin6_port = 0
+        let bound = withUnsafePointer(to: &addr) { $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { bind(fd, $0, socklen_t(MemoryLayout<sockaddr_in6>.size)) } }
+        #expect(bound == 0)
+        #expect(listen(fd, 4) == 0)
+        var got = sockaddr_in6()
+        var len = socklen_t(MemoryLayout<sockaddr_in6>.size)
+        _ = withUnsafeMutablePointer(to: &got) { $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { getsockname(fd, $0, &len) } }
+        let port = UInt16(bigEndian: got.sin6_port)
+
+        let folder = TempFolder("LinkPortTaken")
+        let server = MacLinkServer(identity: try LinkIdentity.generate(commonName: "taken-mac"),
+                                   config: .init(macName: "Test Mac", serviceName: nil, port: NWEndpoint.Port(rawValue: port)!, peerToPeer: false,
+                                                 stateDirectory: folder.url.appendingPathComponent("mac")))
+        try server.start()
+        defer { server.stop() }
+        #expect(await waitUntil(4) { server.snapshot().restarts >= 1 }, "the failed listener was made again at least once")
+        let held = server.snapshot()
+        #expect(held.listening == false && held.problem != nil)
+        print("port \(port) taken: listening \(held.listening), restarts \(held.restarts), problem \(held.problem ?? "-")")
+        close(fd)
+        #expect(await waitUntil(40) { server.snapshot().listening }, "listens once the port is free")
+        #expect(server.port == port)
+        let phone = MirrorLink(mirror: try PhoneMirror(root: folder.url.appendingPathComponent("phone/Mirror")), identities: MemoryIdentityStore(),
+                               recordURL: folder.url.appendingPathComponent("phone/link.json"),
+                               routes: FixedRoutes([.hostPort(host: "127.0.0.1", port: NWEndpoint.Port(rawValue: port)!)]), peerToPeer: false)
+        let steps = await Self.pair(phone, server.beginPairing().text, name: "Taken", server: server)
+        guard case .paired = steps.last else { Issue.record("steps \(steps)"); return }
+    }
+
+    @Test("A Mac that goes silent after the six digits: the phone stops waiting and says the Mac did not answer")
+    func silentAfterDigits() async throws {
+        let rig = try await Rig()
+        let proxy = try Proxy(to: rig.port)
+        #expect(await waitUntil { proxy.port != nil })
+        let phone = try rig.phone("silent", port: proxy.port)
+        phone.pairingAnswerDeadline = 2
+        let t0 = Date()
+        var steps: [PairingStep] = []
+        for await s in phone.pair(scannedCode: rig.server.beginPairing().text, phoneName: "Silent") {
+            steps.append(s)
+            if case .match = s {
+                _ = await waitUntil { rig.server.snapshot().pairing.waiting != nil }
+                // The route keeps the connection open and carries nothing back; nobody answers on the Mac.
+                proxy.freezeOpen()
+            }
+        }
+        let took = Date().timeIntervalSince(t0)
+        print("silent Mac: \(steps.map { "\($0)" }) in \(String(format: "%.1f", took)) s")
+        #expect(Self.failure(steps) == .timeout, "steps \(steps)")
+        #expect(took < 20)
+        #expect(await phone.pairedMac() == nil && rig.server.snapshot().phones.isEmpty)
+    }
+
+    @Test("Leaving the pairing screen stops the attempt: the Mac's pairing session ends")
+    func leavingStopsPairing() async throws {
+        let rig = try await Rig()
+        let phone = try rig.phone("leave")
+        let invite = rig.server.beginPairing()
+        let task = Task {
+            for await s in phone.pair(scannedCode: invite.text, phoneName: "Leave") {
+                if case .match = s { break }  // the screen goes away while it shows the digits
+            }
+        }
+        #expect(await waitUntil { rig.server.snapshot().pairing.waiting != nil })
+        _ = await task.value
+        #expect(await waitUntil { rig.server.snapshot().pairing.waiting == nil }, "the Mac no longer waits for Allow")
+        #expect(rig.server.snapshot().pairing.ended == .cancelled)
+        #expect(rig.server.snapshot().phones.isEmpty)
+    }
+
+    @Test("Proof of pairing: any frame only a pinned session carries counts, a pair-result (busy) does not (review P2-2)")
+    func pairingProofFrames() {
+        #expect(MirrorLink.isPinnedProof(.pins) && MirrorLink.isPinnedProof(.manifest) && MirrorLink.isPinnedProof(.changed) && MirrorLink.isPinnedProof(.chunk))
+        #expect(!MirrorLink.isPinnedProof(.pairResult))
+    }
+
+    @Test("Local network refused, then allowed, then an unreachable Mac: the phone says unreachable, not local network off (review P2-1)")
+    func deniedThenAllowed() async throws {
+        struct DeniedThenFound: LinkRouteSource {
+            func find(service: String?, peerToPeer: Bool, queue: DispatchQueue, update: @escaping @Sendable ([NWEndpoint]) -> Void,
+                      denied: @escaping @Sendable () -> Void) -> any LinkRouteSearch {
+                queue.async { denied() }
+                // Access allowed a moment later: results arrive, but nothing listens there.
+                queue.asyncAfter(deadline: .now() + 0.3) { update([.hostPort(host: "127.0.0.1", port: 9)]) }
+                return FixedRoutes.Nothing()
+            }
+        }
+        let rig = try await Rig()
+        let phone = try rig.phone("denied", routes: DeniedThenFound())
+        let steps = await Self.pair(phone, rig.server.beginPairing().text, name: "D", server: rig.server, answer: nil)
+        #expect(Self.failure(steps) == .unreachable, "steps \(steps)")
+    }
+
+    @Test("A listener that is ready and fails again backs off instead of restarting every second (review P2-3)")
+    func restartBacksOff() async throws {
+        let rig = try await Rig()
+        rig.server.failListenerForTesting()
+        #expect(await waitUntil(5) { rig.server.snapshot().listening })
+        rig.server.failListenerForTesting()
+        #expect(rig.server.restartDelayForTesting() == 2, "second restart waits 2 s, not 1")
+        #expect(await waitUntil(5) { rig.server.snapshot().listening })
+        // Pair now hurries a pending restart (review P3-5).
+        rig.server.failListenerForTesting()
+        let t0 = Date()
+        _ = rig.server.beginPairing()
+        #expect(await waitUntil(5) { rig.server.snapshot().listening })
+        #expect(Date().timeIntervalSince(t0) < 2, "beginPairing made the listener at once")
+    }
+
+    @Test("A phone waiting for Allow keeps its session across a listener restart (review P3-4)")
+    func waitingSurvivesRestart() async throws {
+        let rig = try await Rig()
+        let phone = try rig.phone("wait")
+        var steps: [PairingStep] = []
+        for await s in phone.pair(scannedCode: rig.server.beginPairing().text, phoneName: "Wait") {
+            steps.append(s)
+            if case .match = s {
+                _ = await waitUntil { rig.server.snapshot().pairing.waiting != nil }
+                rig.server.failListenerForTesting()
+                rig.server.answerPairing(allow: true)
+            }
+        }
+        guard case .paired = steps.last else { Issue.record("steps \(steps)"); return }
+    }
+
+    @Test("Pairing with another Mac's code says which paired Mac it replaces; the same Mac's new code does not (P2-6)")
+    func replacesPairedMac() async throws {
+        let rig = try await Rig()
+        let phone = try rig.phone("swap")
+        guard case .paired = await Self.pair(phone, rig.server.beginPairing().text, name: "Swap", server: rig.server).last else { Issue.record("not paired"); return }
+        #expect(await phone.replacesPairedMac(scannedCode: rig.server.beginPairing().text) == nil)
+        let other = PairingInvite(macCertHash: Data(repeating: 7, count: 32), service: "Other", macName: "Other Mac", code: PairingInvite.newCode())
+        #expect(await phone.replacesPairedMac(scannedCode: other.text) == "Test Mac")
     }
 
     @Test("A replayed pairing session gets nothing, with or without a QR up")

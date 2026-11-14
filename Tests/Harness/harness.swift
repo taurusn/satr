@@ -492,6 +492,43 @@ final class Checks {
             check("a repeated quote is told apart by its saved offset", abs(gotOff - qoff) < 120, "reading line at character \(gotOff), the second phrase starts at \(qoff)")
 
         }
+        if await want("READ-1 zoom") {
+            // READ-1 (Hatim, 2026-11-14): the text column keeps its width on screen when the text size changes, so it
+            // holds more words zoomed out and fewer zoomed in; the line being read stays at the reading line. The page
+            // gets what the Mac window sends: the place taken before the zoom, then page zoom, then the zoom message.
+            let para = String(repeating: "Words that fill a reading column so its lines can be counted at each size. ", count: 12)
+            let table = "| A | B | C |\n|---|---|---|\n| " + String(repeating: "wide cell text ", count: 12) + " | b | c |"
+            await load((["# Zoom", table] + (0..<60).map { "Paragraph \($0): " + para }).joined(separator: "\n\n"))
+            _ = await js("window.scrollTo(0, 9000); return 1")
+            try? await Task.sleep(for: .milliseconds(300))
+            let place0 = (try? await host.send(["type": "command", "name": "place"])) as? [String: Any]
+            let index0 = (place0?["index"] as? NSNumber)?.intValue ?? -2, qoff0 = (place0?["qoff"] as? NSNumber)?.intValue ?? -2
+            var rows: [String] = ["before: block \(index0) char \(qoff0)"]
+            var ok = true
+            for z in [0.7, 0.8, 1.3, 1.7, 2.0, 1.0] {
+                let before = (try? await host.send(["type": "command", "name": "place"])) as? [String: Any]
+                host.web.pageZoom = z
+                var msg: [String: Any] = ["type": "zoom", "zoom": z]
+                if let before { msg["place"] = before }
+                _ = try? await host.send(msg)
+                try? await Task.sleep(for: .milliseconds(300))
+                let css = await num("const ps = [...document.querySelectorAll('#doc > .blk p')].filter((p) => p.getBoundingClientRect().width > 0); return ps.length ? ps[0].getBoundingClientRect().width : -1")
+                let onScreen = css * z
+                let after = (try? await host.send(["type": "command", "name": "place"])) as? [String: Any]
+                // The same paragraph, and within a line of text of the same character (the text repeats, so the
+                // quote alone cannot tell lines apart).
+                let index = (after?["index"] as? NSNumber)?.intValue ?? -1, qoff = (after?["qoff"] as? NSNumber)?.intValue ?? -1
+                let kept = index == index0 && abs(qoff - qoff0) <= 90
+                // The floor (340 px) takes over past 170 percent: 578 / 1.7 is 340.
+                let want = max(578.0 / z, 340.0) * z
+                // A wide block (a table) never narrower than the prose, on screen.
+                let wide = await num("const w = document.querySelector('#doc > .blk.wide'); return w ? w.getBoundingClientRect().width : -1") * z
+                if abs(onScreen - want) > 2 || !kept || wide < onScreen - 1 { ok = false }
+                rows.append(String(format: "%.0f%%: %.0f pt on screen (%.0f css px), wide %.0f pt, reading line block %d char %d", z * 100, onScreen, css, wide, index, qoff))
+            }
+            host.web.pageZoom = 1
+            check("zoom keeps the column's width on screen and the line being read", ok, rows.joined(separator: "; "))
+        }
         if await want("LOOK-4 announce") {
             // LOOK-4: one announcement per settled reload.
             await load(paragraphs(8, "Said"))

@@ -12,7 +12,13 @@
   --body-face: var(--sans);
   --mono: "SF Mono", ui-monospace, Menlo, "Linen Sans", monospace;
 
-  --measure: 578px; --col: 720px; /* 34em at the 17 px body; page zoom scales it with text size */ --wing: 120px; --rail: 220px; --foot: 30px;
+  /* The column at 100 percent: 578 px of prose (34em at the 17 px body), 720 px for wide blocks, 120 px wings. --zoom
+     is the Mac window's text size (page zoom), set by Linen: dividing by it keeps the column's width on screen while
+     the text changes size, so zooming out widens the column in words and zooming in narrows it (READ-1; Hatim,
+     2026-11-14). A floor of 340 px (20em of the 17 px body, in pixels so every block
+     lines up) keeps a readable line at 200 percent. Unset elsewhere (iPhone, Quick Look, export). */
+  --measure: max(calc(578px / var(--zoom, 1)), 340px); --col: max(calc(720px / var(--zoom, 1)), 340px); --wing: calc(120px / var(--zoom, 1));
+  --rail: 220px; --foot: 30px;
   --ease-brand: cubic-bezier(.22, .8, .2, 1); --t-brand: .34s;
   color-scheme: light;
 }

@@ -27,7 +27,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // A fresh state for agents at once, so a previous run's file is never read as this one's (MCP-9).
         NowState.write(running: true)
         // The seal's self-test after any update of macOS or Linen; pages keep scripts off until it passes (PAGE-10).
+        #if DEBUG
+        // A test copy run beside Hatim's Linen skips it: its network probes make macOS ask that copy for local network
+        // access, a dialog in front of whatever he is doing (seen 2026-11-14).
+        if Library.folderName == "Linen" { PageSelfTest.shared.runIfNeeded() }
+        #else
         PageSelfTest.shared.runIfNeeded()
+        #endif
         NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.settingsChanged() }
         }
