@@ -155,7 +155,8 @@ final class LinenTools {
         case "loop": heading = "## The author loop"
         default: return nil
         }
-        guard let start = all.range(of: heading) else { return nil }
+        // the heading at a line's start: "## Notes" must not match "### Notes with sources" (found in gate 4E)
+        guard let start = all.range(of: "\n" + heading + " ").map({ all.index(after: $0.lowerBound)..<$0.upperBound }) ?? all.range(of: heading) else { return nil }
         let rest = all[start.lowerBound...]
         let next = rest.dropFirst(heading.count).range(of: "\n## ")
         let intro = all.components(separatedBy: "\n## ").first ?? ""
@@ -424,16 +425,23 @@ enum Layout {
     struct Result { let summary: String; let structured: [String: Any]; let text: String }
 
     static func run(_ u: URL, host: RendererHost, deadline: Deadline? = nil) async throws -> Result {
-        let text = try Checker.readText(u)
-        let sidecar = try? Checker.readText(URL(fileURLWithPath: u.path + ".notes.json"))
-        let r = try await runText(text, sidecar: sidecar, name: u.lastPathComponent, host: host)
-        if r.text != text {
+        // ENG-12: laid out again on the newer text when the file changed while it was laid out (Hatim dragging), once
+        for attempt in 0..<2 {
+            let text = try Checker.readText(u)
+            let sidecar = try? Checker.readText(URL(fileURLWithPath: u.path + ".notes.json"))
+            let r = try await runText(text, sidecar: sidecar, name: u.lastPathComponent, host: host)
+            if r.text == text { return r }
             // An expired or cancelled call writes nothing (MCP-1), checked last, after the renderer returns.
             guard deadline?.expired != true else { throw LinenTools.ToolError(message: "Stopped at its deadline before writing; nothing was written.") }
+            if (try? Checker.readText(u)) != text {
+                if attempt == 0 { continue }
+                throw LinenTools.ToolError(message: "\(u.lastPathComponent) changed twice while it was laid out; nothing was written. Call again.")
+            }
             try Data(r.text.utf8).write(to: u, options: .atomic)
             deadline?.committed = "Laid out \(u.lastPathComponent)."
+            return r
         }
-        return r
+        throw LinenTools.ToolError(message: "\(u.lastPathComponent) could not be laid out.")
     }
 
     /// Layout on text that is not written yet: what write_board and edit_board stage before they commit.
@@ -452,6 +460,10 @@ enum Layout {
         let overflow = result["overflow"] as? [String] ?? []
         let ms = Int((result["ms"] as? NSNumber)?.doubleValue ?? 0)
         var summary = "Laid out \(name): moved or resized \(changed) box\(changed == 1 ? "" : "es") in \(ms) ms."
+        // Gate 4.0: gaps between cards widened so the board's cornered lines have room (layout.js, the channel step).
+        let stats = result["stats"] as? [String: Any] ?? [:]
+        let widened = (stats["widened"] as? NSNumber)?.intValue ?? 0
+        if widened > 0 { summary += " Widened \(widened) gap\(widened == 1 ? "" : "s") between boxes so the lines have room." }
         if (result["normalised"] as? Bool) == true { summary += " The file was normalised to Obsidian's style once; later runs change only numbers." }
         if !overflow.isEmpty { summary += " Text still overflows in: \(overflow.joined(separator: ", ")). Shorten those boxes or give their section more columns." }
         return Result(summary: summary, structured: ["summary": summary, "changed": changed, "ms": ms, "overflow": overflow,

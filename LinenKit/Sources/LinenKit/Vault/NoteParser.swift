@@ -17,6 +17,32 @@ enum NoteParser {
         return text.withUTF8 { parse(bytes: $0) }
     }
 
+    /// Parses a note from its file's bytes. Plain UTF-8 without a byte order mark, which is nearly every note, is
+    /// parsed where it lies; `TextDecoder` would copy it twice (into an array, then a string) only to hand the same
+    /// bytes back. Anything else (a byte order mark, UTF-16, Windows code pages, broken UTF-8) is decoded as the
+    /// reader decodes it.
+    static func parse(data: Data) -> ParsedNote {
+        let inPlace = data.withUnsafeBytes { raw -> ParsedNote? in
+            let bytes = raw.bindMemory(to: UInt8.self)
+            guard !bytes.starts(with: [0xEF, 0xBB, 0xBF]), isValidUTF8(bytes) else { return nil }
+            return parse(bytes: bytes)
+        }
+        return inPlace ?? parse(TextDecoder.decode(data).text)
+    }
+
+    /// Strict UTF-8 validity, as `String(validating:as:)` judges it, without making a string.
+    static func isValidUTF8(_ bytes: UnsafeBufferPointer<UInt8>) -> Bool {
+        var iterator = bytes.makeIterator()
+        var decoder = Unicode.UTF8()
+        while true {
+            switch decoder.decode(&iterator) {
+            case .scalarValue: continue
+            case .emptyInput: return true
+            case .error: return false
+            }
+        }
+    }
+
     static func parse(bytes: UnsafeBufferPointer<UInt8>) -> ParsedNote {
         var note = ParsedNote()
         let lines = lineRanges(bytes)

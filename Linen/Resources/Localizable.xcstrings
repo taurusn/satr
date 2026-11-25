@@ -568,6 +568,16 @@
         }
       }
     },
+    "Full" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كامل"
+          }
+        }
+      }
+    },
     "Getting ready for your iPhone" : {
       "localizations" : {
         "ar" : {
@@ -1468,6 +1478,16 @@
         }
       }
     },
+    "Reading" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "للقراءة"
+          }
+        }
+      }
+    },
     "Recent" : {
       "localizations" : {
         "ar" : {
@@ -1798,6 +1818,16 @@
         }
       }
     },
+    "Text width" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عرض النص"
+          }
+        }
+      }
+    },
     "That area is too large for a PNG" : {
       "localizations" : {
         "ar" : {
@@ -1984,6 +2014,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ماذا نقرأ؟"
+          }
+        }
+      }
+    },
+    "Wide" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عريض"
           }
         }
       }

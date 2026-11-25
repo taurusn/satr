@@ -197,6 +197,26 @@ With `layout: sheet`, a `side` block holds Markdown for the 320 px side column (
 
 A `note` on a tile or card is either the id of a note in `report.md.notes.json` or the note's text itself.
 
+### Boards in notes
+
+Show a board in a note by embedding it, never by pasting a picture of it: the reader sees the real board, with its lines, and can click it to pan and zoom or open it in its own tab.
+
+- `![[architecture.canvas]]` draws the whole board in the column; `![[architecture.canvas#Data]]` draws one section, by its name or id; `![[architecture.canvas|The flow]]` adds a caption. `![The flow](architecture.canvas)` works too.
+- A small board can live in the note itself, as JSON Canvas in a `board` fence (at most 64 KB):
+
+````
+```board
+{"nodes": [
+  {"id": "a", "type": "text", "text": "# Request\nArrives by form.", "x": 0, "y": 0, "width": 240, "height": 90},
+  {"id": "b", "type": "text", "text": "# Review\nA person checks it.", "x": 320, "y": 0, "width": 240, "height": 90}],
+ "edges": [{"id": "e1", "fromNode": "a", "toNode": "b", "label": "queues"}],
+ "linen": {"route": "elbow"}}
+```
+````
+
+- Under a board, a table row whose cell reads `touches: [a, b]` lights those boxes while the pointer is on the row; the cell shows their names. Use it for a walkthrough: one row per step, the boxes each step touches.
+- `check_files` reports an embedded board that is missing, a section it does not have, an inline board that is not valid, and `touches:` ids that are not on the board above.
+
 ### Words, notes and tables
 
 - A status word anywhere in prose or a table cell: `:w[Broken]`.

@@ -109,6 +109,33 @@ ok("an explicit id used twice is an error (#3)", dup.problems.some((p) => p.seve
 const twoEdges = Author.compose({ sections: [{ id: "s", title: "S", cards: [{ id: "a", title: "A" }, { id: "b", title: "B" }] }], edges: [{ from: "a", to: "b" }, { from: "a", to: "b" }] });
 const tb = Canvas.parse(Writer.serialise(twoEdges.canvas), {});
 ok("two connectors between the same boxes get distinct ids (#4)", new Set(twoEdges.canvas.edges.map((e) => e.id)).size === 2 && Canvas.check(tb).filter((p) => p.severity === "error").length === 0);
+// ENG-2 and gate 4.0: a new board is cornered; one set_board restyles a board's lines; a wrong route is refused
+ok("write_board stamps route elbow on a new board", good.canvas.linen.route === "elbow");
+ok("write_board keeps a route the spec gives", Author.compose({ route: "curved", sections: [{ title: "S", cards: [{ id: "a" }] }] }).canvas.linen.route === "curved");
+const rt = Author.edit(JSON.parse(JSON.stringify(good.canvas)), null, [{ op: "set_board", route: "straight" }]);
+ok("set_board route restyles the board", !rt.rejected && rt.boardChanged && rt.canvas.linen.route === "straight");
+const rb = Author.edit(JSON.parse(JSON.stringify(good.canvas)), null, [{ op: "set_board", route: "zigzag" }]);
+ok("set_board refuses a route it does not know", rb.rejected && rb.problems.some((p) => p.path === "ops[0].route"));
+// ENG-11: a box Hatim placed is refused by move, kept by set, and a pinned section is not pushed by the tidy rows
+{
+  const c = JSON.parse(JSON.stringify(good.canvas));
+  const box = c.nodes.find((n) => n.type !== "group");
+  box.linen = Object.assign({}, box.linen, { pinned: true });
+  const secs = c.nodes.filter((n) => n.type === "group");
+  const mv = Author.edit(JSON.parse(JSON.stringify(c)), null, [{ op: "move", id: box.id, section: secs[secs.length - 1].id }]);
+  ok("move refuses a pinned box", mv.rejected && /by hand/.test(mv.problems[0].message));
+  const st = Author.edit(JSON.parse(JSON.stringify(c)), null, [{ op: "set", id: box.id, title: "Renamed box" }]);
+  const after = st.canvas.nodes.find((n) => n.id === box.id);
+  ok("set keeps the pin and the place", !st.rejected && after.linen.pinned === true && after.x === box.x && after.y === box.y);
+  const g0 = secs[0], g1 = secs[1];
+  if (g1) {
+    g1.linen = Object.assign({}, g1.linen, { pinned: true });
+    g1.x = g0.x + 10; g1.y = g0.y; // overlapping its neighbour: the tidy rows would push it
+    const rf = Author.reflow(JSON.parse(JSON.stringify(c)));
+    const g1b = rf.canvas.nodes.find((n) => n.id === g1.id);
+    ok("reflow leaves a pinned section where it is", g1b.x === g1.x && g1b.y === g1.y);
+  }
+}
 const sb = Author.edit(good.canvas, good.notes, [{ op: "set_board", title: "Renamed", dir: "rtl" }]);
 ok("set_board alone is a change (#5)", sb.boardChanged === true && sb.canvas.linen.title === "Renamed" && !sb.rejected);
 const nested = Author.compose({ sections: [{ id: "outer", title: "Outer", cards: [{ id: "o1", title: "One" }] }] });

@@ -91,10 +91,53 @@ enum Checker {
             }
         }
         problems += blockProblems(text, sidecar: try? readText(URL(fileURLWithPath: file.path + ".notes.json")), renderer: renderer)
+        problems += boardEmbedProblems(text, note: file, names: names, renderer: renderer)
         if names.truncated, problems.contains(where: { $0.message.hasPrefix("No note or file called") }) {
             problems.append(Problem(severity: "warning", path: "", line: nil, message: "The link check stopped after 50,000 files in this folder tree; a link reported missing may point past that."))
         }
         return FileReport(file: file.path, problems: problems, note: nil)
+    }
+
+    /// Boards in notes (BRD-19, BLK-8): an embedded board that is missing, a section it does not have, an inline board
+    /// that is not valid, `touches:` ids not on the board above. The check reads the boards a note embeds (at most
+    /// 2 MB each) to find their sections; nothing else.
+    static func boardEmbedProblems(_ text: String, note: URL, names: NameIndex, renderer: URL) -> [Problem] {
+        var out: [Problem] = []
+        for r in BoardEmbeds.refs(in: text) {
+            let label = r.wiki ?? r.path ?? ""
+            let resolve: (String) -> URL? = { name in
+                if let u = names.board(name) { return u }
+                let near = note.deletingLastPathComponent().appendingPathComponent(name)
+                return FileManager.default.fileExists(atPath: near.path) ? near : nil
+            }
+            guard let u = BoardEmbeds.file(r, note: note, resolveWiki: resolve),
+                  FileManager.default.fileExists(atPath: u.path) else {
+                out.append(Problem(severity: "error", path: "", line: r.line, message: "No board called \(label) to embed")); continue
+            }
+            guard let sec = r.section else { continue }
+            let size = (try? FileManager.default.attributesOfItem(atPath: u.path)[.size] as? NSNumber)?.intValue ?? 0
+            guard size <= BoardEmbeds.maxBytes, let d = try? Data(contentsOf: u), let obj = try? JSONSerialization.jsonObject(with: d) as? [String: Any] else {
+                out.append(Problem(severity: "error", path: "", line: r.line, message: "\(u.lastPathComponent) cannot be read as a board")); continue
+            }
+            let want = sec.lowercased().trimmingCharacters(in: .whitespaces)
+            let groups = (obj["nodes"] as? [[String: Any]] ?? []).filter { $0["type"] as? String == "group" }
+            if !groups.contains(where: { "\($0["id"] ?? "")".lowercased() == want || ($0["label"] as? String ?? "").lowercased().trimmingCharacters(in: .whitespaces) == want }) {
+                out.append(Problem(severity: "error", path: "", line: r.line, message: "No section called \(sec) on \(u.lastPathComponent)"))
+            }
+        }
+        // inline boards and touches, by the renderer's own model
+        guard let ctx = JSContext() else { return out }
+        ctx.evaluateScript("var self = this; var globalThis = this; var window = this;")
+        for name in ["board-model.js", "board-embed.js"] {
+            let f = renderer.appendingPathComponent(name)
+            if let src = try? String(contentsOf: f, encoding: .utf8) { ctx.evaluateScript(src, withSourceURL: f) }
+        }
+        ctx.setObject(text, forKeyedSubscript: "__text" as NSString)
+        let json = ctx.evaluateScript("(self.LinenBoardEmbed && self.LinenCanvas) ? JSON.stringify(LinenBoardEmbed.check(__text)) : '[]'")?.toString() ?? "[]"
+        if let data = json.data(using: .utf8), let list = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+            for p in list { out.append(Problem(severity: p["severity"] as? String ?? "error", path: "", line: (p["line"] as? NSNumber)?.intValue, message: p["message"] as? String ?? "")) }
+        }
+        return out
     }
 
     /// Loom blocks (BLK): the renderer's `blocks.js` may export `LinenBlocks.check(source)` returning problems with lines.
@@ -176,6 +219,7 @@ enum Checker {
 struct NameIndex {
     private var names = Set<String>()     // lowercased file names, and names without .md
     private var tails = Set<String>()     // lowercased relative paths, and without .md
+    private var urls: [String: URL] = [:] // the first file for each lowercased name and relative path (board embeds)
     /// True when the walk stopped at its limit: a link reported missing may then be a file it did not reach.
     private(set) var truncated = false
 
@@ -194,9 +238,17 @@ struct NameIndex {
             names.insert(name)
             if name.hasSuffix(".md") { names.insert(String(name.dropLast(3))) }
             let rel = String(u.standardizedFileURL.path.dropFirst(base.count + 1)).precomposedStringWithCanonicalMapping.lowercased()
+            if name.hasSuffix(".canvas") { if urls[name] == nil { urls[name] = u }; urls[rel] = u }
             tails.insert(rel)
             if rel.hasSuffix(".md") { tails.insert(String(rel.dropLast(3))) }
         }
+    }
+
+    /// The board a wiki target names (by name, or by a path's tail), when the walk found one.
+    func board(_ target: String) -> URL? {
+        let t = target.precomposedStringWithCanonicalMapping.lowercased().trimmingCharacters(in: .whitespaces)
+        if let u = urls[t] { return u }
+        return t.contains("/") ? urls.first(where: { $0.key.hasSuffix("/" + t) })?.value : nil
     }
 
     /// True when a wiki-link target names a file: by name (`Note`, `image.png`) or by path (`folder/Note`).

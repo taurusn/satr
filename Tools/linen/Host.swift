@@ -197,9 +197,31 @@ final class RendererHost: NSObject, WKScriptMessageHandler {
             msg["kind"] = "board"
             msg["sidecar"] = sidecar ?? NSNull()
             msg["refPath"] = file.path
+        } else {
+            // BRD-19: boards the note embeds, from its own folder (as images are), read with it
+            let root = folderRoot
+            msg["boards"] = BoardEmbeds.read(BoardEmbeds.refs(in: text), note: file, resolveWiki: { name in RendererHost.findBoard(name, in: root) },
+                                             allowed: { BoardEmbeds.inside($0, root) })
         }
         Task { _ = try? await self.send(msg) }
         return (await wait(for: "rendered", timeout: 25))["type"] as? String == "rendered"
+    }
+
+    /// A wiki name (`name.canvas` or `folder/name.canvas`) inside the note's folder tree, first match, at most 4,000 files.
+    static func findBoard(_ name: String, in root: URL) -> URL? {
+        let direct = root.appendingPathComponent(name)
+        if FileManager.default.fileExists(atPath: direct.path) { return direct }
+        let want = name.lowercased()
+        guard let e = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles, .skipsPackageDescendants]) else { return nil }
+        var seen = 0
+        while let u = e.nextObject() as? URL {
+            seen += 1
+            if seen > 4000 { break }
+            if ["node_modules", "build", "DerivedData"].contains(u.lastPathComponent) { e.skipDescendants(); continue }
+            let rel = String(u.path.dropFirst(root.path.count + 1)).lowercased()
+            if u.lastPathComponent.lowercased() == want || rel == want || rel.hasSuffix("/" + want) { return u }
+        }
+        return nil
     }
 
     /// The longest full-page shot: past it the image is cut and says so (MCP-8).

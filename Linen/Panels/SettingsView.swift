@@ -6,6 +6,7 @@ struct SettingsView: View {
     @AppStorage("appearance") private var appearance = "system"
     @AppStorage("bodyFace") private var face = "sans"
     @AppStorage("defaultZoom") private var zoom = 1.0
+    @AppStorage("textWidth") private var width = "reading"
     @AppStorage("editorBundleID") private var editor = ""
     @AppStorage("remoteImagesAlways") private var remoteAlways = false
     @Environment(\.palette) private var palette
@@ -27,6 +28,7 @@ struct SettingsView: View {
                     }
                     .overlay(RoundedRectangle(cornerRadius: Tok.corner).stroke(palette.line))
                 }
+                row("Text width") { segmented($width, [("reading", "Reading"), ("wide", "Wide"), ("full", "Full")]) }
                 row("Open in Editor") {
                     Picker("", selection: $editor) {
                         Text("Obsidian for vault notes").tag("")

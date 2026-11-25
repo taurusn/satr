@@ -235,6 +235,12 @@
     measureCtx.font = `${weight || 500} ${px}px "Linen Sans", -apple-system, sans-serif`;
     return measureCtx.measureText(text).width;
   }
+  // Section names are set in the serif display face (BRD-3): the router keeps lines off them by this width.
+  function serifWidth(text, px) {
+    if (!measureCtx) measureCtx = document.createElement("canvas").getContext("2d");
+    measureCtx.font = `300 ${px}px "Linen Serif Display", Georgia, serif`;
+    return measureCtx.measureText(text).width;
+  }
   function linesFor(text, width, px) {
     const words = String(text).split(/\s+/).filter(Boolean);
     if (!words.length) return 0;
@@ -545,12 +551,13 @@
 
   // ---------- connectors ----------
   const NORMAL = { top: [0, -1], bottom: [0, 1], left: [-1, 0], right: [1, 0] };
-  function sidePt(n, side) {
+  function sidePt(n, side, t) { // t: where along the side (ENG-21, an end Hatim placed), else its middle
+    const k = t == null ? 0.5 : t;
     switch (side) {
-      case "top": return [n.x + n.w / 2, n.y];
-      case "bottom": return [n.x + n.w / 2, n.y + n.h];
-      case "left": return [n.x, n.y + n.h / 2];
-      default: return [n.x + n.w, n.y + n.h / 2];
+      case "top": return [n.x + n.w * k, n.y];
+      case "bottom": return [n.x + n.w * k, n.y + n.h];
+      case "left": return [n.x, n.y + n.h * k];
+      default: return [n.x + n.w, n.y + n.h * k];
     }
   }
   // An edge's geometry in board units: the path, the point and direction at each end, and the label's place.
@@ -566,7 +573,9 @@
       return { d: `M${p[0]} ${p[1]}L${q[0]} ${q[1]}`, gap: q, gapDir: nv, mid: [q[0] + nv[1] * 0 + 12, q[1]], missingId: a === n ? e.to : e.from };
     }
     if (!e.drawable || !a || !c) return null;
-    const p1 = sidePt(a, e.fromSide), p2 = sidePt(c, e.toSide);
+    const rt = S.routes && S.routes.get(e.id);
+    if (rt) return routedGeom(e, rt);
+    const p1 = sidePt(a, e.fromSide, e.fromSideGiven ? e.fromAt : null), p2 = sidePt(c, e.toSide, e.toSideGiven ? e.toAt : null);
     const n1 = NORMAL[e.fromSide] || [1, 0], n2 = NORMAL[e.toSide] || [-1, 0];
     let d, mid, end2;
     if (e.route === "straight") {
@@ -597,6 +606,46 @@
     }
     const end1 = e.route === "straight" ? [p1[0] - p2[0], p1[1] - p2[1]] : [-n1[0], -n1[1]];
     return { d, mid, p1, p2, end1, end2, at };
+  }
+  // ENG-1, ENG-2: every line's route comes from the router, for the whole board at once in the file's order, so the
+  // same file draws the same lines at every view, in `linen shot` and in export. Corners are rounded for drawing only.
+  const RADIUS = { elbow: 8, curved: 48, straight: 0 };
+  function routeBoard(b) {
+    S.routes = null;
+    S.edgeIndex = null;
+    S.routeStats = null;
+    const R0 = window.LinenRouter;
+    if (!R0 || !b || !b.edges.length) return;
+    const t0 = performance.now();
+    let res;
+    try {
+      // Searches are kept between routings (a drag, an agent's edit) while nothing in their window moved.
+      if (!S.routeCache || S.routeCache.size > 20000) S.routeCache = new Map();
+      res = R0.route(R0.fromBoard(b, { textWidth: (t, px, w) => (w === 300 ? serifWidth(t, px) : textWidth(t, px, w)) }), { labelWidth: (t) => textWidth(t, 12.5, 500) + 20, cache: S.routeCache });
+    } catch (err) { post({ type: "error", during: "routing", message: String(err && err.message || err) }); return; }
+    S.routes = res.routes;
+    S.routeStats = Object.assign({}, res.stats, { pageMs: performance.now() - t0 });
+    const grid = window.LinenCanvas.makeGrid(256);
+    for (const e of b.edges) {
+      const rt = res.routes.get(e.id);
+      if (rt) {
+        let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+        for (const [x, y] of rt.pts) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+        const m = 30; // arrowheads and the label chip
+        grid.insert(e.id, x0 - m, y0 - m, x1 - x0 + 2 * m, y1 - y0 + 2 * m);
+      } else if (e.box) grid.insert(e.id, e.box.x, e.box.y, e.box.w, e.box.h);
+    }
+    S.edgeIndex = grid;
+  }
+  function routedGeom(e, rt) {
+    const r = e.route === "curved" ? RADIUS.curved : rt.how === "straight" ? 0 : RADIUS.elbow;
+    const pts = window.LinenRouter.smooth(rt.pts, r);
+    const n = pts.length;
+    const d = "M" + pts.map((p) => `${+p[0].toFixed(2)} ${+p[1].toFixed(2)}`).join("L");
+    const p1 = pts[0], p2 = pts[n - 1];
+    const end1 = [p1[0] - pts[1][0], p1[1] - pts[1][1]], end2 = [p2[0] - pts[n - 2][0], p2[1] - pts[n - 2][1]];
+    const mid = rt.label ? [rt.label.x, rt.label.y] : pts[Math.floor(n / 2)];
+    return { d, mid, p1, p2, end1, end2, at: polyAt(pts), label: rt.label, clear: rt.clear, routed: true };
   }
   function polyAt(pts) {
     const seg = [];
@@ -640,9 +689,10 @@
     }
     return { p: g.at ? g.at(0.9) : g.mid, top: true };
   }
-  function arrow(p, dirv, s) {
-    const len = Math.hypot(dirv[0], dirv[1]) || 1;
-    const ux = dirv[0] / len, uy = dirv[1] / len;
+  // An open head for export, outside the box (`into` points into it): the tip at p, the arms back along the line.
+  function arrow(p, into, s) {
+    const len = Math.hypot(into[0], into[1]) || 1;
+    const ux = into[0] / len, uy = into[1] / len;
     const L = 8 / s, W = 4.6 / s;
     const bx = p[0] - ux * L, by = p[1] - uy * L;
     return `M${bx + uy * W} ${by - ux * W}L${p[0]} ${p[1]}L${bx - uy * W} ${by + ux * W}`;
@@ -652,7 +702,8 @@
   // mounted at rest under the cards.
   function edgesInView(r) {
     const b = S.board;
-    const ids = b.edgeGrid ? b.edgeGrid.query(r.x, r.y, r.w, r.h) : new Set();
+    const ids = S.edgeIndex ? S.edgeIndex.query(r.x, r.y, r.w, r.h) : b.edgeGrid ? b.edgeGrid.query(r.x, r.y, r.w, r.h) : new Set();
+    if (S.dragEdges) for (const id of S.dragEdges) ids.add(id); // their index is rebuilt on release
     for (const e of S.missingEdges) {
       const n = b.byId.get(e.missing === "from" ? e.to : e.from);
       if (n && n.placed && n.x - 90 < r.x + r.w && n.x + n.w + 90 > r.x && n.y - 90 < r.y + r.h && n.y + n.h + 90 > r.y) ids.add(e.id);
@@ -678,7 +729,8 @@
       chip.className = `b-elbl${g.gap ? " gap" : ""}${e.note ? " noted" : ""}`;
       chip.dataset.edge = id;
       chip.textContent = g.gap ? `${g.missingId}?` : e.label;
-      const place = g.gap ? gapChipPlace(g, chip.textContent) : chipPlace(g, e.label);
+      // The router's place when it found a clear one; with no clear spot the chip is tucked (read beside its lit box).
+      const place = g.gap ? gapChipPlace(g, chip.textContent) : g.label ? { p: [g.label.x, g.label.y], top: !g.label.clear } : chipPlace(g, e.label);
       g.chipAt = place.p;
       if (place.top) chip.classList.add("hid"); // no clear spot: shown only while its box is lit
       chip.style.cssText = `left:${place.p[0]}px;top:${place.p[1]}px;transform:translate(-50%,-50%)`;
@@ -766,6 +818,13 @@
       if (!gr) { gr = { color, width, alpha, cap, path: new Path2D() }; groups.set(key, gr); }
       return gr;
     };
+    const fills = new Map();
+    const fillGroup = (color, alpha) => {
+      const key = `${color}|${alpha}`;
+      let f = fills.get(key);
+      if (!f) { f = { color, alpha, path: new Path2D() }; fills.set(key, f); }
+      return f.path;
+    };
     for (const id of edgesInView(r)) {
       const e = b.edgesById.get(id);
       if (!e) continue;
@@ -777,7 +836,7 @@
       const on = !!(lit && (e.from === lit || e.to === lit)) || changed;
       const alpha = lit && !changed ? (on ? 1 : 0.22) : changed ? 1 : e.kind === "plan" ? base * 0.8 : base;
       const color = e.kind === "fail" ? (c.night ? c.ink : c.rust) : e.kind === "main" || changed ? c.ink : c.ink2;
-      const width = (e.kind === "main" ? 2.4 : on ? 2.2 : 1.5) / s;
+      const width = (e.kind === "main" ? 2.4 : on ? 2.2 : 1.5) * (lv === "areas" ? 0.7 : 1) / s;
       const wi = washIndex(e.color);
       if (wi >= 0) { washed++; const u = group(`wash|${wi}`, c.washes[wi], 7 / s, 1, "round"); u.under = true; addRun(u.path, g, vx0, vy0, vx1, vy1); }
       if (changed && g.at) { const mp = g.at(0.5); dots.push(mp); }
@@ -815,16 +874,20 @@
           k += period;
         }
       }
-      // arrowheads and gap marks, solid
+      // heads and gap marks, solid (ENG-3): outside the box, the tip just off its border, the same size on screen
       const hp = group(`${color}|${(e.kind === "main" ? 2.4 : 1.5) / s}|${alpha}|h`, color, (e.kind === "main" ? 2.4 : 1.5) / s, alpha, "butt").path;
+      if (!g.gap) {
+        const fp = fillGroup(color, alpha);
+        const big = e.kind === "main" || e.weight === "thick" ? 1.15 : 1;
+        const wt = e.weight === "thin" ? 0.85 : big; // the head styles under trial scale with the line's weight
+        headPath(fp, hp, g.p2, g.end2, headOf(e, "to"), s, big, wt);
+        headPath(fp, hp, g.p1, g.end1, headOf(e, "from"), s, big, wt);
+      }
       if (g.gap) {
         const [gx, gy] = g.gap, nv = g.gapDir, hw = 7 / s, kk = 4 / s, px = nv[1], py = -nv[0];
         const gp = group(`${c.ink}|${2 / s}|${alpha}|g`, c.ink, 2 / s, alpha, "butt").path;
         gp.moveTo(gx - px * hw, gy - py * hw); gp.lineTo(gx + px * hw, gy + py * hw);
         gp.moveTo(gx - px * hw + nv[0] * kk, gy - py * hw + nv[1] * kk); gp.lineTo(gx + px * hw + nv[0] * kk, gy + py * hw + nv[1] * kk);
-      } else {
-        if (e.toEnd !== "none") pathArrow(hp, g.p2, g.end2.map((v) => -v), s);
-        if (e.fromEnd === "arrow") pathArrow(hp, g.p1, g.end1.map((v) => -v), s);
       }
     }
     S.lastEdgeWashes = washed;
@@ -839,6 +902,7 @@
       ctx.lineCap = gr.cap;
       ctx.stroke(gr.path);
     }
+    for (const f of fills.values()) { ctx.globalAlpha = f.alpha; ctx.fillStyle = f.color; ctx.fill(f.path); }
     if (dots.length) { // a changed connector's mark: a fixed 6 px dot at its middle
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.globalAlpha = 1;
@@ -856,14 +920,39 @@
       p2d.lineTo(z[0], z[1]);
     }
   }
-  function pathArrow(p2d, p, dirv, s) {
-    const len = Math.hypot(dirv[0], dirv[1]) || 1;
-    const ux = dirv[0] / len, uy = dirv[1] / len;
-    const L = 8 / s, W = 4.6 / s;
-    const bx = p[0] - ux * L, by = p[1] - uy * L;
-    p2d.moveTo(bx + uy * W, by - ux * W);
-    p2d.lineTo(p[0], p[1]);
-    p2d.lineTo(bx - uy * W, by + ux * W);
+  // A connector's end (ENG-3): its file says, else JSON Canvas's own fromEnd and toEnd (an arrow, filled).
+  function headOf(e, end) {
+    const own = end === "to" ? e.headTo : e.headFrom;
+    if (own) return own;
+    return (end === "to" ? e.toEnd !== "none" : e.fromEnd === "arrow") ? "arrow" : "none";
+  }
+  // `into` points from the line into the box at that end; the head sits outside the box with its tip 1 px off the
+  // border, so a card never covers it. Sizes are screen px (divided by the scale), so a head reads at every zoom.
+  function headPath(fill, stroke, p, into, kind, s, big, wt) {
+    if (!kind || kind === "none" || !p || !into) return;
+    const len = Math.hypot(into[0], into[1]) || 1;
+    // On screen a head is 10 px at reading zoom and shrinks with the board below it (4 px at 0.4 and under), so at an
+    // overview it still fits the gap a line runs in; under 0.15 lines draw without heads.
+    if (s < 0.15) return;
+    const ux = into[0] / len, uy = into[1] / len, k = (big || 1) * clamp(s, 0.4, 1.1) / s;
+    const tx = p[0] - ux * (1 / s), ty = p[1] - uy * (1 / s);
+    const at = (back, side) => [tx - ux * back * k - uy * side * k, ty - uy * back * k + ux * side * k];
+    const poly = (path, list) => { path.moveTo(list[0][0], list[0][1]); for (let i = 1; i < list.length; i++) path.lineTo(list[i][0], list[i][1]); path.closePath(); };
+    // Hatim's pick between three heads (2026-11-21), shown only when asked for (S.exp.heads); today's stays the default.
+    // Each scales with the line's weight (big) and keeps at least 65 percent of its size on screen at Fit.
+    const style = kind === "arrow" && ((S.exp && S.exp.heads) || window.__linenHeads);
+    if (style) {
+      const k2 = (wt || big || 1) * clamp(s, 0.65, 1.1) / s;
+      const at2 = (back, side) => [tx - ux * back * k2 - uy * side * k2, ty - uy * back * k2 + ux * side * k2];
+      if (style === "chevron") { const a = at2(7.5, 3.6), b = at2(7.5, -3.6); stroke.moveTo(a[0], a[1]); stroke.lineTo(tx, ty); stroke.lineTo(b[0], b[1]); return; }
+      if (style === "triangle") { poly(fill, [[tx, ty], at2(6.4, 2.5), at2(6.4, -2.5)]); return; }
+      if (style === "tick") { const a = at2(4.4, 3), b = at2(4.4, -3); stroke.moveTo(a[0], a[1]); stroke.lineTo(tx, ty); stroke.lineTo(b[0], b[1]); return; }
+    }
+    if (kind === "arrow") poly(fill, [[tx, ty], at(10, 4.6), at(8.2, 0), at(10, -4.6)]);
+    else if (kind === "open") { const a = at(9, 4.8), b = at(9, -4.8); stroke.moveTo(a[0], a[1]); stroke.lineTo(tx, ty); stroke.lineTo(b[0], b[1]); }
+    else if (kind === "diamond") poly(fill, [[tx, ty], at(6, 4.2), at(12, 0), at(6, -4.2)]);
+    else if (kind === "dot") { const c = at(3.6, 0); fill.moveTo(c[0] + 3.6 * k, c[1]); fill.arc(c[0], c[1], 3.6 * k, 0, Math.PI * 2); }
+    else if (kind === "bar") { const a = at(1, 5.5), b = at(1, -5.5); stroke.moveTo(a[0], a[1]); stroke.lineTo(b[0], b[1]); }
   }
 
   // ---------- the two canvases ----------
@@ -1075,7 +1164,9 @@
 
   // ---------- frames and rest ----------
   let rafId = 0;
-  (function beat() { requestAnimationFrame((t) => { S.lastRaf = performance.now(); beat(); }); })();
+  // No standing frame loop (2026-11-25): a beat that asked for a frame forever kept every Linen window, notes included,
+  // redrawing at the display's rate at rest (about 2.5 percent CPU in the app and 2.5 in the page). Flights step through
+  // next(), which falls back to a timer when no frame comes, so they finish without it.
   function schedule() { if (!rafId) rafId = requestAnimationFrame(() => { rafId = 0; frame(); }); }
   function frame() {
     if (!R || !S.board) return;
@@ -1219,7 +1310,7 @@
     if (!v) return;
     if (!opts || opts.history !== false) pushHistory();
     const tok = ++S.flight;
-    const noFrames = performance.now() - (S.lastRaf || 0) > 250;
+    const noFrames = document.hidden; // a hidden page gets no frames: land at once
     if (reduceMotion.matches || (opts && opts.cut) || noFrames) { Object.assign(S.view, v); frame(); rest(); return; }
     const a = { ...S.view };
     // Fly in log-scale so zoom changes feel even.
@@ -1762,6 +1853,7 @@
     const mod = e.metaKey || e.ctrlKey;
     const v = S.view;
     const pan = (dx, dy) => { v.tx += dx; v.ty += dy; gesture(); };
+    if (e.key === "Escape" && arr) { arrangeEnd(true); drag = null; e.preventDefault(); return; }
     switch (e.key) {
       case "Tab": e.preventDefault(); tabStep(e.shiftKey ? -1 : 1); return;
       case "Escape":
@@ -1791,6 +1883,397 @@
   function zoomBy(k) { pushHistory(); const v = S.view; const target = { ...v }; const s = clamp(v.s * k, MIN_S, MAX_S); target.tx = S.W / 2 - (S.W / 2 - v.tx) * s / v.s; target.ty = S.H / 2 - (S.H / 2 - v.ty) * s / v.s; target.s = s; flyTo(target, { history: false }); }
   function fit() { flyTo(fitBoard(32)); }
   function zoom100() { const v = S.view; const s = 1; flyTo({ s, tx: S.W / 2 - (S.W / 2 - v.tx) * s / v.s, ty: S.H / 2 - (S.H / 2 - v.ty) * s / v.s }); }
+
+  // ---------- arranging (ENG-8 to ENG-14, ENG-21) ----------
+  // Where the host lets the board be arranged (the Mac app's document window sends canArrange), a press on a box, a
+  // section's name, a line's straight run or a label chip moves it once the pointer has gone 3 px. Each frame routes
+  // only the lines that move (whole board on release). The release posts `arrange`: what to write and what was there
+  // before (the app keeps undo). The page never writes; the app applies the change by id to the file it reads.
+  let arr = null, arrRaf = 0, arrEvt = null, arrTimer = 0;
+  const SNAP_PX = 6, HIT_PX = 6;
+  function arrangeOn() { return S.canArrange && S.mode === "canvas" && S.board && !S.board.fatal; }
+  function subtree(id) { const out = []; const walk = (p) => { for (const k of (S.board.children.get(p) || [])) { out.push(k); walk(k); } }; walk(id); return out; }
+  // A straight run of a routed line under the pointer: its edge and run index, within HIT_PX on screen.
+  function runAt(px, py) {
+    if (!S.routes || !S.edgeIndex) return null;
+    const { s, tx, ty } = S.view;
+    const x = (px - tx) / s, y = (py - ty) / s, d = HIT_PX / s;
+    let best = null;
+    for (const id of S.edgeIndex.query(x - d, y - d, 2 * d, 2 * d)) {
+      const rt = S.routes.get(id);
+      if (!rt || !rt.pts || rt.how === "straight" || rt.how === "loop") continue;
+      const p = rt.pts;
+      for (let k = 0; k + 1 < p.length; k++) {
+        const a = p[k], b = p[k + 1], horiz = Math.abs(a[1] - b[1]) < 0.01;
+        if (!horiz && Math.abs(a[0] - b[0]) > 0.01) continue;
+        const lo = horiz ? Math.min(a[0], b[0]) : Math.min(a[1], b[1]), hi = horiz ? Math.max(a[0], b[0]) : Math.max(a[1], b[1]);
+        const along = horiz ? x : y, across = horiz ? Math.abs(y - a[1]) : Math.abs(x - a[0]);
+        // the run's own length, short of its rounded corners
+        if (along < lo + 4 / s || along > hi - 4 / s || across > d) continue;
+        if (!best || across < best.across) best = { id, k, horiz, across };
+      }
+    }
+    return best;
+  }
+  // ENG-21: a line's end under the pointer (the head and the last few px of the line, about 12 screen px), on the
+  // board, or within a few px of the border when the press is on the box itself.
+  function endAt(px, py, onCard) {
+    const b = S.board, { s, tx, ty } = S.view;
+    const x = (px - tx) / s, y = (py - ty) / s, d = (onCard ? 5 : 12) / s;
+    const ids = S.edgeIndex ? S.edgeIndex.query(x - d, y - d, 2 * d, 2 * d) : b.edgeGrid ? b.edgeGrid.query(x - d, y - d, 2 * d, 2 * d) : new Set();
+    let best = null;
+    for (const id of ids) {
+      const e = b.edgesById.get(id);
+      if (!e || e.missing || !e.drawable || e.from === e.to) continue;
+      const g = geomCache(e);
+      if (!g || !g.pts || g.pts.length < 2) continue;
+      const n = g.pts.length;
+      for (const [end, p, q] of [["to", g.pts[n - 1], g.pts[n - 2]], ["from", g.pts[0], g.pts[1]]]) {
+        const L = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1, k = Math.min(14 / s, L) / L;
+        const r = [p[0] + (q[0] - p[0]) * k, p[1] + (q[1] - p[1]) * k];
+        const dist = Math.min(Math.hypot(x - p[0], y - p[1]), segDist(x, y, p, r) * 2);
+        if (dist <= d && (!best || dist < best.dist)) best = { id, end, dist };
+      }
+    }
+    return best;
+  }
+  function segDist(x, y, a, b) {
+    const dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy;
+    const t = L2 ? clamp(((x - a[0]) * dx + (y - a[1]) * dy) / L2, 0, 1) : 0;
+    return Math.hypot(a[0] + dx * t - x, a[1] + dy * t - y);
+  }
+  // The place on a box's border nearest a point: its side and where along it (0 to 1), off the very corners.
+  function borderPlace(n, x, y) {
+    const inX = x >= n.x && x <= n.x + n.w, inY = y >= n.y && y <= n.y + n.h;
+    let side;
+    if (inX && inY) {
+      const dl = x - n.x, dr = n.x + n.w - x, dt = y - n.y, db = n.y + n.h - y, m = Math.min(dl, dr, dt, db);
+      side = m === dt ? "top" : m === db ? "bottom" : m === dl ? "left" : "right";
+    } else {
+      const ox = x < n.x ? n.x - x : x > n.x + n.w ? x - n.x - n.w : 0, oy = y < n.y ? n.y - y : y > n.y + n.h ? y - n.y - n.h : 0;
+      side = ox > oy ? (x < n.x ? "left" : "right") : (y < n.y ? "top" : "bottom");
+    }
+    const horiz = side === "top" || side === "bottom";
+    let at = horiz ? (x - n.x) / n.w : (y - n.y) / n.h;
+    at = clamp(at, 0.04, 0.96);
+    // the side's middle holds the end within 6 screen px (ENG-10)
+    if (Math.abs(at - 0.5) * (horiz ? n.w : n.h) <= SNAP_PX / S.view.s) at = 0.5;
+    return { side, at: Math.round(at * 1000) / 1000 };
+  }
+  // The run k moved across by delta; a run that touches a box first gets a stub from it, so the end stays put.
+  function shiftRun(pts0, k, delta) {
+    let p = pts0.map((q) => q.slice());
+    const stub = (from, to) => { const L = Math.hypot(to[0] - from[0], to[1] - from[1]), st = Math.min(16, L / 3); return [from[0] + (to[0] - from[0]) / L * st, from[1] + (to[1] - from[1]) / L * st]; };
+    if (k === p.length - 2) { const S1 = stub(p[p.length - 1], p[p.length - 2]); p = [...p.slice(0, -1), S1, S1.slice(), p[p.length - 1]]; }
+    if (k === 0) { const S0 = stub(p[0], p[1]); p = [p[0], S0, S0.slice(), ...p.slice(1)]; k += 2; }
+    const horiz = Math.abs(p[k][1] - p[k + 1][1]) < 0.01, ax = horiz ? 1 : 0;
+    p[k][ax] += delta; p[k + 1][ax] += delta;
+    return simplifyPts(p);
+  }
+  function simplifyPts(pts) {
+    const out = [];
+    for (const q of pts) {
+      const l = out[out.length - 1];
+      if (l && Math.abs(l[0] - q[0]) < 0.5 && Math.abs(l[1] - q[1]) < 0.5) continue;
+      out.push([Math.round(q[0] * 10) / 10, Math.round(q[1] * 10) / 10]);
+      while (out.length >= 3) {
+        const a = out[out.length - 3], b = out[out.length - 2], c = out[out.length - 1];
+        if ((Math.abs(a[0] - b[0]) < 0.5 && Math.abs(b[0] - c[0]) < 0.5) || (Math.abs(a[1] - b[1]) < 0.5 && Math.abs(b[1] - c[1]) < 0.5)) out.splice(out.length - 2, 1); else break;
+      }
+    }
+    return out;
+  }
+  // Where a point lies along a polyline, as a fraction of its length.
+  function fractionAlong(pts, x, y) {
+    let total = 0, best = null, at = 0;
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1], b = pts[i], L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      const t = L ? clamp(((x - a[0]) * (b[0] - a[0]) + (y - a[1]) * (b[1] - a[1])) / (L * L), 0, 1) : 0;
+      const d = Math.hypot(a[0] + (b[0] - a[0]) * t - x, a[1] + (b[1] - a[1]) * t - y);
+      if (!best || d < best) { best = d; at = total + t * L; }
+      total += L;
+    }
+    return total ? at / total : 0.5;
+  }
+  function arrangeStart(e, card) {
+    if (!arrangeOn() || e.pointerType === "touch" || e.altKey || S.space) return null;
+    const b = S.board, p = local(e);
+    const base = { cx: e.clientX, cy: e.clientY, pid: e.pointerId, moved: false, t0: performance.now(), frames: [] };
+    const chip = e.target.closest && e.target.closest(".b-elbl");
+    if (chip && S.routes && S.routes.get(chip.dataset.edge)) {
+      const id = chip.dataset.edge, e0 = b.edgesById.get(id);
+      return Object.assign(base, { kind: "chip", id, ids: [], before: { labelAt: e0.labelAt == null ? null : e0.labelAt } });
+    }
+    // ENG-21: a line's end, before the box it sits on (only near the border when the press is on the box)
+    const end = endAt(p.x, p.y, !!card);
+    if (end) {
+      const e0 = b.edgesById.get(end.id), F = end.end === "from";
+      return Object.assign(base, { kind: "end", id: end.id, end: end.end, ids: [], box: F ? e0.from : e0.to,
+        before: { side: (F ? e0.fromSideGiven : e0.toSideGiven) ? (F ? e0.fromSide : e0.toSide) : null, sideNow: F ? e0.fromSide : e0.toSide,
+          given: !!(F ? e0.fromSideGiven : e0.toSideGiven), at: (F ? e0.fromAt : e0.toAt) == null ? null : (F ? e0.fromAt : e0.toAt), via: e0.via ? e0.via.map((q) => q.slice()) : null } });
+    }
+    let n = card ? b.byId.get(card.dataset.id) : null;
+    if (!n && S.level === "areas") n = nodeAt(p.x, p.y);
+    const name = e.target.closest && e.target.closest(".b-slbl");
+    if (!n && name) n = b.byId.get(name.dataset.id);
+    if (n && n.placed) {
+      const ids = [n.id, ...(n.kind === "section" ? subtree(n.id) : [])].filter((id) => { const m = b.byId.get(id); return m && m.placed; });
+      return Object.assign(base, { kind: n.kind === "section" ? "section" : "box", id: n.id, ids, pos: new Map(ids.map((id) => { const m = b.byId.get(id); return [id, { x: m.x, y: m.y, w: m.w, h: m.h, pinned: !!m.pinned }]; })) });
+    }
+    const r = runAt(p.x, p.y);
+    if (r) {
+      const rt = S.routes.get(r.id), e0 = b.edgesById.get(r.id);
+      return Object.assign(base, { kind: "run", id: r.id, ids: [], k: r.k, horiz: r.horiz, pts: rt.pts.map((q) => q.slice()), rt,
+        before: { via: e0.via ? e0.via.map((q) => q.slice()) : null, fromSide: e0.fromSideGiven ? e0.fromSide : null, toSide: e0.toSideGiven ? e0.toSide : null } });
+    }
+    return null;
+  }
+  // Snap targets: edges and centres of the boxes in view that do not move (sections for a section, cards for a box).
+  function snapTargets(a) {
+    const b = S.board, r = viewRect(0), skip = new Set(a.ids || []);
+    if (a.kind === "box") { const n = b.byId.get(a.id); for (let p = n.parent; p; p = b.byId.get(p) && b.byId.get(p).parent) skip.add(p); }
+    const xs = [], ys = [];
+    for (const id of b.grid.query(r.x, r.y, r.w, r.h)) {
+      if (skip.has(id)) continue;
+      const m = b.byId.get(id);
+      if (!m || !m.placed) continue;
+      if (a.kind === "run" ? m.kind === "section" : a.kind === "section" ? m.kind !== "section" && m.parent : false) continue;
+      if (a.kind === "run") { xs.push(m.x + m.w / 2); ys.push(m.y + m.h / 2); continue; } // a line snaps to centres, never onto a box's border
+      xs.push(m.x, m.x + m.w / 2, m.x + m.w); ys.push(m.y, m.y + m.h / 2, m.y + m.h);
+    }
+    return { xs, ys };
+  }
+  function snapAxis(vals, targets, lim) {
+    let best = null;
+    for (const v of vals) for (const t of targets) { const d = t - v; if (Math.abs(d) <= lim && (!best || Math.abs(d) < Math.abs(best.d))) best = { d, at: t }; }
+    return best;
+  }
+  function showGuides(gx, gy) {
+    const { s, tx, ty } = S.view;
+    if (!R.guideX) { R.guideX = document.createElement("div"); R.guideX.className = "b-guide x"; R.guideY = document.createElement("div"); R.guideY.className = "b-guide y"; R.canvas.appendChild(R.guideX); R.canvas.appendChild(R.guideY); }
+    R.guideX.hidden = gx == null; R.guideY.hidden = gy == null;
+    if (gx != null) R.guideX.style.left = `${Math.round(gx * s + tx)}px`;
+    if (gy != null) R.guideY.style.top = `${Math.round(gy * s + ty)}px`;
+  }
+  // The lines that move with the boxes being dragged, routed alone (searches cached); others stay as they are.
+  function routeMoving(edgeIds) {
+    const R0 = window.LinenRouter;
+    if (!R0 || !S.routes || !edgeIds.size) return;
+    const input = R0.fromBoard(S.board, { textWidth: (t, px, w) => (w === 300 ? serifWidth(t, px) : textWidth(t, px, w)) });
+    input.edges = input.edges.filter((x) => edgeIds.has(x.id));
+    if (!input.edges.length) return;
+    const res = R0.route(input, { labelWidth: (t) => textWidth(t, 12.5, 500) + 20, cache: S.routeCache, drag: true });
+    for (const [id, rt] of res.routes) S.routes.set(id, rt);
+  }
+  function refreshEdges(ids) {
+    for (const id of ids) {
+      geoms.delete(id);
+      const o = S.edgesOn.get(id);
+      if (!o) continue;
+      const e = S.board.edgesById.get(id), g = geomCache(e);
+      if (!g) continue;
+      const place = g.label ? { p: [g.label.x, g.label.y] } : chipPlace(g, e.label);
+      o.g = g; g.chipAt = place.p;
+      o.chip.style.left = `${place.p[0]}px`; o.chip.style.top = `${place.p[1]}px`;
+    }
+  }
+  function arrangeFrame() {
+    if (arrRaf) cancelAnimationFrame(arrRaf);
+    arrRaf = 0;
+    clearTimeout(arrTimer);
+    const a = arr, e = arrEvt;
+    if (!a || !e) return;
+    const t0 = performance.now();
+    const b = S.board, s = S.view.s;
+    let dx = (e.clientX - a.cx) / s, dy = (e.clientY - a.cy) / s;
+    const lim = SNAP_PX / s;
+    let gx = null, gy = null;
+    if (a.kind === "box" || a.kind === "section") {
+      const p0 = a.pos.get(a.id);
+      if (!e.metaKey) {
+        a.snap = a.snap || snapTargets(a);
+        const sx = snapAxis([p0.x + dx, p0.x + p0.w / 2 + dx, p0.x + p0.w + dx], a.snap.xs, lim);
+        const sy = snapAxis([p0.y + dy, p0.y + p0.h / 2 + dy, p0.y + p0.h + dy], a.snap.ys, lim);
+        if (sx) { dx += sx.d; gx = sx.at; }
+        if (sy) { dy += sy.d; gy = sy.at; }
+      }
+      for (const id of a.ids) {
+        const n = b.byId.get(id), o = a.pos.get(id);
+        n.x = o.x + dx; n.y = o.y + dy;
+        b.grid.update(id, n.x, n.y, n.w, n.h);
+        const el = S.mounted.get(id);
+        if (el) { el.style.left = `${n.x}px`; el.style.top = `${n.y}px`; }
+        const sec = S.secs.get(id);
+        if (sec) { sizeLabel(n, sec); if (sec.title) { const pad = n.depth > 0 ? 14 : 24; sec.title.style.left = `${n.x + pad}px`; sec.title.style.top = `${n.y + pad}px`; } }
+      }
+      routeMoving(a.edges);
+      refreshEdges(a.edges);
+    } else if (a.kind === "run") {
+      let delta = a.horiz ? dy : dx;
+      if (!e.metaKey) {
+        a.snap = a.snap || snapTargets(a);
+        const c = a.pts[a.k][a.horiz ? 1 : 0] + delta;
+        const sn = snapAxis([c], a.horiz ? a.snap.ys : a.snap.xs, lim);
+        if (sn) { delta += sn.d; if (a.horiz) gy = sn.at; else gx = sn.at; }
+      }
+      const pts = shiftRun(a.pts, a.k, delta);
+      a.now = pts;
+      S.routes.set(a.id, Object.assign({}, a.rt, { pts, how: "shaped", label: a.rt.label ? Object.assign({}, a.rt.label, labelOnPts(pts, a.rt.label)) : null }));
+      refreshEdges([a.id]);
+    } else if (a.kind === "end") {
+      const p = local(e), n = b.byId.get(a.box), e0 = b.edgesById.get(a.id);
+      const pl = borderPlace(n, (p.x - S.view.tx) / s, (p.y - S.view.ty) / s);
+      const F = a.end === "from";
+      e0[F ? "fromSide" : "toSide"] = pl.side; e0[F ? "fromSideGiven" : "toSideGiven"] = true; e0[F ? "fromAt" : "toAt"] = pl.at;
+      // a reshaped line whose end leaves for another side loses its shape (its corners no longer fit)
+      a.viaDropped = !!a.before.via && pl.side !== a.before.sideNow;
+      e0.via = a.viaDropped ? null : a.before.via;
+      a.now = pl;
+      if (S.routes) routeMoving(new Set([a.id]));
+      refreshEdges([a.id]);
+    } else if (a.kind === "chip") {
+      const rt = S.routes.get(a.id), p = local(e);
+      const x = (p.x - S.view.tx) / s, y = (p.y - S.view.ty) / s;
+      const f = Math.round(fractionAlong(rt.pts, x, y) * 1000) / 1000;
+      a.now = f;
+      const at = pointAt(rt.pts, f);
+      rt.label = Object.assign({}, rt.label || { w: 60, h: 22 }, { x: at[0], y: at[1], at: f, clear: true });
+      refreshEdges([a.id]);
+    }
+    showGuides(gx, gy);
+    frame(); // drawn in this frame, so the time below is the whole frame's work
+    a.frames.push(performance.now() - t0);
+  }
+  function pointAt(pts, f) {
+    let total = 0;
+    for (let i = 1; i < pts.length; i++) total += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+    let want = total * f;
+    for (let i = 1; i < pts.length; i++) {
+      const L = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+      if (want <= L || i === pts.length - 1) { const t = L ? Math.min(1, want / L) : 0; return [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * t, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * t]; }
+      want -= L;
+    }
+    return pts[0];
+  }
+  // A dragged line keeps its chip at the same fraction along it while it is being reshaped.
+  function labelOnPts(pts, label) {
+    const f = label.at != null ? label.at : 0.5;
+    const q = pointAt(pts, f);
+    return { x: q[0], y: q[1] };
+  }
+  function arrangeMove(e) {
+    const a = arr;
+    if (!a.moved) {
+      if (Math.hypot(e.clientX - a.cx, e.clientY - a.cy) <= 3) return;
+      a.moved = true;
+      if (drag) drag.moved = true;
+      hideHover();
+      closeNote();
+      R.root.classList.add("arranging");
+      if (a.kind === "box" || a.kind === "section") {
+        const set = new Set(a.ids);
+        a.edges = new Set(S.board.edges.filter((x) => set.has(x.from) || set.has(x.to)).map((x) => x.id));
+        S.dragEdges = a.edges;
+      } else S.dragEdges = new Set([a.id]);
+      if (a.kind === "end") R.root.classList.add("end-drag");
+    }
+    arrEvt = e;
+    // a frame per display refresh; a timer as well, since frames nearly stop in a hidden window
+    if (!arrRaf) { arrRaf = requestAnimationFrame(arrangeFrame); arrTimer = setTimeout(() => { if (arrRaf) arrangeFrame(); }, 50); }
+  }
+  // The box's section after a drop: the smallest section holding its centre, not itself or inside it.
+  function sectionAtPoint(x, y, skip) {
+    let best = null;
+    for (const id of S.board.grid.query(x, y, 0.5, 0.5)) {
+      const m = S.board.byId.get(id);
+      if (!m || m.kind !== "section" || skip.has(id)) continue;
+      if (x >= m.x && x <= m.x + m.w && y >= m.y && y <= m.y + m.h && (!best || m.w * m.h < best.w * best.h)) best = m;
+    }
+    return best;
+  }
+  function arrangeEnd(cancel) {
+    const a = arr;
+    if (arrRaf) { if (a && a.moved && !cancel) arrangeFrame(); else { cancelAnimationFrame(arrRaf); arrRaf = 0; clearTimeout(arrTimer); } } // the last pointer position
+    arr = null; arrEvt = null;
+    showGuides(null, null);
+    R.root.classList.remove("arranging", "end-drag");
+    S.dragEdges = null;
+    const held = S.heldUpdate;
+    S.heldUpdate = null;
+    if (!a || !a.moved) { if (held) update(held); return false; }
+    const b = S.board;
+    const putBack = () => { for (const id of a.ids) { const n = b.byId.get(id), o = a.pos.get(id); n.x = o.x; n.y = o.y; b.grid.update(id, n.x, n.y, n.w, n.h); const el = S.mounted.get(id); if (el) { el.style.left = `${n.x}px`; el.style.top = `${n.y}px`; } } };
+    // an outside save that came in during the drag: shown now when nothing is written, else the write brings it
+    const giveUp = () => { resetView(); if (held) update(held); return true; };
+    const after = { nodes: {}, edges: {} }, before = { nodes: {}, edges: {} };
+    let label = "Move";
+    if (a.kind === "box" || a.kind === "section") {
+      const moved = a.ids.some((id) => { const n = b.byId.get(id), o = a.pos.get(id); return Math.round(n.x) !== Math.round(o.x) || Math.round(n.y) !== Math.round(o.y); });
+      if (cancel || !moved) { putBack(); return giveUp(); }
+      for (const id of a.ids) {
+        const n = b.byId.get(id), o = a.pos.get(id);
+        after.nodes[id] = { x: Math.round(n.x), y: Math.round(n.y) };
+        before.nodes[id] = { x: o.x, y: o.y };
+      }
+      after.nodes[a.id].pinned = true;
+      before.nodes[a.id].pinned = !!a.pos.get(a.id).pinned;
+      if (a.kind === "section") label = "Move Section";
+      // ENG-8: dropped with its centre in a section, the box joins it, and the section (and those around it) grow to hold it
+      const n = b.byId.get(a.id);
+      let sec = sectionAtPoint(n.x + n.w / 2, n.y + n.h / 2, new Set(a.ids));
+      let inner = { x: n.x, y: n.y, w: n.w, h: n.h };
+      for (let guard = 0; sec && guard < 16; guard++) {
+        const pad = sec.depth > 0 ? 14 : 24;
+        const x0 = Math.min(sec.x, inner.x - pad), y0 = Math.min(sec.y, inner.y - pad), x1 = Math.max(sec.x + sec.w, inner.x + inner.w + pad), y1 = Math.max(sec.y + sec.h, inner.y + inner.h + pad);
+        if (x0 === sec.x && y0 === sec.y && x1 === sec.x + sec.w && y1 === sec.y + sec.h) break;
+        before.nodes[sec.id] = before.nodes[sec.id] || { x: sec.x, y: sec.y, width: sec.w, height: sec.h };
+        sec.x = x0; sec.y = y0; sec.w = x1 - x0; sec.h = y1 - y0;
+        after.nodes[sec.id] = { x: Math.round(x0), y: Math.round(y0), width: Math.round(x1 - x0), height: Math.round(y1 - y0) };
+        inner = { x: sec.x, y: sec.y, w: sec.w, h: sec.h };
+        sec = sec.parent ? b.byId.get(sec.parent) : null;
+      }
+    } else if (a.kind === "run") {
+      if (cancel || !a.now) return giveUp();
+      const e0 = b.edgesById.get(a.id), rt = S.routes.get(a.id);
+      const via = a.now.slice(1, -1).map((q) => [Math.round(q[0]), Math.round(q[1])]);
+      after.edges[a.id] = { via, fromSide: rt.fromSide, toSide: rt.toSide };
+      before.edges[a.id] = a.before;
+      e0.via = via; e0.fromSide = rt.fromSide; e0.toSide = rt.toSide; e0.fromSideGiven = e0.toSideGiven = true;
+      label = "Reshape Line";
+    } else if (a.kind === "end") {
+      const e0 = b.edgesById.get(a.id), F = a.end === "from", sk = F ? "fromSide" : "toSide", ak = F ? "fromAt" : "toAt";
+      if (cancel || !a.now) {
+        e0[sk] = a.before.sideNow; e0[F ? "fromSideGiven" : "toSideGiven"] = a.before.given; e0[ak] = a.before.at; e0.via = a.before.via;
+        return giveUp();
+      }
+      after.edges[a.id] = { [sk]: a.now.side, [ak]: a.now.at };
+      before.edges[a.id] = { [sk]: a.before.side, [ak]: a.before.at };
+      if (a.viaDropped) { after.edges[a.id].via = null; before.edges[a.id].via = a.before.via; }
+      label = "Move Line End";
+    } else if (a.kind === "chip") {
+      const e0 = b.edgesById.get(a.id);
+      if (cancel || a.now == null) return giveUp();
+      after.edges[a.id] = { labelAt: a.now };
+      before.edges[a.id] = a.before;
+      e0.labelAt = a.now;
+      label = "Move Label";
+    }
+    const ms = a.frames.slice().sort((x, y) => x - y);
+    const p95 = ms.length ? ms[Math.min(ms.length - 1, Math.floor(ms.length * 0.95))] : 0;
+    S.dragStats = { kind: a.kind, id: a.id, frames: ms.length, p50: ms.length ? ms[Math.floor(ms.length / 2)] : 0, p95, max: ms.length ? ms[ms.length - 1] : 0, lines: a.edges ? a.edges.size : 1 };
+    post({ type: "arrange", docId: S.docId, version: S.version, label, after, before, stats: S.dragStats });
+    // the board as dropped, the whole board routed, until the saved file comes back (it brings any held update too)
+    resetView();
+    return true;
+  }
+  function resetView() {
+    if (!S.board) return;
+    routeBoard(S.board);
+    geoms.clear();
+    for (const o of S.edgesOn.values()) o.chip.remove();
+    S.edgesOn.clear();
+    rest();
+  }
 
   // ---------- pointer and wheel ----------
   let drag = null, hoverRaf = 0, lastMove = null, inPinch = null;
@@ -1828,9 +2311,13 @@
         if (touches.size > 1) { if (drag) { drag.pan = false; drag.moved = true; } return; } // a pinch, and lifting is no tap
       }
       const card = e.target.closest(".b-node");
+      // ENG-8, ENG-9, ENG-21: where the board may be arranged, a mouse press on a box, a section's name, a line's run or
+      // a label chip arranges it (⌥ keeps selecting a card's text).
+      const a = touch ? null : arrangeStart(e, card);
       // A finger pans from anywhere: on a phone at reading zoom cards cover most of the board (spike I(a), finding 1).
-      // A mouse drag that starts on a card still selects its text.
-      drag = { x: e.clientX, y: e.clientY, tx: S.view.tx, ty: S.view.ty, moved: false, card, pan: S.space || !card || touch, id: e.pointerId };
+      // A mouse drag that starts on a card selects its text where arranging is off, or with ⌥.
+      drag = { x: e.clientX, y: e.clientY, tx: S.view.tx, ty: S.view.ty, moved: false, card, pan: S.space || (!card && !a) || touch, id: e.pointerId };
+      if (a) { arr = a; try { C.setPointerCapture(e.pointerId); } catch (_) { /* a synthetic pointer */ } e.preventDefault(); }
       if (drag.pan) { C.setPointerCapture(e.pointerId); if (!touch) C.classList.add("grabbing"); }
       if (touch) {
         // A finger held still on a box copies its reference (BRD-26); the lift after it is not a tap.
@@ -1848,6 +2335,7 @@
       }
     });
     C.addEventListener("pointermove", (e) => {
+      if (arr && e.pointerId === arr.pid) { arrangeMove(e); return; }
       if (drag && drag.pan) {
         if (e.pointerId !== drag.id) return;
         const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
@@ -1861,6 +2349,11 @@
     });
     const end = (e) => {
       if (e.pointerType === "touch") { touches.delete(e.pointerId); clearTimeout(pressTimer); }
+      if (arr && e.pointerId === arr.pid && arrangeEnd(e.type === "pointercancel")) {
+        drag = null;
+        try { C.releasePointerCapture(e.pointerId); } catch (_) { /* not captured */ }
+        return;
+      }
       if (!drag || (e.pointerType === "touch" && e.pointerId !== drag.id)) return;
       const d = drag;
       drag = null;
@@ -1873,18 +2366,25 @@
         // A finger at the map and areas levels flies to the section it touched (IOS-3): boxes there are shapes too
         // small to aim at; at reading zoom a tap selects the box and opens its note, below.
         const hit = nodeAt(p.x, p.y);
+        if (!hit) closeNote(); // a tap on empty board closes any note, here too
         const sec = (hit && hit.parent ? S.board.byId.get(hit.parent) : null) || sectionAt(p.x, p.y);
         if (sec) { flyTo(fitView(sec, 40, 1.25)); return; }
         if (hit) { flyTo(nodeView(hit, true)); return; }
       }
       const n = d.card ? S.board.byId.get(d.card.dataset.id) : nodeAt(p.x, p.y);
       if (n) { S.focus = null; select(n.id); S.lit = n.id; lightEdges(); if (n.note && e.pointerType === "touch") openNote(n.id); } // a tap opens a note
-      else if (S.selected) { S.selected = null; S.lit = null; refreshMarks(); lightEdges(); }
+      else {
+        // A click on empty board clears the selection and closes any note, the one a focus keeps open too.
+        if (S.selected) { S.selected = null; S.lit = null; refreshMarks(); lightEdges(); }
+        closeNote();
+      }
       R.canvas.focus({ preventScroll: true });
     };
     C.addEventListener("pointerup", end);
     C.addEventListener("pointercancel", end);
-    C.addEventListener("pointerleave", () => { hideHover(); if (!S.selected && !S.focus) { S.lit = null; lightEdges(); } clearTimeout(S.noteTimer); });
+    // Leaving the board (the note card is inside it, so moving onto the card is not leaving) closes a note that hover
+    // opened; one a focus keeps open stays. Before this the timer was only cleared and the card stayed on screen.
+    C.addEventListener("pointerleave", () => { hideHover(); if (!S.selected && !S.focus) { S.lit = null; lightEdges(); } clearTimeout(S.noteTimer); if (S.note && !S.focus) closeNote(); });
     C.addEventListener("dblclick", (e) => {
       if (e.target.closest(".b-zpanel, .b-chip, .b-notecard, .b-line")) return;
       const p = local(e);
@@ -1975,6 +2475,11 @@
     const n = onCard ? S.board.byId.get(onCard.dataset.id) : (S.level !== "read" ? nodeAt(p.x, p.y) : null);
     const chip = e.target.closest && e.target.closest(".b-elbl.noted");
     if (chip) { const id = chip.dataset.edge; if (!S.note || S.note.id !== id) { clearTimeout(S.noteTimer); S.noteTimer = setTimeout(() => openNote(id, true), 300); } return; }
+    // ENG-21: the cursor says where a line's run can be dragged
+    const endHit = arrangeOn() && !arr ? endAt(p.x, p.y, !!onCard) : null;
+    const run = arrangeOn() && !n && !arr && !endHit ? runAt(p.x, p.y) : null;
+    const rs = endHit ? "end" : run ? (run.horiz ? "row" : "col") : "";
+    if ((R.canvas.dataset.reshape || "") !== rs) R.canvas.dataset.reshape = rs;
     const id = n ? n.id : null;
     if (id !== S.hover) {
       S.hover = id;
@@ -2182,6 +2687,7 @@
     S.out = new Map();
     for (const e of b.edges) if (!e.missing) { if (!S.out.has(e.from)) S.out.set(e.from, []); S.out.get(e.from).push(e.to); }
     S.missingEdges = b.edges.filter((e) => e.missing && e.missing !== "both");
+    routeBoard(b);
     R.root.setAttribute("dir", S.dir);
     R.rail.setAttribute("dir", S.dir);
     R.btitle.hidden = !b.title;
@@ -2206,6 +2712,10 @@
     S.flight++; // a flight from the previous document ends here; it would land on this one's view
     const t0 = performance.now();
     Object.assign(S, { path: msg.path || "", name: msg.name || "", refPath: msg.refPath || msg.path || "", docId: msg.docId, version: msg.version || 0 });
+    if (arr) arrangeEnd(true);
+    S.heldUpdate = null;
+    S.canArrange = msg.canArrange === true; // ENG-8: only the Mac app's document window
+    R.root.classList.toggle("arrange", S.canArrange);
     S.base = readBaseline(msg.baseline);
     S.previews = msg.previews && typeof msg.previews === "object" ? msg.previews : {};
     S.bgs = new Map();
@@ -2309,6 +2819,7 @@
   }
   async function update(msg) {
     if (!S.active) return false; // only a load shows a board; a late update for one the tab has left is dropped
+    if (arr && arr.moved && (!msg.docId || msg.docId === S.docId)) { S.heldUpdate = msg; return true; } // after the drop (ENG-12)
     if (msg.docId && S.docId && msg.docId !== S.docId) return false; // another document's update, delivered late
     if (S.active && S.good && typeof msg.version === "number" && msg.version <= S.version) return false; // older than what is drawn
     if (!S.active || !S.good) return load(msg);
@@ -2461,8 +2972,8 @@
         const g = geomCache(e);
         if (!g) continue;
         let d = g.d;
-        if (e.toEnd !== "none") d += arrow(g.p2, g.end2.map((v) => -v), 1);
-        if (e.fromEnd === "arrow") d += arrow(g.p1, g.end1.map((v) => -v), 1);
+        if (headOf(e, "to") !== "none") d += arrow(g.p2, g.end2, 1);
+        if (headOf(e, "from") !== "none") d += arrow(g.p1, g.end1, 1);
         items.push({ t: "path", d, stroke: e.kind === "fail" ? c.rust : e.kind === "main" ? c.ink : c.ink2, lw: e.kind === "main" ? 2.4 : 1.5, dash: e.kind === "code" ? [5, 4] : e.kind === "plan" ? [1.5, 3.5] : null, role: "edge", id: e.id });
         if (e.label) items.push({ t: "text", text: e.label, x: g.mid[0], y: g.mid[1] - 9, w: 0, h: 18, font: "sans", weight: 500, size: 12.5, color: c.ink2, dir: "ltr", anchor: "middle", chip: true, role: "edge-label", id: e.id });
       }
@@ -2767,6 +3278,19 @@
         return { s, hits: s <= MIN_S + 1e-9 ? [] : hits, atFloor: s <= MIN_S + 1e-9 };
       }
 
+      // ENG-8 to ENG-14, ENG-21: the app writes what a drag, an undo or a reset changes, applied by id to the file it read
+      case "applyArrange": {
+        try { return window.LinenCanvasWriter.arrange(String(msg.text || ""), msg.state || {}); } catch (err) { return { error: String(err && err.message || err) }; }
+      }
+      case "arrangement": {
+        const b = S.board;
+        return { pins: b.nodes.filter((n) => n.pinned).length, shapes: b.edges.filter((x) => x.via || x.labelAt != null || x.fromAt != null || x.toAt != null).length };
+      }
+      case "resetArrangement": return resetArrangement(msg);
+      case "dragStats": return S.dragStats || null;
+      case "toast": toast(String(msg.text || "")); return true;
+      case "setExp": S.exp = Object.assign({}, S.exp, msg.exp || {}); rest(); return true; // harness experiments (heads)
+      case "benchDrag": return benchDrag(msg);
       case "openNote": openNote(String(msg.id || ""), !!msg.edge); return !!S.note;
       case "findText": openFind(false); R.findq.value = String(msg.q || ""); runFind(R.findq.value); return S.find.hits.length;
       case "displayListSummary": return displayList(msg).then((d) => d && { items: d.items.length, texts: d.items.filter((i) => i.t === "text").length, sample: d.items.filter((i) => i.t === "text").slice(0, 6), notes: d.notes.length, size: d.size });
@@ -2778,6 +3302,40 @@
       case "selectionText": return String(getSelection() || "");
       default: return false;
     }
+  }
+  // ENG-14: every pin, line shape and dragged chip taken out of the file's text, then the board laid out again.
+  async function resetArrangement(msg) {
+    let c;
+    try { c = JSON.parse(String(msg.text || "")); } catch (err) { return { error: "The board is not valid JSON" }; }
+    const state = { nodes: {}, edges: {} };
+    let pins = 0, shapes = 0;
+    for (const n of c.nodes || []) if (n && n.linen && n.linen.pinned === true) { state.nodes[String(n.id)] = { pinned: false }; pins++; }
+    for (const e of c.edges || []) if (e && e.linen && ["via", "labelAt", "fromAt", "toAt"].some((k) => e.linen[k] !== undefined)) { state.edges[String(e.id)] = { via: null, labelAt: null, fromAt: null, toAt: null }; shapes++; }
+    const cleared = window.LinenCanvasWriter.arrange(String(msg.text), state).text;
+    let text = cleared;
+    try { if (window.LinenLayout) text = (await window.LinenLayout.run(cleared, { sidecarText: msg.sidecar == null ? null : msg.sidecar })).text; } catch (err) { return { error: "Layout failed: " + String(err && err.message || err) }; }
+    return { text, pins, shapes };
+  }
+  // ENG-16: a box dragged across the board in `steps` frames, each frame's work timed, then put back (board-host bench).
+  function benchDrag(msg) {
+    const b = S.board, n = b && b.byId.get(String(msg.id || ""));
+    if (!n || !n.placed) return null;
+    const el = S.mounted.get(n.id);
+    const fake = { clientX: 0, clientY: 0, pointerId: -7, pointerType: "mouse", altKey: false, metaKey: !!msg.noSnap, target: el || R.canvas };
+    const was = S.canArrange;
+    S.canArrange = true;
+    let a = arrangeStart(fake, el || null);
+    if (!a && !el) { const ids = [n.id, ...(n.kind === "section" ? subtree(n.id) : [])]; a = { cx: 0, cy: 0, pid: -7, moved: false, frames: [], kind: n.kind === "section" ? "section" : "box", id: n.id, ids, pos: new Map(ids.map((id) => { const m = b.byId.get(id); return [id, { x: m.x, y: m.y, w: m.w, h: m.h, pinned: !!m.pinned }]; })) }; }
+    S.canArrange = was;
+    if (!a) return null;
+    arr = a;
+    const steps = Math.max(2, Math.min(600, msg.steps || 60)), dx = msg.dx == null ? 400 : msg.dx, dy = msg.dy == null ? 120 : msg.dy;
+    arrangeMove(Object.assign({}, fake, { clientX: 4, clientY: 0 }));
+    if (arrRaf) { cancelAnimationFrame(arrRaf); arrRaf = 0; clearTimeout(arrTimer); }
+    for (let i = 1; i <= steps; i++) { arrEvt = Object.assign({}, fake, { clientX: dx * S.view.s * i / steps, clientY: dy * S.view.s * i / steps }); arrangeFrame(); }
+    const ms = a.frames.slice().sort((x, y) => x - y);
+    arrangeEnd(true);
+    return { steps, lines: a.edges ? a.edges.size : 0, p50: ms[Math.floor(ms.length / 2)], p95: ms[Math.min(ms.length - 1, Math.floor(ms.length * 0.95))], max: ms[ms.length - 1] };
   }
   function settings(s) {
     if (!S.active) return;

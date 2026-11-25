@@ -44,16 +44,16 @@ public final class VaultIndex: Sendable {
         let sourceKey = tables.relativeKey(for: source)
         switch tables.resolveMatch(target, sourceKey: sourceKey) {
         case .note(let index, let heading, let block):
-            return .note(tables.notes[index].file.url, heading: heading, block: block)
+            return .note(tables.url(of: tables.notes[index].file), heading: heading, block: block)
         case .attachment(let index):
-            return .note(tables.attachments[index].url, heading: nil, block: nil)
+            return .note(tables.url(of: tables.attachments[index]), heading: nil, block: nil)
         case .selfLink(let heading, let block):
             if let key = sourceKey, let index = tables.noteByKey[key] {
-                return .note(tables.notes[index].file.url, heading: tables.heading(heading, in: index), block: block)
+                return .note(tables.url(of: tables.notes[index].file), heading: tables.heading(heading, in: index), block: block)
             }
             return .note(source, heading: heading, block: block)
         case .ambiguous(let entries):
-            return .ambiguous(entries.map(\.url))
+            return .ambiguous(entries.map(tables.url(of:)))
         case .missing(let path):
             return .missing(path)
         }
@@ -77,7 +77,7 @@ public final class VaultIndex: Sendable {
         let tables = current.snapshot.tables
         return tables.search(query, limit: limit).map { result in
             let note = tables.notes[result.entry.note]
-            return NoteRef(url: note.file.url, name: note.name, path: note.file.path,
+            return NoteRef(url: tables.url(of: note.file), name: note.name, path: note.file.path,
                            matchedAlias: result.entry.isAlias ? result.entry.text : nil)
         }
     }
@@ -90,7 +90,7 @@ public final class VaultIndex: Sendable {
         guard limit > 0, let key = tables.relativeKey(for: url), let groups = snapshot.incoming[key] else { return [] }
         return groups.prefix(limit).map { group in
             let note = tables.notes[group.source]
-            return Backlink(source: note.file.url, name: note.name, path: note.file.path,
+            return Backlink(source: tables.url(of: note.file), name: note.name, path: note.file.path,
                             sentence: group.sentence, line: group.line, count: group.count)
         }
     }
@@ -200,23 +200,30 @@ final class IndexWorker: @unchecked Sendable {
             if isDirectory.boolValue {
                 add(VaultScanner.walk(root: root, under: fileURL))
             } else {
-                add([ScannedFile(url: fileURL, path: path, size: 0)])
+                add([ScannedFile(path: path, size: 0)])
             }
         }
         publish()
     }
 
     /// Parses notes in parallel, largest first so one big note does not finish last, and records
-    /// other files.
+    /// other files. Only a few large notes are read at once: each is in memory while it is parsed, and memory the
+    /// app has touched stays counted against it after it is freed. Measured 2026-11-24 on a code repository with
+    /// 2 MB review transcripts (13 MB of index): ten at a time left the process 68 MB larger, four at a time 37 MB,
+    /// with the same build time.
     private func add(_ files: [ScannedFile]) {
         let markdown = files.filter { VaultScanner.isNote($0.path) }.sorted { $0.size > $1.size }
         for file in files where !VaultScanner.isNote(file.path) {
-            let entry = FileEntry(url: file.url, path: file.path)
+            let entry = FileEntry(path: file.path)
             others[entry.key] = entry
         }
         let results = ParsedNotes(count: markdown.count)
+        let large = DispatchSemaphore(value: VaultScanner.largeNotesAtOnce)
         DispatchQueue.concurrentPerform(iterations: markdown.count) { index in
-            results.set(index, VaultScanner.note(url: markdown[index].url, path: markdown[index].path))
+            let isLarge = markdown[index].size >= VaultScanner.largeNoteBytes
+            if isLarge { large.wait() }
+            results.set(index, VaultScanner.note(root: root, path: markdown[index].path))
+            if isLarge { large.signal() }
         }
         for record in results.all { notes[record.file.key] = record }
     }

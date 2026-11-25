@@ -2,7 +2,7 @@ import Foundation
 
 /// A file found by a walk.
 struct ScannedFile: Sendable {
-    let url: URL
+    /// The vault-relative path as written on disk.
     let path: String
     let size: Int
 }
@@ -13,8 +13,13 @@ enum VaultScanner {
     static let skippedFolders: Set<String> = ["node_modules", ".git", ".obsidian", ".trash"]
     /// Notes larger than this are indexed by name only.
     static let maxNoteBytes = 16 * 1024 * 1024
+    /// Notes this large or larger are parsed at most `largeNotesAtOnce` at a time (`IndexWorker.add`).
+    static let largeNoteBytes = 256 * 1024
+    static let largeNotesAtOnce = 4
 
-    /// Every regular file under `folder` (the root when nil), as URL, vault-relative path and size.
+    /// Every regular file under `folder` (the root when nil), as vault-relative path and size. Each entry is read
+    /// in its own autorelease pool, so the enumerator's URLs and their cached resource values go as soon as the
+    /// path is taken instead of piling up until the walk ends.
     static func walk(root: URL, under folder: URL? = nil) -> [ScannedFile] {
         let start = folder ?? root
         let keys: Set<URLResourceKey> = [.isDirectoryKey, .isRegularFileKey, .fileSizeKey]
@@ -22,14 +27,23 @@ enum VaultScanner {
             at: start, includingPropertiesForKeys: Array(keys),
             options: [.skipsHiddenFiles, .skipsPackageDescendants]) else { return [] }
         var files: [ScannedFile] = []
-        for case let url as URL in enumerator {
-            let values = try? url.resourceValues(forKeys: keys)
-            if values?.isDirectory == true {
-                if skippedFolders.contains(url.lastPathComponent) { enumerator.skipDescendants() }
-                continue
+        // The walk's URLs are spelled as on disk; `relativePath` standardizes, which decomposes some names (an
+        // Arabic hamza seen 2026-11-24), so the plain path is taken when it lies under the root.
+        let prefix = root.path == "/" ? "/" : root.path + "/"
+        var more = true
+        while more {
+            autoreleasepool {
+                guard let url = enumerator.nextObject() as? URL else { more = false; return }
+                let values = try? url.resourceValues(forKeys: keys)
+                if values?.isDirectory == true {
+                    if skippedFolders.contains(url.lastPathComponent) { enumerator.skipDescendants() }
+                    return
+                }
+                guard values?.isRegularFile == true else { return }
+                let full = url.path
+                guard let path = full.hasPrefix(prefix) ? String(full.dropFirst(prefix.count)) : relativePath(url, root: root) else { return }
+                files.append(ScannedFile(path: path, size: values?.fileSize ?? 0))
             }
-            guard values?.isRegularFile == true, let path = relativePath(url, root: root) else { continue }
-            files.append(ScannedFile(url: url, path: path, size: values?.fileSize ?? 0))
         }
         return files
     }
@@ -55,15 +69,17 @@ enum VaultScanner {
         path.lowercased().hasSuffix(".md")
     }
 
-    /// Reads and parses one note. Unreadable notes are still indexed by name.
-    static func note(url: URL, path: String) -> NoteRecord {
-        let file = FileEntry(url: url, path: path)
+    /// Reads and parses one note, `path` being vault-relative as written on disk. Unreadable notes are still
+    /// indexed by name. The file's bytes and text live only inside an autorelease pool of their own.
+    static func note(root: URL, path: String) -> NoteRecord {
+        let file = FileEntry(path: path)
         let fileName = (file.path.split(separator: "/").last.map(String.init) ?? file.path)
         let name = String(fileName.dropLast(3))
-        var parsed = ParsedNote()
-        // An iCloud note that is not downloaded is indexed by name only: reading it would download it (OPEN-8).
-        if !CloudFile.isDataless(url), let data = try? Data(contentsOf: url), data.count <= maxNoteBytes {
-            parsed = NoteParser.parse(TextDecoder.decode(data).text)
+        let parsed = autoreleasepool { () -> ParsedNote in
+            let url = file.url(in: root)
+            // An iCloud note that is not downloaded is indexed by name only: reading it would download it (OPEN-8).
+            guard !CloudFile.isDataless(url), let data = try? Data(contentsOf: url), data.count <= maxNoteBytes else { return ParsedNote() }
+            return NoteParser.parse(data: data)
         }
         return NoteRecord(file: file, name: name, aliases: parsed.aliases, headings: parsed.headings, links: parsed.links)
     }

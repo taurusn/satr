@@ -251,6 +251,62 @@ test("a malformed node list does not throw", async () => {
   assert.ok(r.problems.some((p) => p.id === "g"));
 });
 
+test("the channel pass widens an inner gap that routed lines run along, and only on boards that route (round 10, finding 1)", async () => {
+  require(path.join(R, "board-model.js"));
+  globalThis.LinenRouter = require(path.join(R, "router.js"));
+  // a 2 x 3 grid; three lines from the left column to boxes further down the right column run along the column gap
+  const nodes = [{ id: "s", type: "group", x: 0, y: 0, width: 640, height: 400, label: "Grid", linen: { layout: "grid", cols: 2 } }];
+  for (let i = 0; i < 6; i++) nodes.push({ id: "c" + i, type: "text", text: "Card " + i, x: 24 + (i % 2) * 300, y: 24 + Math.floor(i / 2) * 100, width: 280, height: 60 });
+  const edges = [["c0", "c5"], ["c2", "c5"], ["c0", "c3"]].map(([a, b], i) => ({ id: "e" + i, fromNode: a, toNode: b, fromSide: "right", toSide: "left" }));
+  const mb = (items) => items.map((it) => ({ w: it.width, h: it.kind === "section-title" ? 30 : 60 }));
+  const gapOf = (text) => { const c = JSON.parse(text).nodes; const a = c.find((n) => n.id === "c0"), b = c.find((n) => n.id === "c1"); return b.x - (a.x + a.width); };
+  const plain = JSON.stringify({ nodes, edges });
+  const routed = JSON.stringify({ nodes, edges, linen: { route: "elbow" } });
+  const r0 = await L.run(plain, { measureBatch: mb, elk: new ELK() });
+  const r1 = await L.run(routed, { measureBatch: mb, elk: new ELK() });
+  assert.ok(!r0.stats.widened, "a board that keeps its curves lays out as before");
+  assert.ok(r1.stats.widened >= 1, "the column gap widened");
+  assert.ok(gapOf(r1.text) > gapOf(r0.text) + 3, gapOf(r0.text) + " -> " + gapOf(r1.text));
+  const r2 = await L.run(routed, { measureBatch: mb, elk: new ELK(), channels: false });
+  assert.strictEqual(gapOf(r2.text), gapOf(r0.text));
+  // gate 4.0: the step settles (lines measured again until no gap needs more), so laying out its own result again
+  // changes nothing; the three lines get max(16, 12 + 8 * 3) = 36 px
+  assert.ok(gapOf(r1.text) >= 36, "gap " + gapOf(r1.text));
+  const again = await L.run(r1.text, { measureBatch: mb, elk: new ELK() });
+  assert.strictEqual(again.text, r1.text, "a second layout moves nothing");
+  // a section holding a box Hatim placed keeps its gaps (ENG-11)
+  const pinnedNodes = nodes.map((n) => (n.id === "c4" ? Object.assign({}, n, { linen: { pinned: true } }) : n));
+  const r3 = await L.run(JSON.stringify({ nodes: pinnedNodes, edges, linen: { route: "elbow" } }), { measureBatch: mb, elk: new ELK() });
+  assert.ok(!r3.stats.widened, "no gap widened in a section with a pinned box");
+});
+
+test("pins: a section holding a box Hatim placed is arranged by hand, and a pinned section keeps its place (ENG-11)", async () => {
+  const mb = (items) => items.map((it) => ({ w: it.width, h: it.id === "c1" ? 160 : 60 }));
+  const nodes = [
+    { id: "s", type: "group", x: 0, y: 0, width: 640, height: 300, label: "Grid", linen: { layout: "grid", cols: 2 } },
+    { id: "c0", type: "text", text: "A", x: 24, y: 24, width: 280, height: 60 },
+    { id: "c1", type: "text", text: "B", x: 330, y: 24, width: 280, height: 60 },
+    { id: "c2", type: "text", text: "C", x: 330, y: 100, width: 280, height: 60 },
+    { id: "c3", type: "text", text: "D", x: 420, y: 250, width: 200, height: 60, linen: { pinned: true } },
+    { id: "t", type: "group", x: 0, y: 420, width: 300, height: 120, label: "Pinned", linen: { layout: "grid", cols: 1, pinned: true } },
+    { id: "t0", type: "text", text: "E", x: 24, y: 450, width: 252, height: 60 },
+  ];
+  const r = await L.run(JSON.stringify({ nodes, edges: [] }), { measureBatch: mb, elk: new ELK() });
+  const out = new Map(JSON.parse(r.text).nodes.map((n) => [n.id, n]));
+  // c3 is pinned, dropped low in the section: it stays, and s grows to hold it
+  assert.deepStrictEqual([out.get("c3").x, out.get("c3").y, out.get("c3").width], [420, 250, 200]);
+  assert.strictEqual(out.get("c0").x, 24); assert.strictEqual(out.get("c1").x, 330, "boxes keep their places by hand");
+  assert.strictEqual(out.get("c1").height, 160, "sized to its text");
+  assert.ok(out.get("c2").y >= 24 + 160 + 16, "pushed below the taller box above it: " + out.get("c2").y);
+  assert.ok(out.get("c2").y >= 250 + 60, "and below the pinned box it would land on: " + out.get("c2").y);
+  assert.ok(out.get("s").height >= 250 + 60 + 24, "the section grew to hold the pinned box: " + out.get("s").height);
+  // the pinned section is not moved by the row gap, though s grew over it
+  assert.strictEqual(out.get("t").y, 420);
+  // a second layout changes nothing
+  const again = await L.run(r.text, { measureBatch: mb, elk: new ELK() });
+  assert.strictEqual(again.text, r.text);
+});
+
 (async () => {
   let failed = 0;
   for (const [name, fn] of tests) {

@@ -29,6 +29,9 @@
     "Properties": "الخصائص", "This note has no properties.": "لا خصائص لهذه الملاحظة.", "Back to text": "العودة إلى النص",
     "Image from {h}": "صورة من {h}", "Load images for this file": "حمّل صور هذا الملف", "{f} is outside this vault": "{f} خارج هذا المخزن",
     "Allow this file": "اسمح بهذا الملف", "Image: {f}": "صورة: {f}", "Missing image": "صورة مفقودة",
+    "Open board": "افتح اللوحة", "Click to pan and zoom": "انقر للتحريك والتكبير", "Inline board": "لوحة مضمّنة",
+    "Not read with this note": "لم تُقرأ مع هذه الملاحظة", "Missing": "مفقودة", "Outside this folder": "خارج هذا المجلد",
+    "Over 2 MB": "أكبر من ٢ ميغابايت", "Cannot be read": "تتعذّر قراءتها",
     "Rewritten since you read it on {d}.": "أعيدت كتابتها منذ قرأتها في {d}.", "Rewritten since you last read it.": "أعيدت كتابتها منذ آخر قراءة.",
     "This document is too long to show whole; Linen shows its first {n} blocks.": "المستند أطول من أن يُعرض كاملًا؛ يعرض سطر أول {n} جزء منه.",
     "This document is too large to typeset, so it is shown as plain text.": "هذا المستند أكبر من أن يُنضَّد، فيُعرض نصًا عاديًا.",
@@ -282,8 +285,127 @@
         n.style.setProperty("--h", `${cached || Math.min(900, 60 + 26 * n.dataset.src.split("\n").length)}px`);
       }
     });
+    el.querySelectorAll(".board-embed-src, .board-src").forEach((n) => mountBoard(n, el));
+    el.querySelectorAll("td").forEach((td) => {
+      const ids = window.LinenBoardEmbed && window.LinenBoardEmbed.touchesOf(td.textContent);
+      if (ids && td.parentElement) { td.parentElement.dataset.touches = ids.join(","); td.classList.add("touches"); }
+    });
     el.querySelectorAll("a.wl").forEach((a) => wikiTargets.add(a.dataset.target));
     if (!b.deferMedia) activateMedia(el);
+  }
+
+  // ---------- boards in notes (BRD-19, BLK-8) ----------
+  // A frame at the column's width whose height comes from the board's shape (CSS aspect-ratio, at most 600 px), so
+  // the page never jumps; static until clicked, then pan and zoom move its view box; Esc or a click outside ends it.
+  function mountBoard(n, blockEl) {
+    const E = window.LinenBoardEmbed;
+    const inline = n.classList.contains("board-src");
+    let r, target = null, caption = "", why = null;
+    if (inline) {
+      const src = D.sources.get(n.dataset.k) || "";
+      D.sources.delete(n.dataset.k);
+      r = E ? E.render(src, { inline: true }) : { error: "Boards cannot be drawn here" };
+    } else {
+      target = n.dataset.target || "";
+      caption = n.dataset.caption || "";
+      const info = state.boards[n.dataset.req];
+      const sec = E ? E.splitTarget(target).section : null;
+      if (!info) why = t("Not read with this note");
+      else if (info.status !== "ok") why = info.status === "missing" ? t("Missing") : info.status === "outside" ? t("Outside this folder") : info.status === "large" ? t("Over 2 MB") : t("Cannot be read");
+      else r = E ? E.render(info.text, { section: sec, sidecar: info.sidecar }) : { error: "Boards cannot be drawn here" };
+    }
+    if (r && r.error) why = r.error;
+    let out;
+    if (why) {
+      // the L2 link card: the board's name and why it is not drawn; a file embed opens the board
+      out = document.createElement(target ? "a" : "div");
+      out.className = `board-card${target ? " wl" : ""}`;
+      if (target) { out.href = "#"; out.dataset.target = target; }
+      out.innerHTML = `<b>${D.escapeHTML(target ? D.linkName(target) : t("Inline board"))}</b><span>${D.escapeHTML(why)}</span>`;
+    } else {
+      out = document.createElement("figure");
+      out.className = "board-embed";
+      out.dataset.view = r.view.join(" ");
+      out.setAttribute("dir", state.docDir || "ltr");
+      // the frame's height from the board's shape, at most 600 px; the board is drawn whole inside it (meet)
+      out.innerHTML = `<div class="be-frame" style="aspect-ratio:${Math.round(r.w)} / ${Math.round(r.h)}"><div class="be-svg">${r.svg}</div>` +
+        (target ? `<button type="button" class="be-open">${D.escapeHTML(t("Open board"))}</button>` : "") +
+        `<span class="be-hint">${D.escapeHTML(t("Click to pan and zoom"))}</span></div>`;
+      out._boxes = r.boxes;
+      if (target) out.querySelector(".be-open").addEventListener("click", (ev) => { ev.preventDefault(); ev.stopPropagation(); post({ type: "openWiki", target, newTab: true, place: capturePlace() }); });
+      wireBoard(out);
+      const cap = caption || r.title;
+      if (cap) { const fc = document.createElement("figcaption"); fc.textContent = cap; out.appendChild(fc); }
+    }
+    const p = n.parentElement;
+    if (p && p.tagName === "P" && p.textContent.trim() === "" && p.children.length === 1) p.replaceWith(out);
+    else if (p && p.tagName === "P") { p.after(out); n.remove(); }
+    else n.replaceWith(out);
+    blockEl.classList.add("wide");
+  }
+  let liveBoard = null;
+  function wireBoard(fig) {
+    const svg = () => fig.querySelector("svg");
+    const frameRect = () => fig.querySelector(".be-frame").getBoundingClientRect();
+    const base = fig.dataset.view.split(" ").map(Number);
+    let vb = base.slice(), drag = null;
+    const set = () => svg().setAttribute("viewBox", vb.map((v) => Math.round(v * 10) / 10).join(" "));
+    const off = () => { if (liveBoard !== fig) return; liveBoard = null; fig.classList.remove("live"); vb = base.slice(); set(); };
+    fig._off = off;
+    fig.addEventListener("click", (ev) => {
+      if (liveBoard === fig || ev.target.closest(".be-open") || !ev.target.closest(".be-frame")) return;
+      if (liveBoard) liveBoard._off();
+      liveBoard = fig; fig.classList.add("live");
+    });
+    fig.addEventListener("wheel", (ev) => {
+      if (liveBoard !== fig) return;
+      ev.preventDefault();
+      const r = frameRect(), sc = Math.min(r.width / vb[2], r.height / vb[3]), k = Math.exp((ev.ctrlKey || ev.metaKey ? ev.deltaY * 0.01 : 0));
+      if (ev.ctrlKey || ev.metaKey) {
+        const fx = (ev.clientX - r.left) / r.width, fy = (ev.clientY - r.top) / r.height;
+        const nw = Math.min(base[2] * 2, Math.max(base[2] / 8, vb[2] * k)), nh = nw * vb[3] / vb[2];
+        vb = [vb[0] + (vb[2] - nw) * fx, vb[1] + (vb[3] - nh) * fy, nw, nh];
+      } else { vb[0] += ev.deltaX / sc; vb[1] += ev.deltaY / sc; }
+      set();
+    }, { passive: false });
+    fig.addEventListener("pointerdown", (ev) => { if (liveBoard !== fig || ev.button !== 0 || !ev.target.closest(".be-frame")) return; drag = { x: ev.clientX, y: ev.clientY, vb: vb.slice() }; try { fig.setPointerCapture(ev.pointerId); } catch (_) { /* a synthetic pointer */ } });
+    fig.addEventListener("pointermove", (ev) => {
+      if (!drag) return;
+      const r = frameRect(), sc = Math.min(r.width / vb[2], r.height / vb[3]);
+      vb[0] = drag.vb[0] - (ev.clientX - drag.x) / sc; vb[1] = drag.vb[1] - (ev.clientY - drag.y) / sc; set();
+    });
+    fig.addEventListener("pointerup", () => { drag = null; });
+    fig.addEventListener("gesturestart", (ev) => { if (liveBoard === fig) { ev.preventDefault(); drag = { pinch: vb.slice() }; } });
+    fig.addEventListener("gesturechange", (ev) => {
+      if (liveBoard !== fig || !drag || !drag.pinch) return;
+      ev.preventDefault();
+      const w0 = drag.pinch[2], nw = Math.min(base[2] * 2, Math.max(base[2] / 8, w0 / ev.scale)), nh = nw * drag.pinch[3] / w0;
+      vb = [drag.pinch[0] + (w0 - nw) / 2, drag.pinch[1] + (drag.pinch[3] - nh) / 2, nw, nh]; set();
+    });
+    fig.addEventListener("gestureend", () => { drag = null; });
+  }
+  document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && liveBoard) liveBoard._off(); });
+  document.addEventListener("pointerdown", (ev) => { if (liveBoard && !liveBoard.contains(ev.target)) liveBoard._off(); }, true);
+  window.addEventListener("beforeprint", () => { if (liveBoard) liveBoard._off(); });
+  // BLK-8: a table row `touches: [ids]` lights those boxes in the nearest board above it; the cell reads as their names
+  function linkTouches() {
+    const frames = [...docEl.querySelectorAll(".board-embed")];
+    docEl.querySelectorAll("tr[data-touches]").forEach((tr) => {
+      if (tr._touch) return;
+      let fig = null;
+      for (const f of frames) if (f.compareDocumentPosition(tr) & Node.DOCUMENT_POSITION_FOLLOWING) fig = f;
+      if (!fig) return;
+      const ids = tr.dataset.touches.split(",").filter((id) => fig._boxes && fig._boxes.has(id));
+      const cell = tr.querySelector("td.touches");
+      if (cell && ids.length) cell.textContent = ids.map((id) => fig._boxes.get(id)).join(", ");
+      const on = (v) => {
+        fig.classList.toggle("touching", v);
+        for (const id of ids) fig.querySelectorAll(`g.bc[data-id="${CSS.escape(id)}"]`).forEach((g) => g.classList.toggle("lit", v));
+      };
+      tr._touch = true;
+      tr.addEventListener("mouseenter", () => on(true));
+      tr.addEventListener("mouseleave", () => on(false));
+    });
   }
   // Image requests and lazy fills, for a block that is on the page (a reload typesets ahead, and may drop the work).
   function activateMedia(el) {
@@ -319,11 +441,31 @@
       });
     });
   }
+  // highlight.js loads with the first code block that has a language, as Mermaid does with the first diagram: most
+  // notes have none, and every page used to parse it at load.
+  let hljsLoad = null;
+  function loadHighlighter() {
+    if (!hljsLoad) {
+      hljsLoad = new Promise((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = "vendor/highlight.min.js";
+        s.onload = () => resolve();
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+    return hljsLoad;
+  }
   async function fill(n) {
     if (n.matches("pre.code")) {
       const code = n.querySelector("code");
       const lang = n.dataset.lang;
-      if (lang && window.hljs && window.hljs.getLanguage(lang) && code.textContent.split("\n").length <= 2000) {
+      if (!lang || code.textContent.split("\n").length > 2000) return;
+      if (!window.hljs) {
+        try { await loadHighlighter(); } catch (_) { return; /* stays plain */ }
+        if (!n.isConnected || !window.hljs) return;
+      }
+      if (window.hljs.getLanguage(lang)) {
         code.className = `language-${lang}`;
         try { window.hljs.highlightElement(code); } catch (_) { /* stays plain */ }
       }
@@ -898,6 +1040,7 @@
       docId: msg.docId, name: msg.name || "", path: msg.path || "", plain: !!msg.plain, meta: msg.meta || {},
       baseline: Array.isArray(msg.baseline) ? msg.baseline.slice() : null, baselineDate: msg.baselineDate || null,
       allowRemote: !!msg.allowRemote, held: null, rewritten: false, loading: msg,
+      boards: msg.boards && typeof msg.boards === "object" ? msg.boards : {}, // BRD-19: embedded boards, read with the note
     });
     heard = null;
     unannounced = false;
@@ -966,6 +1109,7 @@
     footer();
     requestLinkStatus();
     requestImages();
+    linkTouches();
     if (msg.place && msg.place.atEnd && msg.grown) {
       const firstNew = docEl.querySelector(":scope > .blk.chg");
       if (firstNew) jumpTo(firstNew);
@@ -983,6 +1127,7 @@
     const token = ++state.renderToken;
     state.held = null;
     if (msg.meta) state.meta = msg.meta; // the footer's modified time follows the file
+    if (msg.boards && typeof msg.boards === "object") state.boards = msg.boards;
     const big = overBytes(msg.text, MAX_BYTES);
     const result = await lex(msg.text, state.plain || big);
     if (!result || token !== state.renderToken) return;
@@ -1091,6 +1236,7 @@
     footer();
     requestLinkStatus();
     requestImages();
+    linkTouches();
     if (findState.query) runFind(findState.query, true);
     unannounced = true;
     if (settles) settle();
@@ -1496,6 +1642,7 @@
       if (s.lang) { html.lang = s.lang; lang = s.lang === "ar" ? "ar" : "en"; localizeChrome(); }
       if ("printPaper" in s) html.classList.toggle("print-paper", !!s.printPaper);
       if (Number(s.zoom) > 0) html.style.setProperty("--zoom", String(s.zoom));
+      if (["reading", "wide", "full"].includes(s.width)) html.dataset.width = s.width;
     });
     if ("foldArabic" in s && (s.foldArabic !== false) !== findState.foldArabic) setFold(s.foldArabic !== false, false);
     if (s.theme && mermaidSVG.size) {

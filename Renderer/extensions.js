@@ -42,6 +42,10 @@
     },
     renderer(t) {
       const target = escapeHTML(t.target);
+      // BRD-19: an embedded board, filled by page.js from the boards the app sent with the note
+      if (t.embed && /\.canvas$/i.test(t.target.split("#")[0].trim())) {
+        return `<span class="board-embed-src" data-req="wiki:${escapeHTML(t.target.split("#")[0].trim())}" data-target="${target}" data-caption="${escapeHTML(t.label || "")}"></span>`;
+      }
       if (t.embed && IMAGE_EXT.test(t.target.split("#")[0])) {
         return `<img class="embed" data-wiki-src="${target}" alt="${escapeHTML(t.label || t.target)}">`;
       }
@@ -216,9 +220,22 @@
       const lang = (token.lang || "").trim().split(/\s+/)[0].toLowerCase();
       if (lang === "math") return `<div class="math display" data-k="${stash(token.text)}"></div>\n`;
       if (lang === "mermaid") return `<div class="mermaid-src" data-k="${stash(token.text)}"></div>\n`;
+      if (lang === "board") return `<div class="board-src" data-k="${stash(token.text)}"></div>\n`; // BLK-8: a small inline board
       if (LOOM_BLOCKS.has(lang)) return `<div class="lblk-src" data-lang="${lang}" data-k="${stash(token.text)}"></div>\n`;
       const label = lang ? `<span class="lang">${escapeHTML(lang)}</span>` : "";
       return `<pre class="code" data-lang="${escapeHTML(lang)}">${label}<code>${escapeHTML(token.text)}</code></pre>\n`;
+    },
+    // BRD-19: `![caption](board.canvas)` embeds the board as `![[board.canvas]]` does; other images as usual
+    image(token) {
+      const href = String(token.href || "");
+      const file = href.split("#")[0];
+      if (!/\.canvas$/i.test(file) || /^[a-z][a-z0-9+.-]*:/i.test(href)) return false;
+      let path = file;
+      try { path = decodeURIComponent(file); } catch (_) { /* as written */ }
+      const sec = href.includes("#") ? href.slice(href.indexOf("#") + 1) : "";
+      let secDec = sec;
+      try { secDec = decodeURIComponent(sec); } catch (_) { /* as written */ }
+      return `<span class="board-embed-src" data-req="path:${escapeHTML(path)}" data-target="${escapeHTML(path + (secDec ? "#" + secDec : ""))}" data-caption="${escapeHTML(token.text || "")}"></span>`;
     },
   };
 

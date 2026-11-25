@@ -291,3 +291,16 @@ html[data-theme="night"] .sw6.s-rust { border-color: var(--head); }
 .b-secs a.tour { font-weight: 500; color: var(--head); padding-top: 10px; }
 .b-secs a.step { font-size: 13px; color: var(--quiet); }
 .b-secs a.nd.chgd::after { content: ""; display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); margin-inline-start: 6px; vertical-align: middle; }
+
+/* arranging (ENG-8 to ENG-10, ENG-21): section names can be pressed, lines show where a run can be dragged, guides */
+#board.arrange .b-slbl b { pointer-events: auto; cursor: grab; }
+#board.arranging .b-slbl b, #board.arranging .b-canvas { cursor: grabbing; }
+#board.arranging .b-node, #board.arranging .b-elbl { user-select: none; -webkit-user-select: none; }
+#board.arrange .b-elbl { cursor: grab; }
+.b-canvas[data-reshape="row"] { cursor: row-resize; }
+.b-canvas[data-reshape="col"] { cursor: col-resize; }
+.b-guide { position: absolute; z-index: 5; pointer-events: none; background: var(--head); opacity: .55; }
+.b-guide.x { top: 0; bottom: 0; width: 1px; }
+.b-guide.y { left: 0; right: 0; height: 1px; }
+.b-canvas[data-reshape="end"], #board.end-drag .b-canvas { cursor: grab; }
+#board.end-drag.arranging .b-canvas { cursor: grabbing; }

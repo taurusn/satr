@@ -22,6 +22,11 @@
   --ease-brand: cubic-bezier(.22, .8, .2, 1); --t-brand: .34s;
   color-scheme: light;
 }
+/* Text width (READ-11, Linen Settings; Hatim, 2026-11-25: "make it user preference to control"). Reading is the column
+   above. Wide is a longer line; zoom still widens or narrows it in words (READ-1). Full fills the pane inside its own
+   margins. Set by Linen on the Mac only; unset elsewhere (iPhone, Quick Look, export), so those keep Reading. */
+html[data-width="wide"] { --measure: max(calc(820px / var(--zoom, 1)), 340px); --col: max(calc(1000px / var(--zoom, 1)), 340px); }
+html[data-width="full"] { --measure: 100%; --col: 100%; }
 html[data-theme="night"] {
   --ground: var(--ink-2); --raised: var(--ink); --text: var(--paper); --head: var(--paper); --quiet: var(--sage);
   --line: rgba(246, 243, 235, .14); --wash: rgba(246, 243, 235, .07); --soft: rgba(246, 243, 235, .2); --edge: rgba(246, 243, 235, .3);
@@ -254,3 +259,46 @@ html.contrast[data-theme="night"] { --quiet: var(--paper); --line: rgba(246, 243
   #doc table { width: 100%; font-size: 9.5pt; }
   details.preamble > summary { white-space: normal; }
 }
+
+/* boards in notes (BRD-19, BLK-8): a frame at the column's width, its height from the board's shape */
+#doc .board-embed { margin: 1.2em 0; width: 100%; }
+#doc .board-embed .be-frame { position: relative; width: 100%; max-height: 600px; border: 1px solid var(--line); border-radius: 2px; background: var(--ground); overflow: hidden; cursor: zoom-in; }
+#doc .board-embed .be-svg { position: absolute; inset: 0; }
+#doc .board-embed svg { width: 100%; height: 100%; display: block; }
+#doc .board-embed.live .be-frame { cursor: grab; outline: 1.5px solid var(--head); outline-offset: -1.5px; touch-action: none; }
+#doc .board-embed figcaption { margin: 8px 2px 0; font: 500 11px/1.3 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--quiet); }
+#doc .board-embed .be-open { position: absolute; top: 8px; inset-inline-end: 8px; font: 500 12px/1 var(--sans); color: var(--text); background: var(--ground); border: 1px solid var(--line); border-radius: 2px; padding: 6px 9px; cursor: pointer; }
+#doc .board-embed .be-hint { position: absolute; bottom: 8px; inset-inline-end: 10px; font: 500 11px/1 var(--sans); color: var(--quiet); opacity: 0; transition: opacity .15s; pointer-events: none; }
+#doc .board-embed .be-frame:hover .be-hint { opacity: .8; } #doc .board-embed.live .be-hint { opacity: 0 !important; }
+.bsvg .bs { fill: var(--wash); stroke: var(--line); stroke-width: 1; }
+.bsvg .bn { font-family: var(--serif); font-weight: 300; font-size: 24px; fill: var(--text); }
+.bsvg .bn.nested { font-family: var(--sans); font-weight: 500; font-size: 15px; }
+.bsvg .bl { fill: none; stroke: var(--quiet); stroke-width: 1.5; }
+.bsvg .bl.main { stroke: var(--head); stroke-width: 2.4; }
+.bsvg .bl.code, .bsvg .bl.dashed { stroke-dasharray: 5 4; }
+.bsvg .bl.plan, .bsvg .bl.dotted { stroke-dasharray: 1.5 3.5; stroke-linecap: round; opacity: .8; }
+.bsvg .bl.fail { stroke: var(--rust); }
+.bsvg .bl.thick { stroke-width: 2.4; } .bsvg .bl.thin { stroke-width: 1; }
+.bsvg .bh { fill: var(--quiet); } .bsvg .bh.main { fill: var(--head); } .bsvg .bh.fail { fill: var(--rust); }
+.bsvg .bk rect { fill: var(--ground); stroke: var(--line); }
+.bsvg .bk text { font: 500 12.5px var(--sans); fill: var(--text); }
+.bsvg .bc rect { fill: var(--raised); stroke: var(--quiet); stroke-width: 1; }
+.bsvg .bc.dashed > rect:first-of-type { stroke-dasharray: 5 4; }
+.bsvg .bc.dotted > rect:first-of-type { stroke-dasharray: 1.5 3; }
+.bsvg .bc.solid > rect:first-of-type { fill: var(--head); stroke: var(--head); }
+.bsvg .bc.rust > rect:first-of-type { stroke: var(--rust); stroke-width: 1.5; }
+.bsvg .bc .thr { fill: url(#bthr); stroke: none; }
+.bsvg .thl { stroke: var(--quiet); stroke-width: 1.6; }
+.bsvg .bct { height: 100%; box-sizing: border-box; padding: 12px 14px; overflow: hidden; color: var(--text); font: 400 14px/1.4 var(--sans); }
+.bsvg .bc.solid .bct { color: var(--ground); }
+.bsvg .bct b { display: block; font: 300 19px/1.2 var(--serif); margin: 0 0 5px; }
+.bsvg .bct p { margin: 0; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.bsvg .bw { display: inline-block; font: 500 9.5px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; border: 1px solid currentColor; padding: 3px 5px 2px; margin: 0 0 7px; }
+#doc .board-embed.touching .bc { opacity: .35; } #doc .board-embed.touching .bc.lit { opacity: 1; }
+#doc .board-embed.touching .bc.lit > rect:first-of-type { stroke: var(--head); stroke-width: 2.5; }
+#doc td.touches { font: 500 12px/1.4 var(--sans); color: var(--quiet); }
+#doc tr[data-touches] { cursor: default; } #doc tr[data-touches]:hover td { background: var(--wash); }
+#doc .board-card { display: flex; flex-direction: column; gap: 3px; margin: 1.2em 0; padding: 12px 14px; border: 1px dashed var(--line); border-radius: 2px; text-decoration: none; color: var(--text); }
+#doc .board-card b { font: 300 19px/1.2 var(--serif); }
+#doc .board-card span { font: 500 12px/1.3 var(--sans); color: var(--quiet); }
+@media print { #doc .board-embed .be-open, #doc .board-embed .be-hint { display: none; } #doc .board-embed { break-inside: avoid; } }

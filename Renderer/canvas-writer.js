@@ -80,7 +80,64 @@
     };
   }
 
-  const api = { write, serialise, isObsidianStyle };
+  /** ENG-8 to ENG-14, ENG-21: what a drag, an undo or a reset writes. state: { nodes: { id: {x, y, width, height,
+      pinned} }, edges: { id: {via, fromSide, toSide, labelAt, fromAt, toAt} } }; a key left out is untouched, null removes it, pinned
+      false removes the pin. Only those keys change (text, ids, kinds, labels and relations never). Ids no longer on the
+      board are skipped and listed. Returns { text, changed, missing, normalised }. */
+  function arrange(text, state) {
+    const obj = JSON.parse(text);
+    const styled = isObsidianStyle(text);
+    const trailing = /\n$/.test(text);
+    const nodes = Array.isArray(obj.nodes) ? obj.nodes : [], edges = Array.isArray(obj.edges) ? obj.edges : [];
+    const byId = new Map(), edgeById = new Map();
+    for (const n of nodes) if (n && typeof n === "object") byId.set(String(n.id), n);
+    for (const e of edges) if (e && typeof e === "object") edgeById.set(String(e.id), e);
+    const linenOf = (o) => (o.linen && typeof o.linen === "object" && !Array.isArray(o.linen) ? o.linen : null);
+    const setLinen = (o, k, v) => {
+      let L = linenOf(o);
+      if (v === null || v === undefined || v === false) {
+        if (L && k in L) { delete L[k]; if (!Object.keys(L).length) delete o.linen; return true; }
+        return false;
+      }
+      if (!L) { if (o.linen !== undefined) return false; L = o.linen = {}; } // a linen value that is not an object is left alone
+      if (JSON.stringify(L[k]) === JSON.stringify(v)) return false;
+      L[k] = v;
+      return true;
+    };
+    let changed = 0;
+    const missing = [];
+    for (const [id, p] of Object.entries((state && state.nodes) || {})) {
+      const n = byId.get(id);
+      if (!n) { missing.push(id); continue; }
+      let did = false;
+      for (const k of KEYS) {
+        if (typeof p[k] !== "number" || !isFinite(p[k])) continue;
+        const v = Math.round(p[k]);
+        if (n[k] !== v) { n[k] = v; did = true; }
+      }
+      if (p.pinned === true || p.pinned === false) did = setLinen(n, "pinned", p.pinned === true ? true : null) || did;
+      if (did) changed++;
+    }
+    for (const [id, p] of Object.entries((state && state.edges) || {})) {
+      const e = edgeById.get(id);
+      if (!e) { missing.push(id); continue; }
+      let did = false;
+      if (p.via !== undefined) did = setLinen(e, "via", Array.isArray(p.via) ? p.via.map((q) => [Math.round(q[0]), Math.round(q[1])]) : null) || did;
+      const frac = (v) => (typeof v === "number" && isFinite(v) ? Math.round(Math.max(0, Math.min(1, v)) * 1000) / 1000 : null);
+      for (const k of ["labelAt", "fromAt", "toAt"]) if (p[k] !== undefined) did = setLinen(e, k, frac(p[k])) || did;
+      for (const k of ["fromSide", "toSide"]) {
+        if (p[k] === undefined) continue;
+        if (p[k] === null) { if (k in e) { delete e[k]; did = true; } }
+        else if (["top", "right", "bottom", "left"].includes(p[k]) && e[k] !== p[k]) { e[k] = p[k]; did = true; }
+      }
+      if (did) changed++;
+    }
+    if (!styled) for (const n of nodes) if (n && typeof n === "object") for (const k of KEYS) if (typeof n[k] === "number" && isFinite(n[k]) && !Number.isInteger(n[k])) n[k] = Math.round(n[k]);
+    const out = serialise(obj) + (styled && trailing ? "\n" : "");
+    return { text: out, changed, missing, normalised: !styled };
+  }
+
+  const api = { write, arrange, serialise, isObsidianStyle };
   root.LinenCanvasWriter = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof self !== "undefined" ? self : typeof globalThis !== "undefined" ? globalThis : this);

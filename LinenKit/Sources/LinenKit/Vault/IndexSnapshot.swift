@@ -138,6 +138,9 @@ struct VaultTables: Sendable {
         }
     }
 
+    /// The URL of an indexed file.
+    func url(of entry: FileEntry) -> URL { entry.url(in: root) }
+
     /// The vault-relative key for a URL, or nil when it lies outside the vault.
     func relativeKey(for url: URL) -> String? {
         let prefix = rootKey == "/" ? "/" : rootKey + "/"

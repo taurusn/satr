@@ -15,6 +15,9 @@
   const WORD_SHAPES = ["outline", "threads", "solid", "dashed", "dotted", "rust"];
   const EDGE_KINDS = ["works", "main", "code", "plan", "fail"];
   const ROUTES = ["straight", "elbow", "curved"];
+  const LINES = ["solid", "dashed", "dotted"];
+  const WEIGHTS = ["thin", "normal", "thick"];
+  const HEADS = ["arrow", "open", "dot", "diamond", "bar", "none"];
   const LAYOUTS = ["lanes", "grid", "stack", "layered"];
   const SIDES = ["top", "right", "bottom", "left"];
   const ENDS = ["none", "arrow"];
@@ -512,6 +515,25 @@
         }
       },
       box(id) { return boxes.get(id) || null; },
+      // ENG-8: a box dragged on the board moves in the index too
+      remove(id) {
+        const b = boxes.get(id);
+        if (!b) return;
+        boxes.delete(id);
+        this.size--;
+        const oi = overflow.indexOf(id);
+        if (oi !== -1) { overflow.splice(oi, 1); return; }
+        const x0 = Math.floor(b[0] / cellSize), x1 = Math.floor((b[0] + b[2]) / cellSize);
+        const y0 = Math.floor(b[1] / cellSize), y1 = Math.floor((b[1] + b[3]) / cellSize);
+        for (let cx = x0; cx <= x1; cx++) for (let cy = y0; cy <= y1; cy++) {
+          const k = key(cx, cy), list = cells.get(k);
+          if (!list) continue;
+          const i = list.indexOf(id);
+          if (i !== -1) list.splice(i, 1);
+          if (!list.length) cells.delete(k);
+        }
+      },
+      update(id, x, y, w, h) { this.remove(id); this.insert(id, x, y, w, h); },
       query(x, y, w, h) {
         const out = new Set();
         const hit = (id) => {
@@ -633,7 +655,7 @@
 
   function emptyBoard() {
     return {
-      fatal: null, dir: "ltr", title: null, eyebrow: null, words: [], tours: [],
+      fatal: null, dir: "ltr", title: null, eyebrow: null, words: [], tours: [], route: "curved", routeGiven: false,
       nodes: [], byId: new Map(), children: new Map([[null, []]]), roots: [], edges: [], edgesById: new Map(), edgesOf: new Map(),
       order: [], unplaced: [], problems: [], checkProblems: [], bounds: { x: 0, y: 0, w: 0, h: 0 }, hasLayout: false,
       grid: makeGrid(CELL), edgeGrid: makeGrid(CELL), sidecarIds: [],
@@ -705,6 +727,12 @@
       if (L.dir != null) {
         if (L.dir === "ltr" || L.dir === "rtl") explicitDir = L.dir;
         else P("warning", ["linen", "dir"], "dir is ltr or rtl; ignored " + quote(L.dir));
+      }
+      if (L.route != null) {
+        // ENG-2: the board's default route; a connector's own linen.route wins.
+        // Hatim, 2026-11-21: boards that do not say keep their curves; new boards say (write_board stamps elbow).
+        if (ROUTES.indexOf(L.route) !== -1) { board.route = L.route; board.routeGiven = true; }
+        else P("warning", ["linen", "route"], "route is one of " + ROUTES.join(", ") + "; lines are drawn curved");
       }
       for (const k of ["title", "eyebrow"]) {
         if (L[k] == null) continue;
@@ -821,7 +849,7 @@
         x: null, y: null, w: null, h: null, placed: false,
         title: null, body: null, text: null, file: null, subpath: null, url: null, label: null, color: null, eyebrow: null,
         background: null, backgroundStyle: null,
-        word: null, note: null, noteFrom: null, parent: null, depth: 0, layout: null, cols: null, gap: null,
+        word: null, note: null, noteFrom: null, parent: null, depth: 0, layout: null, cols: null, gap: null, pinned: false,
         dir: null, hash: null, line, jsonPath: pathOf(at()), index: i, truncated: false,
       };
       if (!known) {
@@ -874,6 +902,9 @@
         P("warning", at("linen", k), k + " should be text; ignored", id);
         return null;
       };
+      // ENG-8, ENG-11: a box or section Hatim placed by hand; layout and agents keep it where it is.
+      node.pinned = ln.pinned === true;
+      if (ln.pinned != null && typeof ln.pinned !== "boolean") P("warning", at("linen", "pinned"), "pinned is true or false; ignored", id);
 
       // The board's direction reads the text as written, before any cut (documentDirection reads the source).
       if (dirSource.length < DOC_DIR_CHARS) {
@@ -1004,12 +1035,13 @@
       }
       const edge = {
         id, from: raw.fromNode, to: raw.toNode, fromSide: null, toSide: null, sidesFilled: false,
-        fromEnd: "none", toEnd: "arrow", label: null, color: null, kind: "works", route: "curved", note: null, noteFrom: null,
+        fromEnd: "none", toEnd: "arrow", label: null, color: null, kind: "works", route: board.route, routeGiven: false, note: null, noteFrom: null,
+        fromSideGiven: false, toSideGiven: false, line: null, weight: null, headFrom: null, headTo: null, via: null, labelAt: null, fromAt: null, toAt: null,
         hash: null, missing: null, drawable: false, stub: null, p1: null, p2: null, box: null, line, jsonPath: pathOf(at()), index: i, truncated: false,
       };
       for (const k of ["fromSide", "toSide"]) {
         if (raw[k] == null) continue;
-        if (SIDES.indexOf(raw[k]) !== -1) edge[k] = raw[k];
+        if (SIDES.indexOf(raw[k]) !== -1) { edge[k] = raw[k]; edge[k + "Given"] = true; }
         else P("warning", at(k), k + " is top, right, bottom or left; picked by angle instead", id);
       }
       for (const k of ["fromEnd", "toEnd"]) {
@@ -1034,12 +1066,39 @@
             else P("warning", at("linen", "kind"), "A connector's kind is one of " + EDGE_KINDS.join(", ") + "; drawn as works", id);
           }
           if (EL.route != null) {
-            if (ROUTES.indexOf(EL.route) !== -1) edge.route = EL.route;
-            else P("warning", at("linen", "route"), "route is one of " + ROUTES.join(", ") + "; drawn curved", id);
+            if (ROUTES.indexOf(EL.route) !== -1) { edge.route = EL.route; edge.routeGiven = true; }
+            else P("warning", at("linen", "route"), "route is one of " + ROUTES.join(", ") + "; drawn as the board's route (" + board.route + ")", id);
           }
+          // ENG-3: how the line looks; the kind gives the defaults, these override them.
+          const pick = (k, list, what) => {
+            if (EL[k] == null) return null;
+            if (list.indexOf(EL[k]) !== -1) return EL[k];
+            P("warning", at("linen", k), k + " is one of " + list.join(", ") + "; " + what, id);
+            return null;
+          };
+          edge.line = pick("line", LINES, "the kind's pattern is used");
+          edge.weight = pick("weight", WEIGHTS, "the kind's weight is used");
+          edge.headFrom = pick("fromEnd", HEADS, "the default end is used");
+          edge.headTo = pick("toEnd", HEADS, "the default end is used");
           if (EL.note !== undefined) {
             const note = readNote(EL.note, (sev, sub, msg) => P(sev, at("linen", "note", ...sub), msg, id));
             if (note) { edge.note = note; edge.noteFrom = "board"; }
+          }
+          // ENG-21: a line Hatim reshaped: its corners between the two ends, kept as placed
+          if (EL.via != null) {
+            const v = EL.via;
+            if (Array.isArray(v) && v.length >= 1 && v.length <= 64 && v.every((q) => Array.isArray(q) && q.length === 2 && isNum(q[0]) && isNum(q[1]) && Math.abs(q[0]) < 1e7 && Math.abs(q[1]) < 1e7)) edge.via = v.map((q) => [q[0], q[1]]);
+            else P("warning", at("linen", "via"), "via is a list of 1 to 64 [x, y] corners; the line is routed as usual", id);
+          }
+          // ENG-21: an end Hatim dragged along its box's side (0 to 1, left to right or top to bottom)
+          for (const k of ["fromAt", "toAt"]) {
+            if (EL[k] == null) continue;
+            if (isNum(EL[k]) && EL[k] >= 0 && EL[k] <= 1) edge[k] = EL[k];
+            else P("warning", at("linen", k), k + " is a number from 0 to 1 along the side; the end is placed as usual", id);
+          }
+          if (EL.labelAt != null) {
+            if (isNum(EL.labelAt) && EL.labelAt >= 0 && EL.labelAt <= 1) edge.labelAt = EL.labelAt;
+            else P("warning", at("linen", "labelAt"), "labelAt is a number from 0 to 1 along the line; the label is placed as usual", id);
           }
         }
       }
@@ -1202,8 +1261,8 @@
   }
 
   root.LinenCanvas = {
-    parse, check, hashString, sideFor, sidePoint, findJSONError, blockDirection, proseDirection, documentDirection, letters, utf8Length, cutUtf8,
+    parse, check, hashString, sideFor, sidePoint, makeGrid, findJSONError, blockDirection, proseDirection, documentDirection, letters, utf8Length, cutUtf8,
     DEFAULT_WORDS: DEFAULT_WORDS.map((w) => Object.assign({}, w)),
-    SPEC_TYPES, TEXT_KINDS, SHAPES, WORD_SHAPES, EDGE_KINDS, ROUTES, LAYOUTS, LIMITS,
+    SPEC_TYPES, TEXT_KINDS, SHAPES, WORD_SHAPES, EDGE_KINDS, ROUTES, LINES, WEIGHTS, HEADS, LAYOUTS, LIMITS,
   };
 })(typeof self !== "undefined" ? self : globalThis);

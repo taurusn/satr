@@ -80,6 +80,8 @@ targets:
       - path: Tools/linen
       # The vault gate's descriptor walk (SAFE-2), shared with the app so the command reads files the same way.
       - path: Linen/Document/SafeOpen.swift
+      # Boards embedded in notes (BRD-19), read the same way by the app and the command.
+      - path: Linen/Document/BoardEmbeds.swift
     dependencies:
       - package: LinenKit
     settings:

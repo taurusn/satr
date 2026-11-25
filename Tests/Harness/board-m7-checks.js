@@ -320,6 +320,52 @@
     return { pass: !!o && o.docId === S.docId && o.line === 18, detail: JSON.stringify(o) };
   });
 
+  await check("note-leave", "a note opened by hover closes within 300 ms when the pointer leaves the board, even right after leaving its box; a focused note stays; a click or tap on empty board closes any note", async () => {
+    await load(board([node("a", 0, 0, null, { linen: { note: { title: "N", body: "B" } } }), node("b", 600, 0)]));
+    await cmd("setView", { s: 1, tx: 40, ty: 40 });
+    await sleep(150);
+    S.focus = null; S.selected = null;
+    const C = document.querySelector(".b-canvas"), r = C.getBoundingClientRect();
+    const inside = C.contains(document.querySelector(".b-notecard"));
+    const pt = (bx, by, extra) => Object.assign({ clientX: r.left + 40 + bx, clientY: r.top + 40 + by, bubbles: true, pointerId: 7, pointerType: "mouse", isPrimary: true, button: 0 }, extra || {});
+    const cardEl = () => document.querySelector('.b-node[data-id="a"]');
+    const moveOver = (el, bx, by) => (el || C).dispatchEvent(new PointerEvent("pointermove", pt(bx, by)));
+    // hover the box: the note opens after its delay (frames do not tick in the offscreen host: timers stand in)
+    const realRaf = window.requestAnimationFrame;
+    window.requestAnimationFrame = (f) => setTimeout(() => f(performance.now()), 16);
+    moveOver(cardEl(), 100, 60);
+    await sleep(500);
+    const openedByHover = !!S.note && S.level === "read";
+    const why = `hover ${S.hover}`;
+    // leave the box for empty board (a close is now 250 ms away), then leave the board at once
+    moveOver(null, 450, 400);
+    await sleep(40);
+    C.dispatchEvent(new PointerEvent("pointerleave", pt(-50, -50, { bubbles: false })));
+    await sleep(300);
+    const closedByLeave = !S.note && document.querySelector(".b-notecard").hidden;
+    window.requestAnimationFrame = realRaf;
+    // a focused note stays when the pointer leaves
+    S.focus = "a";
+    await cmd("openNote", { id: "a" });
+    C.dispatchEvent(new PointerEvent("pointerleave", pt(-50, -50, { bubbles: false })));
+    await sleep(300);
+    const keptOnLeave = !!S.note;
+    // a click on empty board closes it, focused or not
+    C.dispatchEvent(new PointerEvent("pointerdown", pt(450, 400)));
+    C.dispatchEvent(new PointerEvent("pointerup", pt(450, 400)));
+    await sleep(50);
+    const closedByClick = !S.note && document.querySelector(".b-notecard").hidden;
+    // and so does a tap
+    S.focus = "a";
+    await cmd("openNote", { id: "a" });
+    C.dispatchEvent(new PointerEvent("pointerdown", pt(450, 400, { pointerType: "touch", pointerId: 9 })));
+    C.dispatchEvent(new PointerEvent("pointerup", pt(450, 400, { pointerType: "touch", pointerId: 9 })));
+    await sleep(50);
+    const closedByTap = !S.note && document.querySelector(".b-notecard").hidden;
+    S.focus = null;
+    return { pass: inside && openedByHover && closedByLeave && keptOnLeave && closedByClick && closedByTap, detail: `${why}; card inside the board ${inside}, opened by hover ${openedByHover}, closed within 300 ms of leaving ${closedByLeave}, focused kept ${keptOnLeave}, closed by click ${closedByClick}, by tap ${closedByTap}` };
+  });
+
   X.post = realPost;
   return out;
 })();

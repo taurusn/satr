@@ -76,28 +76,47 @@ public enum LinkResolution: Sendable, Equatable {
     case missing(String)
 }
 
-/// A file in the vault, with its comparison keys precomputed.
+/// A file in the vault, with its comparison keys precomputed. It keeps no `URL`: an enumerator's URL carries the
+/// resource values read during the walk (about 0.8 KB a file with its strings), and a vault can hold tens of
+/// thousands of files. `VaultTables.url(of:)` makes the URL when a query hands one out.
 struct FileEntry: Sendable {
-    let url: URL
     /// The vault-relative path as found on disk, in NFC.
     let path: String
     /// `path` case folded.
     let key: String
-    /// The last path component case folded, extension included.
-    let nameKey: String
-    /// The parent folder's key, empty at the vault root.
-    let folderKey: String
-    /// The number of path components.
-    let depth: Int
+    /// The path as written on disk, only when it is not already NFC (a name written decomposed); nil otherwise.
+    private let diskPath: String?
 
-    init(url: URL, path: String) {
-        self.url = url
-        self.path = path.nfc
-        self.key = path.folded
-        let parts = key.split(separator: "/", omittingEmptySubsequences: true)
-        self.nameKey = parts.last.map(String.init) ?? key
-        self.folderKey = parts.dropLast().joined(separator: "/")
-        self.depth = parts.count
+    /// - Parameter path: the vault-relative path as written on disk.
+    init(path: String) {
+        let nfc = path.nfc
+        // Strings compare by canonical equivalence, so NFC and NFD forms of one name are `==`; compare the bytes.
+        let isNFC = nfc.utf8.elementsEqual(path.utf8)
+        self.path = isNFC ? path : nfc
+        self.diskPath = isNFC ? nil : path
+        let folded = path.folded
+        self.key = folded.utf8.elementsEqual(self.path.utf8) ? self.path : folded
+    }
+
+    /// The last path component case folded, extension included.
+    var nameKey: String {
+        guard let slash = key.lastIndex(of: "/") else { return key }
+        return String(key[key.index(after: slash)...])
+    }
+
+    /// The parent folder's key, empty at the vault root.
+    var folderKey: String { VaultTables.folder(of: key) }
+
+    /// The number of path components.
+    var depth: Int { key.split(separator: "/", omittingEmptySubsequences: true).count }
+
+    /// The file's URL under the vault root, spelled byte for byte as the walk found it. Made from the file system
+    /// representation: every path-string initializer, and `appendingPathComponent`, decompose some names (an Arabic
+    /// alef with hamza above, U+0623, becomes U+0627 U+0654), which the walk's own URLs never did.
+    func url(in root: URL) -> URL {
+        let rootPath = root.path
+        let full = (rootPath == "/" ? "/" : rootPath + "/") + (diskPath ?? path)
+        return full.withCString { URL(fileURLWithFileSystemRepresentation: $0, isDirectory: false, relativeTo: nil) }
     }
 }
 

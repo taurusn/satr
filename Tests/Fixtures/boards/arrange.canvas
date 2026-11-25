@@ -1,0 +1,36 @@
+{
+	"nodes":[
+		{
+			"id":"s-a",
+			"type":"group",
+			"x":0,
+			"y":0,
+			"width":620,
+			"height":330,
+			"label":"Intake",
+			"linen":{"layout":"grid","cols":2}
+		},
+		{"id":"form","type":"text","text":"# Request form\nValidates and stores a request.","x":24,"y":24,"width":278,"height":120},
+		{"id":"queue","type":"text","text":"# Queue\nHolds requests until the nightly run.","x":318,"y":24,"width":278,"height":120},
+		{"id":"audit","type":"text","text":"# Audit trail\nEvery change, with who and when.","x":24,"y":160,"width":278,"height":120},
+		{
+			"id":"s-b",
+			"type":"group",
+			"x":700,
+			"y":0,
+			"width":320,
+			"height":330,
+			"label":"Nightly",
+			"linen":{"layout":"grid","cols":1}
+		},
+		{"id":"import","type":"text","text":"# Nightly import\nReads the queue at 02:00.","x":724,"y":24,"width":272,"height":120},
+		{"id":"export","type":"text","text":"# Export\nWrites the report for finance.","x":724,"y":160,"width":272,"height":120}
+	],
+	"edges":[
+		{"id":"e1","fromNode":"form","toNode":"queue","label":"queues"},
+		{"id":"e2","fromNode":"queue","toNode":"import","label":"read at 02:00"},
+		{"id":"e3","fromNode":"import","toNode":"export"},
+		{"id":"e4","fromNode":"audit","toNode":"export","label":"logs"}
+	],
+	"linen":{"route":"elbow","title":"Arrange checks"}
+}

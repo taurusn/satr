@@ -230,6 +230,9 @@
     if (spec.eyebrow) linen.eyebrow = str(spec.eyebrow);
     if (spec.dir === "rtl" || spec.dir === "ltr") linen.dir = spec.dir;
     if (Array.isArray(spec.words) && spec.words.length) linen.words = spec.words.map((w) => (typeof w === "string" ? { word: w } : w));
+    // ENG-2: a new board is cornered (lines in straight runs around every box); curved or straight when the spec says.
+    if (spec.route !== undefined && !ROUTES.includes(spec.route)) problems.push({ severity: "warning", path: "route", message: "route is one of " + ROUTES.join(", ") + "; the board is cornered (elbow)" });
+    linen.route = ROUTES.includes(spec.route) ? spec.route : "elbow";
     canvas.linen = linen;
     return { canvas, notes: Object.keys(notes).length ? notes : null, problems };
   }
@@ -254,12 +257,13 @@
    *       { op: "add", section, card } | { op: "remove", id } | { op: "move", id, section }
    *       { op: "connect", from, to, label, kind, two_way } | { op: "disconnect", from, to } | { op: "disconnect", id }
    *       { op: "add_section", section: {id, title, cols, layout, cards} } | { op: "remove_section", id, keep_cards }
-   *       { op: "set_board", title, words, dir }]
+   *       { op: "set_board", title, words, dir, route }]
    * notes: the sidecar object or null. A note given in an op goes where that box's note already lives, else to the
    * sidecar when the board has one, else into the board.
    * Returns { canvas, notes, changed: [ids], problems }.
    */
   const OPS = ["set", "add", "remove", "move", "connect", "disconnect", "add_section", "remove_section", "set_board"];
+  const ROUTES = ["elbow", "curved", "straight"];
   const isStr = (v) => typeof v === "string";
   const optStr = (v) => v === undefined || isStr(v);
   const nullStr = (v) => v === undefined || v === null || isStr(v);
@@ -307,6 +311,7 @@
         case "set_board":
           if (!optStr(o.title)) bad("title", "text"); if (o.words !== undefined && !Array.isArray(o.words)) bad("words", "a list of words");
           if (o.dir !== undefined && o.dir !== "ltr" && o.dir !== "rtl") bad("dir", "ltr or rtl");
+          if (o.route !== undefined && !ROUTES.includes(o.route)) bad("route", ROUTES.join(", "));
           break;
       }
     });
@@ -406,6 +411,7 @@
           const n = map.get(str(o.id)), g = map.get(str(o.section));
           if (!n || !g || g.type !== "group") { problems.push({ severity: "error", path: where, message: `move needs an existing box id and section id` }); return; }
           if (n.type === "group") { problems.push({ severity: "error", path: where, message: `"${o.id}" is a section; move takes a box (sections keep their place)` }); return; }
+          if (n.linen && n.linen.pinned === true) { problems.push({ severity: "error", path: where, message: `Hatim placed "${o.id}" by hand, so it stays where it is; leave it, or ask him to move it` }); return; }
           appendTo(canvas, g.id, n);
           changed.add(n.id);
           return;
@@ -467,6 +473,8 @@
             canvas.linen.words = o.words.map((w) => (typeof w === "string" ? before.get(w) || { word: w, shape: "outline" } : w));
           }
           if (o.dir === "rtl" || o.dir === "ltr") canvas.linen.dir = o.dir;
+          // ENG-2: one action restyles the whole board's lines; layout then gives the lines room (gate 4.0)
+          if (ROUTES.includes(o.route)) canvas.linen.route = o.route;
           boardChanged = true;
           return;
         }
@@ -516,7 +524,8 @@
     // Push apart, never re-grid: a section keeps where it is (where compose put it, or where someone dragged it) unless
     // layout made it overlap a neighbour. Sections starting at the same height form a row and move together, so rows
     // stay level; within a row a section moves right only as far as the one before it now reaches.
-    const shift = (g, dx, dy) => { g.x += dx; g.y += dy; for (const k of kidsOf.get(g.id)) { k.x += dx; k.y += dy; } };
+    // ENG-11: a section Hatim placed by hand stays where he put it
+    const shift = (g, dx, dy) => { if (g.linen && g.linen.pinned === true) return; g.x += dx; g.y += dy; for (const k of kidsOf.get(g.id)) { k.x += dx; k.y += dy; } };
     const rowsOf = [];
     for (const g of top) {
       const r = rowsOf.find((row) => Math.abs(row.y - g.y) < 40);

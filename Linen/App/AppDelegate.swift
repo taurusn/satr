@@ -359,7 +359,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func settingsChanged() {
         for d in documents where d.pageController != nil { d.applyPageTheme() }
         for d in documents where d.web != nil {
-            d.send(["type": "settings", "theme": Settings.theme(for: d.window?.effectiveAppearance ?? NSApp.effectiveAppearance), "face": Settings.face])
+            d.send(["type": "settings", "theme": Settings.theme(for: d.window?.effectiveAppearance ?? NSApp.effectiveAppearance), "face": Settings.face, "width": Settings.textWidth])
             d.web.underPageBackgroundColor = Settings.theme(for: NSApp.effectiveAppearance) == "night" ? .linenInk2 : .linenPaper
         }
     }

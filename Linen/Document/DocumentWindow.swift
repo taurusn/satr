@@ -10,6 +10,8 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
     private(set) var url: URL { didSet { updateIPhoneMark() } }
     private(set) var vault: Vault
     private var index: VaultIndex
+    /// Set when the tab closes and gives its index back (Library.stopUsing).
+    private var indexReleased = false
     private(set) var web: WKWebView!
     private let local = LocalScheme()
     private let remote = RemoteScheme()
@@ -42,6 +44,11 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
     private var zoom: Double = Settings.defaultZoom
     private var outsideAllowed: [String: FileID] = [:]
     private var remoteApproved = false
+    /// ENG-13: this tab's drags, newest last, for Undo Move and Redo Move; they hold while the tab shows the same board.
+    private var arrangeUndo: [[String: Any]] = []
+    private var arrangeRedo: [[String: Any]] = []
+    private var arrangeURL: URL?
+    private var arranging = false
     private var loadGeneration = 0
     private var indexDirty = false
     private var hiddenSince: Date?
@@ -59,7 +66,7 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
     init(url: URL, buildNow: Bool = true) {
         self.url = url.standardizedFileURL
         vault = VaultLocator.vault(for: self.url)
-        index = Library.shared.index(for: vault)
+        index = Library.shared.useIndex(for: vault)
         let screen = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
         let size = NSSize(width: min(1180, screen.width - 40), height: min(820, screen.height - 40))
         let window = NSWindow(contentRect: NSRect(origin: .zero, size: size),
@@ -266,6 +273,7 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
         version += 1
         var msg: [String: Any] = ["type": "update", "docId": docID, "text": text, "sidecar": sidecarText ?? NSNull(), "inBurst": inBurst, "version": version, "meta": meta()]
         if kind == .board { msg["kind"] = "board" }
+        if kind == .note && !isPlain { msg["boards"] = embeddedBoards(text) }
         send(msg)
     }
 
@@ -303,10 +311,10 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
             showState(error == EPERM ? .denied : .unreadable)
         case let .moved(newURL):
             // Renamed or moved (by Obsidian, Finder): the whole context follows, then a full load keeps the place.
-            let old = url
+            let old = url, oldIndex = index
             url = newURL.standardizedFileURL
             vault = VaultLocator.vault(for: url)
-            index = Library.shared.index(for: vault)
+            useVaultIndex()
             if let chosen = EncodingChoice.stored(for: old) {
                 EncodingChoice.store(nil, for: old)
                 EncodingChoice.store(chosen, for: url)
@@ -314,7 +322,9 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
             updateTitle(nil)
             onChange?()
             startSidecar()   // the notes file travels with the board's new name
-            let new = url, newIndex = index, oldIndex = Library.shared.index(for: VaultLocator.vault(for: old))
+            // The old vault's index is the one this tab held: asking the library for it could build a whole index
+            // only to update one file.
+            let new = url, newIndex = index
             Task {
                 await oldIndex.update(changed: [old])
                 await newIndex.update(changed: [new])
@@ -361,14 +371,18 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
         if kind == .board {
             msg["kind"] = "board"
             msg["refPath"] = Self.referencePath(for: url)
+            // ENG-8: boards in the document window may be arranged (never in Quick Look, export, linen shot or the iPhone)
+            msg["canArrange"] = true
+            if arrangeURL != url { arrangeUndo = []; arrangeRedo = []; arrangeURL = url }
             if let p = pendingPlace { msg["place"] = p } else if let b = stored?.board {
                 msg["place"] = ["kind": "board", "cx": b.cx, "cy": b.cy, "zoom": b.zoom, "node": b.node ?? NSNull(), "mode": b.mode]
             }
-        } else if let p = pendingPlace { msg["place"] = p } else if let p = stored {
+        } else if let p = pendingPlace { msg["place"] = p; if !isPlain { msg["boards"] = embeddedBoards(text) } } else if let p = stored {
             msg["place"] = ["hash": p.blockHash, "index": p.blockIndex, "offset": p.offset, "quote": p.quote, "atEnd": p.atEnd]
             msg["grown"] = p.atEnd
         }
         pendingPlace = nil
+        if kind == .note && !isPlain && msg["boards"] == nil { msg["boards"] = embeddedBoards(text) }
         if let base = Library.shared.baselines.hashes(for: url) {
             msg["baseline"] = base
             if let d = stored?.date { msg["baselineDate"] = d.formatted(.dateTime.day().month(.wide)) }
@@ -391,7 +405,7 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
             "type": "settings", "theme": Settings.theme(for: window?.effectiveAppearance ?? NSApp.effectiveAppearance), "face": Settings.face,
             "uiDir": Settings.interfaceIsArabic ? "rtl" : "ltr", "lang": Settings.interfaceIsArabic ? "ar" : "en",
             "contrast": NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast, "foldArabic": Settings.foldArabic,
-            "zoom": kind == .note ? zoom : 1,
+            "zoom": kind == .note ? zoom : 1, "width": Settings.textWidth,
         ])
     }
 
@@ -422,8 +436,20 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
     fileprivate func received(_ body: Any) {
         guard let msg = body as? [String: Any], let type = msg["type"] as? String else { return }
         // A message from the document this tab showed before a navigation is about that one, never this one.
-        if ["rendered", "view", "place", "baseline", "openReference"].contains(type), let d = msg["docId"] as? String, d != docID { return }
+        if ["rendered", "view", "place", "baseline", "openReference", "arrange"].contains(type), let d = msg["docId"] as? String, d != docID { return }
         switch type {
+        case "arrange":
+            guard kind == .board, let after = msg["after"] as? [String: Any], let before = msg["before"] as? [String: Any] else { break }
+            let label = msg["label"] as? String ?? "Move"
+            if let st = msg["stats"] as? [String: Any] { Log.write("arrange \(label) on \(url.lastPathComponent): \(st)") }
+            Task { @MainActor in
+                if await self.writeArrangement(after) {
+                    if self.arrangeURL != self.url { self.arrangeUndo = []; self.arrangeRedo = []; self.arrangeURL = self.url }
+                    self.arrangeUndo.append(["label": label, "before": before, "after": after])
+                    if self.arrangeUndo.count > 100 { self.arrangeUndo.removeFirst() }
+                    self.arrangeRedo = []
+                }
+            }
         case "openReference":
             openReference(msg["path"] as? String ?? "", line: msg["line"] as? Int)
         case "ready":
@@ -604,7 +630,7 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
         if target != url {
             url = target
             vault = VaultLocator.vault(for: url)
-            index = Library.shared.index(for: vault)
+            useVaultIndex()
             encoding = nil
             encodingNote = nil
             docID = UUID().uuidString
@@ -805,9 +831,21 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
     private func recover() {
         clearState()
         vault = VaultLocator.vault(for: url)
-        index = Library.shared.index(for: vault)
+        useVaultIndex()
         updateTitle(nil)
         startWatching()
+    }
+
+    /// Moves the tab to its current vault's index and gives the previous one back (the same index when the vault did
+    /// not change). After the tab closed it only looks the index up.
+    private func useVaultIndex() {
+        let previous = index
+        if indexReleased {
+            index = Library.shared.index(for: vault)
+            return
+        }
+        index = Library.shared.useIndex(for: vault)
+        Library.shared.stopUsing(previous)
     }
 
     private func clearState() {
@@ -928,6 +966,120 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
     private var zoomRunning = false
 
     @objc func reloadDocument(_ sender: Any?) { if kind == .page { pageController?.reload() } else { startWatching() } }
+
+    // MARK: Boards in notes (BRD-19)
+
+    /// The boards this note embeds, read with it (the vault rule for images: inside the vault, or a file Hatim allowed).
+    private func embeddedBoards(_ text: String) -> [String: Any] {
+        let refs = BoardEmbeds.refs(in: text)
+        guard !refs.isEmpty else { return [:] }
+        let root = vault.root, allowedFiles = outsideAllowed
+        return BoardEmbeds.read(refs, note: url, resolveWiki: { [index, url] name in
+            if case let .note(u, _, _) = index.resolve(name, from: url) { return u }
+            let near = url.deletingLastPathComponent().appendingPathComponent(name)
+            return FileManager.default.fileExists(atPath: near.path) ? near : nil
+        }, allowed: { u in BoardEmbeds.inside(u, root) || allowedFiles[u.resolvingSymlinksInPath().standardizedFileURL.path] != nil })
+    }
+
+    // MARK: Arranging (ENG-8 to ENG-14, ENG-21)
+
+    /// Applies a drag's change by id to the file as it is on disk now (an agent may have written since), and saves it
+    /// only if the file did not change while it was applied (else again, at most three times); staged and renamed.
+    /// A write that cannot be made puts the board back as the file has it and says why.
+    @discardableResult
+    private func writeArrangement(_ state: [String: Any]) async -> Bool {
+        await writeBoard { disk in
+            guard let r = await self.command("applyArrange", ["text": disk, "state": state]) as? [String: Any] else { return nil }
+            if let e = r["error"] as? String { Log.write("arrange: \(e)"); return nil }
+            return r["text"] as? String
+        }
+    }
+
+    private func writeBoard(_ make: (String) async -> String?) async -> Bool {
+        guard !arranging else { return false }
+        arranging = true
+        defer { arranging = false }
+        var why = String(localized: "the file could not be read")
+        for _ in 0..<3 {
+            guard let data = try? Data(contentsOf: url), let disk = String(data: data, encoding: .utf8) else { break }
+            guard let out = await make(disk) else { why = String(localized: "the board could not be changed"); break }
+            if out == disk { return true }
+            guard let again = try? Data(contentsOf: url), again == data else { continue }
+            let staged = url.deletingLastPathComponent().appendingPathComponent(".\(url.lastPathComponent).linen-\(UUID().uuidString.prefix(8))")
+            do { try Data(out.utf8).write(to: staged) } catch { why = String(localized: "the folder is read-only"); break }
+            // keep the file's permissions
+            if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path), let perm = attrs[.posixPermissions] {
+                try? FileManager.default.setAttributes([.posixPermissions: perm], ofItemAtPath: staged.path)
+            }
+            if Darwin.rename(staged.path, url.path) == 0 { return true }
+            try? FileManager.default.removeItem(at: staged)
+            why = String(localized: "the file is locked")
+            break
+        }
+        send(["type": "command", "name": "toast", "text": String(localized: "Not saved: \(why). The board is as the file has it.")])
+        sendUpdate(inBurst: false)
+        return false
+    }
+
+    private static func arrangeTitle(_ label: String, undo: Bool) -> String {
+        switch (label, undo) {
+        case ("Move Section", true): String(localized: "Undo Move Section")
+        case ("Move Section", false): String(localized: "Redo Move Section")
+        case ("Reshape Line", true): String(localized: "Undo Reshape Line")
+        case ("Reshape Line", false): String(localized: "Redo Reshape Line")
+        case ("Move Line End", true): String(localized: "Undo Move Line End")
+        case ("Move Line End", false): String(localized: "Redo Move Line End")
+        case ("Move Label", true): String(localized: "Undo Move Label")
+        case ("Move Label", false): String(localized: "Redo Move Label")
+        case (_, true): String(localized: "Undo Move")
+        default: String(localized: "Redo Move")
+        }
+    }
+
+    @objc func undoArrange(_ sender: Any?) {
+        guard kind == .board, arrangeURL == url, let e = arrangeUndo.popLast(), let before = e["before"] as? [String: Any] else { NSSound.beep(); return }
+        Task { @MainActor in
+            if await self.writeArrangement(before) { self.arrangeRedo.append(e) } else { self.arrangeUndo.append(e) }
+        }
+    }
+
+    @objc func redoArrange(_ sender: Any?) {
+        guard kind == .board, arrangeURL == url, let e = arrangeRedo.popLast(), let after = e["after"] as? [String: Any] else { NSSound.beep(); return }
+        Task { @MainActor in
+            if await self.writeArrangement(after) { self.arrangeUndo.append(e) } else { self.arrangeRedo.append(e) }
+        }
+    }
+
+    /// ENG-14: every pin, line shape and dragged label removed after asking, then the board laid out again and saved.
+    @objc func resetArrangement(_ sender: Any?) {
+        guard kind == .board, let window else { NSSound.beep(); return }
+        Task { @MainActor in
+            guard let c = await self.command("arrangement") as? [String: Any] else { NSSound.beep(); return }
+            let pins = (c["pins"] as? NSNumber)?.intValue ?? 0, shapes = (c["shapes"] as? NSNumber)?.intValue ?? 0
+            if pins + shapes == 0 {
+                self.send(["type": "command", "name": "toast", "text": String(localized: "Nothing on this board was placed by hand.")])
+                return
+            }
+            let alert = NSAlert()
+            alert.messageText = shapes == 0
+                ? String(localized: "Put the \(pins) boxes and sections you placed back in their layout?")
+                : pins == 0 ? String(localized: "Put the \(shapes) lines you reshaped back as Linen draws them?")
+                : String(localized: "Put the \(pins) boxes and sections you placed back in their layout, and the \(shapes) lines you reshaped?")
+            alert.addButton(withTitle: String(localized: "Reset Arrangement"))
+            alert.addButton(withTitle: String(localized: "Cancel"))
+            alert.beginSheetModal(for: window) { [weak self] r in
+                guard r == .alertFirstButtonReturn, let self else { return }
+                Task { @MainActor in
+                    let sidecar = self.sidecarText
+                    let done = await self.writeBoard { disk in
+                        guard let r = await self.command("resetArrangement", ["text": disk, "sidecar": sidecar ?? NSNull()]) as? [String: Any] else { return nil }
+                        return r["text"] as? String
+                    }
+                    if done { self.arrangeUndo = []; self.arrangeRedo = [] }
+                }
+            }
+        }
+    }
     @objc func revealInFinder(_ sender: Any?) { NSWorkspace.shared.activateFileViewerSelecting([url]) }
     @objc func openInEditor(_ sender: Any?) { Editors.open(url, vault: vault) }
 
@@ -986,6 +1138,15 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
             }
         }
         switch item.action {
+        case #selector(undoArrange(_:)):
+            let last = arrangeURL == url ? arrangeUndo.last : nil
+            item.title = Self.arrangeTitle(last?["label"] as? String ?? "Move", undo: true)
+            return kind == .board && last != nil
+        case #selector(redoArrange(_:)):
+            let last = arrangeURL == url ? arrangeRedo.last : nil
+            item.title = Self.arrangeTitle(last?["label"] as? String ?? "Move", undo: false)
+            return kind == .board && last != nil
+        case #selector(resetArrangement(_:)): return kind == .board
         case #selector(goBack(_:)): return !back.isEmpty || kind == .board
         case #selector(goForward(_:)): return !forward.isEmpty
         case #selector(toggleOutline(_:)):
@@ -1104,6 +1265,10 @@ final class DocumentWindow: NSWindowController, NSWindowDelegate, WKNavigationDe
         pageWatch = nil
         pageController?.close()
         pageController = nil
+        if !indexReleased {
+            indexReleased = true
+            Library.shared.stopUsing(index)
+        }
         onClose?(self)
         NowState.changed()
     }

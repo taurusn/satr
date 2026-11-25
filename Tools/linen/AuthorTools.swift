@@ -75,6 +75,7 @@ extension LinenTools {
              ["path": ["type": "string", "description": "Where to write the .canvas file (notes go beside it in <name>.canvas.notes.json)."],
               "board": ["type": "object", "description": "The board.", "properties": [
                 "title": ["type": "string"], "dir": ["type": "string", "enum": ["ltr", "rtl"], "description": "rtl for an Arabic board."],
+                "route": ["type": "string", "enum": ["elbow", "curved", "straight"], "default": "elbow", "description": "How lines are drawn: elbow (default), straight runs with rounded corners around every box; curved, the same route with wide corners; straight, a direct line where it crosses nothing."],
                 "columns": ["type": "integer", "minimum": 1, "maximum": 8, "description": "Sections per row (default up to 5)."],
                 "words": ["type": "array", "description": "Optional custom status words, at most six: [{word, shape: outline|threads|solid|dashed|dotted|rust, meaning, quiet}]. Give the most common word the outline shape and quiet: true, so the usual state stays calm; solid is the heaviest shape, for the few boxes that must stand out; rust only for failure. Without this list the board uses Works (quiet), Partial, Broken, Missing, Planned.", "items": ["type": "object"]],
                 "sections": ["type": "array", "items": ["type": "object", "properties": [
@@ -94,7 +95,8 @@ extension LinenTools {
              first changed box. Untouched boxes keep every byte, so Hatim's change marks show exactly what you changed. \
              Use it for every update to a board, small or large, instead of rewriting the file. Ops: set (title, body, \
              word, note, kind, shape, color, eyebrow; null clears a field), add (a card into a section), remove, move (to \
-             another section), connect, disconnect, add_section, remove_section, set_board (title, words, dir). Get ids \
+             another section), connect, disconnect, add_section, remove_section, set_board (title, words, dir, route: elbow \
+             restyles an older curved board's lines to corners and gives them room). Get ids \
              from read_outline. Example: {"path": "/abs/requests.canvas", "ops": [{"op": "set", "id": "nightly", "word": \
              "Works", "body": "Runs nightly; fixed retries at export."}, {"op": "add", "section": "s-intake", "card": \
              {"id": "audit", "title": "Audit trail", "word": "Missing"}}]}
@@ -108,6 +110,7 @@ extension LinenTools {
                 "kind": ["type": "string"], "color": ["type": ["string", "null"]],
                 "shape": ["type": "string", "enum": ["rect", "rounded", "ellipse", "diamond", "pill", "cylinder", "hexagon"]],
                 "eyebrow": ["type": ["string", "null"]], "dir": ["type": "string", "enum": ["ltr", "rtl"]],
+                "route": ["type": "string", "enum": ["elbow", "curved", "straight"], "description": "set_board: how the board's lines are drawn."],
                 "two_way": ["type": "boolean"], "keep_cards": ["type": "boolean"],
                 "words": ["type": "array", "description": "set_board: the board's whole word list, at most six. Give a word by name to keep its current definition, or as {word, shape: outline|threads|solid|dashed|dotted|rust, meaning, quiet}. To add one word, pass the existing names plus the new object.",
                           "items": ["type": ["string", "object"]]]], "required": ["op"]]],
@@ -138,12 +141,29 @@ extension LinenTools {
             return failure("Nothing written; fix these in board and call again:\n" + errors.prefix(30).map { "- \($0["path"] ?? ""): \($0["message"] ?? "")" }.joined(separator: "\n"))
         }
         guard let text = composed["text"] as? String else { throw ToolError(message: "The board author returned nothing.") }
-        return try await stageAndCommit(u, text: text, notes: composed["notes"] as? String, removeSidecar: exists, js: js,
-                                        members: composed["members"] as? [String: Any] ?? [:], changed: [], args: args,
-                                        lead: "\(exists ? "Replaced" : "Wrote") \(u.lastPathComponent)", warnings: problems)
+        // ENG-12: written only over the version read here (or only if there is still no file)
+        let expected: String? = exists ? try? Checker.readText(u) : nil
+        do {
+            return try await stageAndCommit(u, text: text, notes: composed["notes"] as? String, removeSidecar: exists, js: js,
+                                            members: composed["members"] as? [String: Any] ?? [:], changed: [], args: args,
+                                            lead: "\(exists ? "Replaced" : "Wrote") \(u.lastPathComponent)", warnings: problems, expected: .some(expected))
+        } catch is BoardChanged {
+            return failure("\(u.lastPathComponent) changed while this call ran (Hatim moved something on it, or another writer saved it); nothing was written. Call again.")
+        }
     }
 
+    /// ENG-12: the file is not the version a tool read; its change is applied again to the new text, once.
+    struct BoardChanged: Error {}
+
     func editBoardTool(_ args: [String: Any]) async throws -> [String: Any] {
+        do { return try await editBoardOnce(args) } catch is BoardChanged {}
+        do { return try await editBoardOnce(args) } catch is BoardChanged {
+            let name = (args["path"] as? String).map { URL(fileURLWithPath: $0).lastPathComponent } ?? "The board"
+            return failure("\(name) changed twice while this edit ran (Hatim moving boxes, or another writer); nothing was written. Call edit_board again.")
+        }
+    }
+
+    private func editBoardOnce(_ args: [String: Any]) async throws -> [String: Any] {
         let u = try file(args, kinds: ["board"])
         guard let ops = args["ops"] as? [Any], !ops.isEmpty else { throw ToolError(message: "Pass ops: a list such as [{op: \"set\", id: \"approve-flow\", word: \"Works\"}].") }
         let text = try Checker.readText(u)
@@ -173,13 +193,15 @@ extension LinenTools {
             : "Changed \(changed.count) box\(changed.count == 1 ? "" : "es") on \(u.lastPathComponent): \(changed.prefix(12).joined(separator: ", "))\(changed.count > 12 ? ", …" : "")"
         if (edited["styled"] as? Bool) == false { lead += ". The file was rewritten once in Obsidian's style" }
         return try await stageAndCommit(u, text: out, notes: edited["notes"] as? String, removeSidecar: false, js: js,
-                                        members: edited["members"] as? [String: Any] ?? [:], changed: changed, args: args, lead: lead, warnings: problems)
+                                        members: edited["members"] as? [String: Any] ?? [:], changed: changed, args: args, lead: lead, warnings: problems,
+                                        expected: .some(text))
     }
 
     /// Writes a board and its notes as one change: both are staged beside their targets first, the old notes are kept
     /// aside, and the renames happen only if the call is still live; if the board's rename fails, the old notes come back.
     /// A board written without notes takes away a notes file left beside it, so stale notes never attach to it.
-    private func commitPair(board u: URL, text: String, notes: String?, removeSidecar: Bool) throws {
+    /// expected: .some(text) writes only over that text, .some(nil) only where there is no file, nil anyway.
+    private func commitPair(board u: URL, text: String, notes: String?, removeSidecar: Bool, expected: String?? = nil) throws {
         let fm = FileManager.default
         try fm.createDirectory(at: u.deletingLastPathComponent(), withIntermediateDirectories: true)
         let sidecar = URL(fileURLWithPath: u.path + ".notes.json")
@@ -191,6 +213,11 @@ extension LinenTools {
         try Data(text.utf8).write(to: stagedBoard)
         if let notes { try Data(notes.utf8).write(to: stagedNotes) }
         guard deadline?.expired != true else { throw ToolError(message: "Stopped at its deadline before writing; nothing was written.") }
+        // ENG-12: read again just before the rename; a file someone changed since the tool read it is not overwritten
+        if let exp = expected {
+            let now = fm.fileExists(atPath: u.path) ? try? Checker.readText(u) : nil
+            if now != exp { throw BoardChanged() }
+        }
         // A notes path that exists but is not a plain file (a link, a folder) is someone else's; nothing is written.
         var st = stat()
         if lstat(sidecar.path, &st) == 0, (st.st_mode & S_IFMT) != S_IFREG {
@@ -224,7 +251,7 @@ extension LinenTools {
     /// Layout, tidy rows and check on the staged text; only a board with no errors replaces the files on disk, and
     /// then the screenshot. Nothing is written when any step fails (MCP-4, MCP-5).
     private func stageAndCommit(_ u: URL, text: String, notes: String?, removeSidecar: Bool, js: BoardJS, members: [String: Any],
-                                changed: [String], args: [String: Any], lead: String, warnings: [[String: Any]]) async throws -> [String: Any] {
+                                changed: [String], args: [String: Any], lead: String, warnings: [[String: Any]], expected: String?? = nil) async throws -> [String: Any] {
         let width = (args["width"] as? NSNumber)?.doubleValue ?? 1176
         let h = try await layoutHost()
         let laid = try await Layout.runText(text, sidecar: notes, name: u.lastPathComponent, host: h)
@@ -238,7 +265,7 @@ extension LinenTools {
         if !errors.isEmpty {
             return failure("Nothing written: the result would not pass check_files. " + errors.prefix(20).map { "\($0.path): \($0.message)" }.joined(separator: "; "))
         }
-        try commitPair(board: u, text: final, notes: notes, removeSidecar: removeSidecar)
+        try commitPair(board: u, text: final, notes: notes, removeSidecar: removeSidecar, expected: expected)
 
         var lines = ["\(lead). \(laid.summary)"]
         lines.append("check_files: no errors\(report.problems.isEmpty ? "" : ", \(report.problems.count) warnings").")

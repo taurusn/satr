@@ -46,6 +46,10 @@ enum Menus {
         add(file, String(localized: "Print…"), #selector(DocumentWindow.printDocument(_:)), "p")
 
         let edit = submenu(main, String(localized: "Edit"))
+        // ENG-13: drags on a board (the only thing Linen changes); the titles follow the last drag
+        add(edit, String(localized: "Undo Move"), #selector(DocumentWindow.undoArrange(_:)), "z")
+        add(edit, String(localized: "Redo Move"), #selector(DocumentWindow.redoArrange(_:)), "z", [.command, .shift])
+        edit.addItem(.separator())
         edit.addItem(withTitle: String(localized: "Copy"), action: #selector(NSText.copy(_:)), keyEquivalent: "c")
         add(edit, String(localized: "Copy Reference"), #selector(DocumentWindow.copyReference(_:)), "c", [.command, .option])
         edit.addItem(withTitle: String(localized: "Select All"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
@@ -70,6 +74,7 @@ enum Menus {
         add(view, String(localized: "Actual Size"), #selector(DocumentWindow.zoomReset(_:)), "0")
         add(view, String(localized: "Zoom to 100%"), #selector(DocumentWindow.zoomActual(_:)), "1")
         add(view, String(localized: "As List"), #selector(DocumentWindow.toggleList(_:)), "l", [.command, .option])
+        add(view, String(localized: "Reset Arrangement…"), #selector(DocumentWindow.resetArrangement(_:)), "")
         add(view, String(localized: "Run Page Scripts"), #selector(DocumentWindow.togglePageScripts(_:)), "")
         view.addItem(.separator())
         let encodingItem = NSMenuItem(title: String(localized: "Text Encoding"), action: nil, keyEquivalent: "")

@@ -69,6 +69,8 @@
       file: typeof n.file === "string" ? n.file : null,
       url: typeof n.url === "string" ? n.url : null,
       parent: null, depth: 0, kids: [],
+      // ENG-8, ENG-11: placed by Hatim's hand; never moved by layout
+      pinned: L.pinned === true,
     };
   }
 
@@ -188,6 +190,10 @@
     // stacked in one column) is not. Reading order there would make a second layout reverse the flow.
     for (const g of laid) g.kids = g.layout === "layered" ? g.kids.slice().sort((a, b) => a.i - b.i) : readingOrder(g.kids, rtl);
     const orig = new Map(nodes.map((n) => [n, { x: n.x, y: n.y, w: n.w, h: n.h }]));
+    // ENG-11: a laid-out section that holds a box Hatim placed is arranged by hand: its boxes keep their places and
+    // widths and are sized to their text, a box moves down only where a taller box above it now overlaps it, a pinned
+    // box never moves, and the section grows to hold everything.
+    for (const g of laid) g.byHand = g.kids.some((k) => k.pinned);
 
     // 1. Widths, top down. A flowed child takes its cell's width; a hand-placed group keeps its size.
     const pad = (g) => (g.depth === 0 || !g.parent ? METRICS.sectionPad : METRICS.groupPad);
@@ -195,16 +201,23 @@
     const spanOf = (n, cols) => (n.span === "all" ? cols : Math.max(1, Math.min(cols, Math.floor(Number(n.span) || 1))));
     const cells = new Map(); // node -> {w}
 
+    // Round 10, finding 1: a gap that lines pass along is widened by the channel pass (run): extra px per gap.
+    const extraOf = (g, axis, i) => { const x = opts.extraGaps && opts.extraGaps[g.id]; return (x && x[axis] && x[axis][i]) || 0; };
     function columns(g, count) {
       const inner = g.w - 2 * pad(g);
       const ratios = g.ratios && g.ratios.length === count ? g.ratios : new Array(count).fill(1);
       const sum = ratios.reduce((a, b) => a + b, 0);
-      const free = inner - gapOf(g) * (count - 1);
+      let free = inner - gapOf(g) * (count - 1);
+      for (let c = 0; c < count - 1; c++) free -= extraOf(g, "col", c);
       return ratios.map((r) => (free * r) / sum);
     }
 
     function widths(g) {
       const kids = g.kids;
+      if (g.byHand) {
+        for (const k of kids) { cells.set(k, { w: k.w, col: 0, span: 1 }); if (k.layout) widths(k); }
+        return;
+      }
       if (g.layout === "layered") {
         for (const k of kids) {
           const w = k.type === "group" ? (k.w || METRICS.cardDefault * 2) : Math.max(METRICS.cardMin, k.w || METRICS.cardDefault);
@@ -220,7 +233,8 @@
         let span = g.layout === "grid" ? spanOf(k, cols) : 1;
         if (g.layout === "grid" && c + span > cols) c = 0;
         const start = g.layout === "stack" ? 0 : c;
-        const w = colW.slice(start, start + span).reduce((a, b) => a + b, 0) + gapOf(g) * (span - 1);
+        let w = colW.slice(start, start + span).reduce((a, b) => a + b, 0) + gapOf(g) * (span - 1);
+        for (let x = start; x < start + span - 1; x++) w += extraOf(g, "col", x);
         cells.set(k, { w, col: start, span });
         if (k.type !== "group" || k.layout) k.w = w;
         if (k.layout) widths(k);
@@ -249,6 +263,7 @@
     // 3. Heights and positions, bottom up, relative to each section's top-left; roots are then placed in place.
     const rel = new Map(); // node -> {x, y} relative to its laid-out parent
     const routes = {};
+    const grids = new Map(); // grid, stack and lanes sections -> their columns and rows, relative
 
     async function place(g) {
       stats.sections++;
@@ -259,6 +274,30 @@
       for (const k of kids) if (k.layout) await place(k);
       const labelOff = (k) => (k.type === "group" && k.label ? METRICS.labelBand : 0);
       const height = (k) => (k.type === "group" ? k.h : Math.max(1, (sizeOf(k.id) || { h: k.h || 60 }).h));
+
+      if (g.byHand) {
+        const og = orig.get(g), gap = gapOf(g);
+        const list = kids.map((k) => { const o = orig.get(k); if (k.type !== "group") k.h = height(k); return { k, x: o.x - og.x, y: o.y - og.y }; });
+        list.sort((u, v) => u.y - v.y || u.x - v.x);
+        for (let i = 0; i < list.length; i++) {
+          const u = list[i];
+          if (u.k.pinned) continue;
+          // below every box above it that it now overlaps, and below a pinned box it would land on
+          for (let pass = 0, moved = true; moved && pass <= list.length; pass++) {
+            moved = false;
+            for (let j = 0; j < list.length; j++) {
+              const v = list[j];
+              if (v === u || !(j < i || v.k.pinned)) continue;
+              const ox = Math.min(u.x + u.k.w, v.x + v.k.w) - Math.max(u.x, v.x);
+              if (ox > 0 && u.y < v.y + v.k.h && u.y + u.k.h > v.y && (v.y <= u.y || v.k.pinned)) { u.y = v.y + v.k.h + gap; moved = true; }
+            }
+          }
+        }
+        let w = og.w, h = og.h;
+        for (const u of list) { rel.set(u.k, { x: u.x, y: u.y }); w = Math.max(w, u.x + u.k.w + p); h = Math.max(h, u.y + u.k.h + p); }
+        g.w = Math.ceil(w); g.h = Math.ceil(h);
+        return;
+      }
 
       if (g.layout === "layered") {
         const t = now();
@@ -315,13 +354,16 @@
       const cols = g.layout === "stack" ? 1 : g.layout === "lanes" ? Math.max(1, kids.length) : Math.max(1, g.cols || 2);
       const colW = columns(g, cols);
       const colX = []; let acc = p;
-      for (let c = 0; c < cols; c++) { colX.push(acc); acc += colW[c] + gap; }
+      for (let c = 0; c < cols; c++) { colX.push(acc); acc += colW[c] + gap + extraOf(g, "col", c); }
       if (rtl) for (let c = 0; c < cols; c++) colX[c] = g.w - colX[c] - colW[c];
       let y = top;
       let row = [];
+      const info = { cols: colX.map((x, c) => [x, x + colW[c]]), rows: [] };
+      grids.set(g, info);
       const flush = () => {
         if (!row.length) return;
         const rowH = Math.max(...row.map((k) => labelOff(k) + height(k)));
+        info.rows.push([y, y + rowH]);
         for (const k of row) {
           const cell = cells.get(k);
           let x = rtl ? colX[cell.col + cell.span - 1] : colX[cell.col];
@@ -332,7 +374,7 @@
           else if (g.layout === "lanes" && k.layout) k.h = rowH - labelOff(k);
           if (k.type !== "group") k.w = cell.w;
         }
-        y += rowH + gap;
+        y += rowH + gap + extraOf(g, "row", info.rows.length - 1);
         row = [];
       };
       let c = 0;
@@ -345,7 +387,7 @@
         c = cell.col + cell.span;
       }
       flush();
-      g.h = Math.ceil((kids.length ? y - gap : top) + p);
+      g.h = Math.ceil((kids.length ? y - gap - extraOf(g, "row", info.rows.length - 1) : top) + p);
     }
 
     for (const r of roots) await place(r);
@@ -404,11 +446,11 @@
           }
         }
         done.push(...row);
-        if (!row.some((t) => target > t.y)) continue;
+        if (!row.some((t) => target > t.y && !t.pinned)) continue;
         target = Math.max(target, ...row.map((t) => t.y));
         for (const t of row) {
           const dy = target - t.y;
-          if (dy <= 0) continue;
+          if (dy <= 0 || t.pinned) continue; // ENG-11: a section Hatim placed stays where he put it
           t.y = target; moved.add(t.id);
           const shift = (n) => { for (const k of n.kids) { k.y += dy; shift(k); } };
           shift(t);
@@ -444,8 +486,25 @@
       const v = { x: Math.round(n.x), y: Math.round(n.y), width: Math.round(n.w), height: Math.ceil(n.h - 1e-6) };
       if (v.x !== o.x || v.y !== o.y || v.width !== o.w || v.height !== o.h) positions[n.id] = v;
     }
+    // 8. The inner gaps of grid, stack and lanes sections, in board units, for the channel pass (run).
+    const gaps = [];
+    const pinned = (n) => !!(n.raw && n.raw.linen && n.raw.linen.pinned === true);
+    for (const [g, info] of grids) {
+      const cs = info.cols, rs = info.rows;
+      if (!rs.length) continue;
+      // a section Hatim placed, or one holding a box he placed, keeps its gaps (ENG-11)
+      if (pinned(g) || g.kids.some(pinned)) continue;
+      const y0 = g.y + rs[0][0], y1 = g.y + rs[rs.length - 1][1];
+      const xs = cs.flat(), x0 = g.x + Math.min(...xs), x1 = g.x + Math.max(...xs);
+      const usedCols = g.layout === "lanes" ? g.kids.length : cs.length;
+      for (let c = 0; c + 1 < Math.min(cs.length, usedCols); c++) {
+        const a = cs[c], b = cs[c + 1];
+        gaps.push({ section: g.id, axis: "col", index: c, x0: g.x + Math.min(a[1], b[1]), x1: g.x + Math.max(a[0], b[0]), y0, y1 });
+      }
+      for (let r = 0; r + 1 < rs.length; r++) gaps.push({ section: g.id, axis: "row", index: r, x0, x1, y0: g.y + rs[r][1], y1: g.y + rs[r + 1][0] });
+    }
     stats.ms = now() - t0;
-    return { positions, routes, moved: [...moved], problems, stats, metrics: METRICS };
+    return { positions, routes, gaps, moved: [...moved], problems, stats, metrics: METRICS };
   }
 
   // Obsidian's side rule (PRD 9.1 rule 3): the larger of the horizontal and vertical offsets between centres.
@@ -645,9 +704,30 @@
       await Promise.all(['400 15px "Linen Sans"', '500 15px "Linen Sans"', '700 15px "Linen Sans"', '300 19px "Linen Serif Display"']
         .map((f) => document.fonts.load(f).catch(() => null)));
     }
-    const res = await layout(canvas, { measureBatch, cacheToken: opts.cacheToken || "page", rowGap: opts.rowGap, elk: opts.elk });
+    const lopts = { measureBatch, cacheToken: opts.cacheToken || "page", rowGap: opts.rowGap, elk: opts.elk };
+    let res = await layout(canvas, lopts);
     if (!root.LinenCanvasWriter) throw new Error("canvas-writer.js is not loaded");
-    const written = root.LinenCanvasWriter.write(text, res.positions);
+    let written = root.LinenCanvasWriter.write(text, res.positions);
+    // Round 10, finding 1, and gate 4.0 (room for lines): where k routed lines run along an inner gap of a laid-out
+    // section, the gap becomes max(16, 12 + 8k) wide, by one more layout. Only lines the router draws count (boards that
+    // set a route), so older boards lay out as before. A wider gap can draw more lines into it, so the lines are
+    // measured again on the new layout and a gap that now needs more grows again (a gap never shrinks), until none
+    // does, at most three times: the result depends only on the file, so running it again changes nothing.
+    if (opts.channels !== false) {
+      let acc = null, passes = 0;
+      for (let pass = 0; pass < (opts.channelPasses || 3); pass++) {
+        const extra = channelDemand(written.text, res.gaps, opts.sidecarText, acc);
+        if (!extra) break;
+        acc = extra.gaps; passes++;
+        res = await layout(JSON.parse(text), Object.assign({}, lopts, { extraGaps: acc }));
+        written = root.LinenCanvasWriter.write(text, res.positions);
+      }
+      if (passes) {
+        // gaps widened (each once, however many passes it took)
+        res.stats.widened = Object.values(acc).reduce((n, g) => n + g.col.filter(Boolean).length + g.row.filter(Boolean).length, 0);
+        res.stats.channelPasses = passes;
+      }
+    }
 
     // Every text node, laid out or hand-placed, measured at its final width against its final height.
     const after = JSON.parse(written.text);
@@ -666,7 +746,54 @@
     };
   }
 
-  const api = { layout, run, sideFor, elbow, METRICS, LAYOUTS: [...LAYOUTS], clearCache: () => cache.clear(), hashString };
+  /** The extra width each inner gap needs for the routed lines that run along it, or null when none does. */
+  function channelDemand(text, gaps, sidecarText, prev) {
+    const R = root.LinenRouter, C = root.LinenCanvas;
+    if (!R || !C || !gaps || !gaps.length) return null;
+    let board;
+    try { board = C.parse(text, { sidecarText: sidecarText || null }); } catch (_) { return null; }
+    if (!board || board.fatal) return null;
+    const input = R.fromBoard(board);
+    if (!input.edges.length) return null;
+    const { routes } = R.route(input);
+    const out = {};
+    let count = 0;
+    for (const gp of gaps) {
+      const col = gp.axis === "col", width = col ? gp.x1 - gp.x0 : gp.y1 - gp.y0;
+      const lines = new Set();
+      for (const [id, r] of routes) {
+        for (let i = 1; i < r.pts.length; i++) {
+          const a = r.pts[i - 1], b = r.pts[i];
+          if (col ? a[0] !== b[0] : a[1] !== b[1]) continue;
+          const c = col ? a[0] : a[1], lo = Math.min(col ? a[1] : a[0], col ? b[1] : b[0]), hi = Math.max(col ? a[1] : a[0], col ? b[1] : b[0]);
+          const g0 = col ? gp.x0 : gp.y0, g1 = col ? gp.x1 : gp.y1, e0 = col ? gp.y0 : gp.x0, e1 = col ? gp.y1 : gp.x1;
+          if (c > g0 && c < g1 && Math.min(hi, e1) - Math.max(lo, e0) > 8) { lines.add(id); break; }
+        }
+      }
+      if (!lines.size) continue;
+      // a line crossing a section that holds neither of its ends counts three times, so it passes 18 px clear of the
+      // cards there (ENG-1's 16 px) rather than 10 (E1 polish, with the title-strip cost in router.js)
+      const inSec = (id) => { for (let n = board.byId.get(id); n; n = n.parent ? board.byId.get(n.parent) : null) if (n.parent === gp.section) return true; return false; };
+      let k = 0;
+      for (const id of lines) { const e = board.edgesById.get(id); k += e && !inSec(e.from) && !inSec(e.to) ? 3 : 1; }
+      // the gap's width before any widening, and what it has been given so far (a gap only ever grows)
+      const had = (prev && prev[gp.section] && prev[gp.section][gp.axis] && prev[gp.section][gp.axis][gp.index]) || 0;
+      const add = Math.max(0, Math.max(16, 12 + 8 * k) - (width - had));
+      if (add < had + 1) continue;
+      const g = (out[gp.section] = out[gp.section] || { col: [], row: [] });
+      g[gp.axis][gp.index] = Math.ceil(add);
+      count++;
+    }
+    if (!count) return null;
+    // the earlier passes' widths stay
+    if (prev) for (const sec of Object.keys(prev)) for (const axis of ["col", "row"]) (prev[sec][axis] || []).forEach((v, i) => {
+      const g = (out[sec] = out[sec] || { col: [], row: [] });
+      if (v && !(g[axis][i] > v)) g[axis][i] = v;
+    });
+    return { gaps: out, count };
+  }
+
+  const api = { layout, run, channelDemand, sideFor, elbow, METRICS, LAYOUTS: [...LAYOUTS], clearCache: () => cache.clear(), hashString };
   root.LinenLayout = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof self !== "undefined" ? self : typeof globalThis !== "undefined" ? globalThis : this);

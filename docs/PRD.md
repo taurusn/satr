@@ -147,6 +147,7 @@ The dialect is pinned: CommonMark with GitHub's tables, task lists, strikethroug
 | READ-8 | **Present** (⌥⌘P): in the window or full screen, at its own remembered size, outline and marks hidden; space and arrows move one screen, snapping to a heading only when one sits in the bottom fifth; Esc ends. | 1 |
 | READ-9 | **Link preview** on force click or three-finger tap (the macOS Look Up gesture) and on ⌘-hover, never on plain hover: the target's first screen in a solid paper popover. | 1 |
 | READ-10 | "Copy as Markdown" copies the source of the selected blocks. | 1 |
+| READ-11 | **Text width** in Settings: Reading (the 578 px column, default), Wide (820 px, wide blocks 1000 px) or Full (the whole pane inside its margins), applied live to open notes with the reading place kept; zoom still widens or narrows Reading and Wide in words (READ-1). Mac only: iPhone, Quick Look and exports keep Reading. Added 2026-11-25 on Hatim's ask ("make it user preference to control"). | 2.x |
 
 ### 6.4 Live reload
 

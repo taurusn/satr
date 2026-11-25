@@ -10,7 +10,7 @@ final class Library {
     let places: PlaceStore
     let baselines: BaselineStore
     let sessions: SessionStore
-    private var indexes: [URL: VaultIndex] = [:]
+    private let indexes = VaultIndexCache()
 
     private init() {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent(Self.folderName, isDirectory: true)
@@ -30,13 +30,25 @@ final class Library {
         return "Linen"
     }
 
-    /// The index of a vault, built in the background on first use and kept current from file events.
+    /// The index of a vault for a lookup that does not outlive the caller (Open Quickly, Keep on iPhone): the one a
+    /// document uses, else one built in the background that goes when the caller drops it.
     func index(for vault: Vault) -> VaultIndex {
-        if let i = indexes[vault.root] { return i }
-        let i = VaultIndex(vault: vault)
-        indexes[vault.root] = i
-        Task.detached(priority: .utility) { await i.build() }
-        return i
+        indexes.index(for: vault)
+    }
+
+    /// The index for a tab that shows a file in `vault`, built in the background on first use and kept current from
+    /// the tab's file events. Balance every call with `stopUsing(_:)`.
+    func useIndex(for vault: Vault) -> VaultIndex {
+        indexes.acquire(vault)
+    }
+
+    /// A tab no longer uses `index`. When it was the last, the index stays for a quick reopen until another index is
+    /// let go or 10 minutes pass, as idle background tabs unload (section 9).
+    func stopUsing(_ index: VaultIndex) {
+        guard indexes.release(index) else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 601) { [weak self] in
+            MainActor.assumeIsolated { self?.indexes.dropKept(olderThan: 600) }
+        }
     }
 
     func flush() {
@@ -66,6 +78,11 @@ final class Library {
 enum Settings {
     static var appearance: String { UserDefaults.standard.string(forKey: "appearance") ?? "system" }
     static var face: String { UserDefaults.standard.string(forKey: "bodyFace") ?? "sans" }
+    /// The note column's width (READ-11): "reading" (the default), "wide" or "full".
+    static var textWidth: String {
+        let v = UserDefaults.standard.string(forKey: "textWidth") ?? "reading"
+        return ["reading", "wide", "full"].contains(v) ? v : "reading"
+    }
     static var defaultZoom: Double { let v = UserDefaults.standard.double(forKey: "defaultZoom"); return v > 0 ? v : 1 }
     static var editorBundleID: String? { UserDefaults.standard.string(forKey: "editorBundleID") }
     static var remoteImagesAlways: Bool { UserDefaults.standard.bool(forKey: "remoteImagesAlways") }
