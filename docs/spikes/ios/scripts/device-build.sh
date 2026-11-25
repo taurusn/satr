@@ -1,7 +1,7 @@
 #!/bin/bash
 # Builds the spike app and its UI tests (Release) for the iPhone and installs the app with devicectl.
 #   scripts/device-build.sh <xcodebuild destination id> <CoreDevice id>
-# The iPhone "Eight": CoreDevice 6C03C5DB-EDDC-5669-87D7-A46D7A263745, hardware 00008130-000E719C2E3A001C. Never by name.
+# The iPhone "Eight": CoreDevice <coredevice-id>, hardware <hardware-id>. Never by name.
 set -e
 here="$(cd "$(dirname "$0")/.." && pwd)"
 dest="$1"; core="$2"

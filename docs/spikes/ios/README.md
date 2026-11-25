@@ -49,7 +49,7 @@ Extra, outside the gate: List first paint p95 148 ms (500 cards, target 500 ms) 
 
 **The app.** `LinenSpike` (`project.yml`, XcodeGen; bundle id `com.hatim.linen.spike-ios`; Release builds; team 2U8YZJV343, automatic signing). It hosts `Renderer/page.html` the way the Mac app's `DocumentWindow` does: a non-persistent data store, `linen-app://renderer/` served from the bundle by a scheme handler (the Mac `AppScheme`), `linen-local://` for images beside the document, the `linen` message handler, and the Mac app's error and CSP listener at document start. The bridge answers what the page asks of the app (`imageInfo`, `resolveLinks`), as the Mac app and Loom's shim do. The renderer and the Thmanyah faces are copied into the app at build time by `Scripts/copy-renderer.sh` (run as is), the fixtures by rsync. Nothing in `Renderer/`, `Linen/` or the main project changed. The page fills the safe area: 393 x 759 CSS px at 3x on the iPhone, 402 x 778 on the simulator.
 
-**Devices.** iPhone 15 Pro "Eight", iOS 26.5, over the cable, targeted by CoreDevice id `6C03C5DB-EDDC-5669-87D7-A46D7A263745` for xcodebuild and devicectl; xctrace only finds it by hardware id `00008130-000E719C2E3A001C`. Simulator: iPhone 17 Pro, iOS 26.5, booted headless with `xcrun simctl` (Simulator.app never opened). Mac: MacBook Air M4, Xcode 26.6.
+**Devices.** iPhone 15 Pro "Eight", iOS 26.5, over the cable, targeted by CoreDevice id `<coredevice-id>` for xcodebuild and devicectl; xctrace only finds it by hardware id `<hardware-id>`. Simulator: iPhone 17 Pro, iOS 26.5, booted headless with `xcrun simctl` (Simulator.app never opened). Mac: MacBook Air M4, Xcode 26.6.
 
 **Runs** (launch arguments `-LinenMode <mode> -LinenBoard big-500|big-2000`; each writes `Documents/results/<mode>-<board>.json`, copied off with `devicectl device copy from`):
 
@@ -76,10 +76,10 @@ cd docs/spikes/ios
 bash scripts/sim-build.sh <sim udid>                       # Release, build-for-testing, install
 bash scripts/sim-run.sh <sim udid> DONE 600 -LinenMode fixtures
 bash scripts/touch.sh sim <sim udid> big-500
-bash scripts/device-build.sh 6C03C5DB-EDDC-5669-87D7-A46D7A263745 6C03C5DB-EDDC-5669-87D7-A46D7A263745
-bash scripts/device-run.sh 6C03C5DB-EDDC-5669-87D7-A46D7A263745 DONE 600 results/device -LinenMode paint -LinenBoard big-500
-bash scripts/touch.sh device 6C03C5DB-EDDC-5669-87D7-A46D7A263745 big-500
-bash scripts/device-loop.sh 00008130-000E719C2E3A001C 6C03C5DB-EDDC-5669-87D7-A46D7A263745 big-500 10 results/device
+bash scripts/device-build.sh <coredevice-id> <coredevice-id>
+bash scripts/device-run.sh <coredevice-id> DONE 600 results/device -LinenMode paint -LinenBoard big-500
+bash scripts/touch.sh device <coredevice-id> big-500
+bash scripts/device-loop.sh <hardware-id> <coredevice-id> big-500 10 results/device
 python3 -I scripts/fixtures-report.py results/device/fixtures.json
 node scripts/reference.js results/device/fixtures.json        # the same problem lists computed on the Mac
 python3 -I scripts/analyze.py results/device
